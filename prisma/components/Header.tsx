@@ -1,7 +1,9 @@
+
 import React from 'react';
-import { Settings, ChevronDown, Menu, History } from 'lucide-react';
+import { Settings, ChevronDown, Menu } from 'lucide-react';
 import { MODELS } from '../config';
 import { ModelOption } from '../types';
+import Logo from './Logo';
 
 interface HeaderProps {
   selectedModel: ModelOption;
@@ -13,7 +15,7 @@ interface HeaderProps {
 
 const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSidebar, onNewChat }: HeaderProps) => {
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
       <div className="w-full px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 
@@ -25,15 +27,13 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
           </button>
           
           <div 
-            className="flex items-center gap-2 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group"
             onClick={onNewChat}
             title="Start New Chat"
           >
-            <h1 className="font-bold text-lg tracking-tight text-slate-900 hidden sm:block group-hover:opacity-70 transition-opacity">
-              Gemini <span className="text-blue-600 font-light">Prisma</span>
-            </h1>
-            <h1 className="font-bold text-lg tracking-tight text-slate-900 sm:hidden group-hover:opacity-70 transition-opacity">
-              Prisma
+            <Logo className="w-8 h-8 transition-transform group-hover:scale-110" />
+            <h1 className="font-bold text-lg tracking-tight text-blue-600 group-hover:opacity-70 transition-opacity">
+              <span className="font-light">Prisma</span>
             </h1>
           </div>
         </div>

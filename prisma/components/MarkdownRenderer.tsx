@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, Check, Terminal } from 'lucide-react';
@@ -70,14 +72,35 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
 };
 
 const MarkdownRenderer = ({ content, className }: { content: string, className?: string }) => {
+  /**
+   * Pre-process content to handle common LaTeX delimiters from Gemini
+   * and optimize Markdown compatibility.
+   */
+  const preprocessMarkdown = (text: string) => {
+    if (!text) return "";
+    
+    return text
+      // Replace \[ ... \] with $$ ... $$
+      .replace(/\\\[/g, '$$$$')
+      .replace(/\\\]/g, '$$$$')
+      // Replace \( ... \) with $ ... $
+      .replace(/\\\(/g, '$$')
+      .replace(/\\\)/g, '$$')
+      // Fix potential spacing issues between bold marks and math delimiters
+      .replace(/\*\*(\$)/g, '** $1')
+      .replace(/(\$)\*\*/g, '$1 **');
+  };
+
   return (
     <div className={className}>
       <ReactMarkdown
+        remarkPlugins={[remarkMath]}
+        rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
           code: CodeBlock
         }}
       >
-        {content}
+        {preprocessMarkdown(content)}
       </ReactMarkdown>
     </div>
   );

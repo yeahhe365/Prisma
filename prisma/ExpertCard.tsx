@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Loader2, CheckCircle2, X, BrainCircuit, MessageSquareText, Thermometer, Timer } from 'lucide-react';
+import { Bot, Loader2, CheckCircle2, X, BrainCircuit, MessageSquareText, Thermometer, Timer, Repeat } from 'lucide-react';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { ExpertResult } from './types';
 
@@ -47,6 +47,7 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
   const isDone = expert.status === 'completed';
   const isPending = expert.status === 'pending';
   const isError = expert.status === 'error';
+  const round = expert.round || 1;
 
   // Auto-switch to thoughts if that's all we have so far
   React.useEffect(() => {
@@ -72,7 +73,15 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
-            <h3 className="text-sm font-bold text-slate-800 leading-tight truncate mr-2">{expert.role}</h3>
+            <div className="flex items-center gap-2">
+               <h3 className="text-sm font-bold text-slate-800 leading-tight truncate">{expert.role}</h3>
+               {round > 1 && (
+                 <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-bold uppercase tracking-wider border border-indigo-200">
+                    <Repeat size={8} />
+                    Round {round}
+                 </div>
+               )}
+            </div>
             
             {/* Timer for Expert */}
             <TimeDisplay start={expert.startTime} end={expert.endTime} status={expert.status} />

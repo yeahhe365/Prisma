@@ -1,52 +1,37 @@
-import { useState, useRef, useCallback } from 'react';
+
+import { useCallback } from 'react';
 import { getAI } from '../api';
 import { getThinkingBudget } from '../config';
-import { AppConfig, ModelOption, AppState, AnalysisResult, ExpertResult, ChatMessage } from '../types';
+import { AppConfig, ModelOption, ExpertResult, ChatMessage } from '../types';
 
-import { executeManagerAnalysis } from '../services/deepThink/manager';
+import { executeManagerAnalysis, executeManagerReview } from '../services/deepThink/manager';
 import { streamExpertResponse } from '../services/deepThink/expert';
 import { streamSynthesisResponse } from '../services/deepThink/synthesis';
+import { useDeepThinkState } from './useDeepThinkState';
 
 export const useDeepThink = () => {
-  const [appState, setAppState] = useState<AppState>('idle');
-  const [managerAnalysis, setManagerAnalysis] = useState<AnalysisResult | null>(null);
-  const [experts, setExperts] = useState<ExpertResult[]>([]);
-  const [finalOutput, setFinalOutput] = useState('');
-  const [synthesisThoughts, setSynthesisThoughts] = useState('');
-  
-  // Timing state
-  const [processStartTime, setProcessStartTime] = useState<number | null>(null);
-  const [processEndTime, setProcessEndTime] = useState<number | null>(null);
+  const {
+    appState, setAppState,
+    managerAnalysis, setManagerAnalysis,
+    experts, expertsDataRef,
+    finalOutput, setFinalOutput,
+    synthesisThoughts, setSynthesisThoughts,
+    processStartTime, setProcessStartTime,
+    processEndTime, setProcessEndTime,
+    abortControllerRef,
+    resetDeepThink,
+    stopDeepThink,
+    updateExpertAt,
+    setInitialExperts,
+    appendExperts
+  } = useDeepThinkState();
 
-  // Refs for data consistency during high-frequency streaming updates
-  const expertsDataRef = useRef<ExpertResult[]>([]);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const stopDeepThink = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setAppState('idle');
-    setProcessEndTime(Date.now());
-  }, []);
-
-  const resetDeepThink = useCallback(() => {
-    setAppState('idle');
-    setManagerAnalysis(null);
-    setExperts([]);
-    expertsDataRef.current = [];
-    setFinalOutput('');
-    setSynthesisThoughts('');
-    setProcessStartTime(null);
-    setProcessEndTime(null);
-    abortControllerRef.current = null;
-  }, []);
-
-  // Helper: Orchestrate a single expert's lifecycle (Start -> Stream -> End)
+  /**
+   * Orchestrates a single expert's lifecycle (Start -> Stream -> End)
+   */
   const runExpertLifecycle = async (
     expert: ExpertResult,
-    index: number,
+    globalIndex: number,
     ai: any,
     model: ModelOption,
     context: string,
@@ -55,17 +40,10 @@ export const useDeepThink = () => {
   ): Promise<ExpertResult> => {
     if (signal.aborted) return expert;
 
-    // 1. Mark as thinking
     const startTime = Date.now();
-    expertsDataRef.current[index] = { 
-        ...expert, 
-        status: 'thinking',
-        startTime
-    };
-    setExperts([...expertsDataRef.current]);
+    updateExpertAt(globalIndex, { status: 'thinking', startTime });
 
     try {
-      // 2. Stream execution via service
       let fullContent = "";
       let fullThoughts = "";
 
@@ -79,44 +57,27 @@ export const useDeepThink = () => {
         (textChunk, thoughtChunk) => {
           fullContent += textChunk;
           fullThoughts += thoughtChunk;
-
-          // Update Ref & State live
-          expertsDataRef.current[index] = { 
-             ...expertsDataRef.current[index], 
-             thoughts: fullThoughts,
-             content: fullContent 
-          };
-          setExperts([...expertsDataRef.current]);
+          updateExpertAt(globalIndex, { thoughts: fullThoughts, content: fullContent });
         }
       );
       
-      if (signal.aborted) return expertsDataRef.current[index];
+      if (signal.aborted) return expertsDataRef.current[globalIndex];
 
-      // 3. Mark as completed
-      expertsDataRef.current[index] = { 
-          ...expertsDataRef.current[index], 
-          status: 'completed',
-          endTime: Date.now()
-      };
-      setExperts([...expertsDataRef.current]);
-
-      return expertsDataRef.current[index];
+      updateExpertAt(globalIndex, { status: 'completed', endTime: Date.now() });
+      return expertsDataRef.current[globalIndex];
 
     } catch (error) {
        console.error(`Expert ${expert.role} error:`, error);
        if (!signal.aborted) {
-           expertsDataRef.current[index] = { 
-               ...expertsDataRef.current[index], 
-               status: 'error', 
-               content: "Failed to generate response.",
-               endTime: Date.now()
-           };
-           setExperts([...expertsDataRef.current]);
+           updateExpertAt(globalIndex, { status: 'error', content: "Failed to generate response.", endTime: Date.now() });
        }
-       return expertsDataRef.current[index];
+       return expertsDataRef.current[globalIndex];
     }
   };
 
+  /**
+   * Main Orchestration logic
+   */
   const runDynamicDeepThink = async (
     query: string, 
     history: ChatMessage[],
@@ -125,20 +86,16 @@ export const useDeepThink = () => {
   ) => {
     if (!query.trim()) return;
 
-    // Reset previous run
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
+    // Reset UI state
     setAppState('analyzing');
     setManagerAnalysis(null);
-    setExperts([]);
-    expertsDataRef.current = [];
+    setInitialExperts([]);
     setFinalOutput('');
     setSynthesisThoughts('');
-    
     setProcessStartTime(Date.now());
     setProcessEndTime(null);
     
@@ -152,33 +109,8 @@ export const useDeepThink = () => {
         `${msg.role === 'user' ? 'User' : 'Model'}: ${msg.content}`
       ).join('\n');
 
-      // --- 1. Initialize Primary Expert IMMEDIATELY ---
-      const primaryExpert: ExpertResult = {
-        id: 'expert-0',
-        role: "Primary Responder",
-        description: "Directly addresses the user's original query.",
-        temperature: 1, 
-        prompt: query, 
-        status: 'pending'
-      };
-
-      expertsDataRef.current = [primaryExpert];
-      setExperts([primaryExpert]);
-
-      // --- 2. Start Parallel Execution ---
+      // --- Phase 1: Planning & Initial Experts ---
       
-      // Task A: Run Primary Expert (Index 0)
-      const primaryExpertTask = runExpertLifecycle(
-        primaryExpert,
-        0,
-        ai,
-        model,
-        recentHistory,
-        getThinkingBudget(config.expertLevel, model),
-        signal
-      );
-
-      // Task B: Run Manager Analysis via Service
       const managerTask = executeManagerAnalysis(
         ai, 
         model, 
@@ -187,60 +119,97 @@ export const useDeepThink = () => {
         getThinkingBudget(config.planningLevel, model)
       );
 
-      // Wait for Manager Analysis
-      const analysisJson = await managerTask;
+      const primaryExpert: ExpertResult = {
+        id: 'expert-0',
+        role: "Primary Responder",
+        description: "Directly addresses the user's original query.",
+        temperature: 1, 
+        prompt: query, 
+        status: 'pending',
+        round: 1
+      };
 
+      setInitialExperts([primaryExpert]);
+
+      const primaryTask = runExpertLifecycle(
+        primaryExpert, 0, ai, model, recentHistory,
+        getThinkingBudget(config.expertLevel, model), signal
+      );
+
+      const analysisJson = await managerTask;
       if (signal.aborted) return;
       setManagerAnalysis(analysisJson);
 
-      // --- 3. Initialize & Run Supplementary Experts ---
-      
-      const generatedExperts: ExpertResult[] = analysisJson.experts.map((exp, idx) => ({
+      const round1Experts: ExpertResult[] = analysisJson.experts.map((exp, idx) => ({
         ...exp,
-        id: `expert-${idx + 1}`,
-        status: 'pending'
+        id: `expert-r1-${idx + 1}`,
+        status: 'pending',
+        round: 1
       }));
 
-      // Update state: Keep Primary (0) and append new ones
-      const currentPrimary = expertsDataRef.current[0];
-      const allExperts = [currentPrimary, ...generatedExperts];
-      expertsDataRef.current = allExperts;
-      setExperts([...allExperts]);
-      
+      appendExperts(round1Experts);
       setAppState('experts_working');
 
-      // Task C: Run Supplementary Experts (Offset indices by 1)
-      const supplementaryTasks = generatedExperts.map((exp, idx) => 
-        runExpertLifecycle(
-            exp,
-            idx + 1, 
-            ai,
-            model,
-            recentHistory,
-            getThinkingBudget(config.expertLevel, model),
-            signal
-        )
+      const round1Tasks = round1Experts.map((exp, idx) => 
+        runExpertLifecycle(exp, idx + 1, ai, model, recentHistory,
+           getThinkingBudget(config.expertLevel, model), signal)
       );
 
-      // --- 4. Wait for ALL Experts ---
-      const allResults = await Promise.all([primaryExpertTask, ...supplementaryTasks]);
+      await Promise.all([primaryTask, ...round1Tasks]);
+      if (signal.aborted) return;
+
+      // --- Phase 2: Recursive Loop (Optional) ---
+      let roundCounter = 1;
+      const MAX_ROUNDS = 3;
+      let loopActive = config.enableRecursiveLoop ?? false;
+
+      while (loopActive && roundCounter < MAX_ROUNDS) {
+          if (signal.aborted) return;
+          setAppState('reviewing');
+          
+          const reviewResult = await executeManagerReview(
+            ai, model, query, expertsDataRef.current,
+            getThinkingBudget(config.planningLevel, model)
+          );
+
+          if (signal.aborted) return;
+          if (reviewResult.satisfied) {
+            loopActive = false;
+          } else {
+             roundCounter++;
+             const nextRoundExperts = (reviewResult.refined_experts || []).map((exp, idx) => ({
+                ...exp, id: `expert-r${roundCounter}-${idx}`, status: 'pending' as const, round: roundCounter
+             }));
+
+             if (nextRoundExperts.length === 0) {
+                 loopActive = false;
+                 break;
+             }
+
+             const startIndex = expertsDataRef.current.length;
+             appendExperts(nextRoundExperts);
+             setAppState('experts_working');
+
+             const nextRoundTasks = nextRoundExperts.map((exp, idx) => 
+                runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory,
+                   getThinkingBudget(config.expertLevel, model), signal)
+             );
+
+             await Promise.all(nextRoundTasks);
+          }
+      }
 
       if (signal.aborted) return;
 
-      // --- 5. Synthesis ---
+      // --- Phase 3: Synthesis ---
       setAppState('synthesizing');
 
       let fullFinalText = '';
       let fullFinalThoughts = '';
 
       await streamSynthesisResponse(
-        ai,
-        model,
-        query,
-        recentHistory,
-        allResults,
-        getThinkingBudget(config.synthesisLevel, model),
-        signal,
+        ai, model, query, recentHistory, expertsDataRef.current,
+        getThinkingBudget(config.synthesisLevel, model), signal,
         (textChunk, thoughtChunk) => {
             fullFinalText += textChunk;
             fullFinalThoughts += thoughtChunk;
@@ -255,9 +224,7 @@ export const useDeepThink = () => {
       }
 
     } catch (e: any) {
-      if (signal.aborted) {
-        console.log('Operation aborted by user');
-      } else {
+      if (!signal.aborted) {
         console.error(e);
         setAppState('idle');
         setProcessEndTime(Date.now());

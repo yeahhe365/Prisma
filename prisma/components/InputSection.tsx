@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect, useState } from 'react';
+import React, { useRef, useLayoutEffect, useState, useEffect } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 import { AppState } from '../types';
 
@@ -33,6 +33,13 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState }: InputSection
       }
     }
   };
+
+  // Focus input on mount and when app becomes idle (e.g. after "New Chat" or completion)
+  useEffect(() => {
+    if (appState === 'idle' && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [appState]);
 
   // useLayoutEffect prevents visual flickering by adjusting height before paint
   useLayoutEffect(() => {
@@ -70,6 +77,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState }: InputSection
           onCompositionEnd={() => setIsComposing(false)}
           placeholder="Ask a complex question..."
           rows={1}
+          autoFocus
           className="flex-1 max-h-[200px] py-3 pl-4 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 placeholder:text-slate-400 leading-relaxed custom-scrollbar text-base"
           style={{ minHeight: '48px' }}
         />

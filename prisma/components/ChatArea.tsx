@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { ChatMessage, AppState, AnalysisResult, ExpertResult } from '../types';
 import ChatMessageItem from './ChatMessage';
 import ProcessFlow from './ProcessFlow';
+import Logo from './Logo';
 
 interface ChatAreaProps {
   messages: ChatMessage[];
@@ -26,12 +28,12 @@ const ChatArea = ({
     <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
       <div className="pb-40">
         {messages.length === 0 && appState === 'idle' && (
-           <div className="h-full flex flex-col items-center justify-center pt-32 opacity-50 px-4 text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl mb-6 shadow-lg rotate-3 flex items-center justify-center text-white font-bold text-2xl">
-                Pr
-              </div>
-              <p className="text-lg font-medium">Prisma</p>
-              <p className="text-sm">Ask a complex question to start.</p>
+           <div className="h-full flex flex-col items-center justify-center pt-32 opacity-70 px-4 text-center">
+              <Logo className="w-24 h-24 mb-6 drop-shadow-xl animate-pulse-slow" />
+              <p className="text-xl font-bold text-slate-900">Prisma</p>
+              <p className="text-sm text-slate-500 max-w-xs mt-2">
+                Deep multi-agent reasoning.
+              </p>
            </div>
         )}
 

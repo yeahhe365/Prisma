@@ -16,6 +16,7 @@ export type ExpertResult = ExpertConfig & {
   thoughtProcess?: string; 
   startTime?: number;
   endTime?: number;
+  round?: number; // Track which iteration this expert belongs to
 };
 
 export type AnalysisResult = {
@@ -23,7 +24,14 @@ export type AnalysisResult = {
   experts: Omit<ExpertConfig, 'id'>[];
 };
 
-export type AppState = 'idle' | 'analyzing' | 'experts_working' | 'synthesizing' | 'completed';
+export type ReviewResult = {
+  satisfied: boolean;
+  critique: string;
+  next_round_strategy?: string;
+  refined_experts?: Omit<ExpertConfig, 'id'>[];
+};
+
+export type AppState = 'idle' | 'analyzing' | 'experts_working' | 'reviewing' | 'synthesizing' | 'completed';
 
 export type AppConfig = {
   planningLevel: ThinkingLevel;
@@ -32,6 +40,7 @@ export type AppConfig = {
   customApiKey?: string;
   customBaseUrl?: string;
   enableCustomApi?: boolean;
+  enableRecursiveLoop?: boolean; // New toggle for loop mode
 };
 
 export type ChatMessage = {

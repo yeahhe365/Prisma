@@ -1,4 +1,5 @@
-import { ModelOption, ThinkingLevel } from './types';
+
+import { ModelOption, ThinkingLevel, AppConfig } from './types';
 
 export const MODELS: { value: ModelOption; label: string; desc: string }[] = [
   { 
@@ -12,6 +13,22 @@ export const MODELS: { value: ModelOption; label: string; desc: string }[] = [
     desc: 'Deep reasoning, complex tasks, higher intelligence.' 
   },
 ];
+
+export const STORAGE_KEYS = {
+  SETTINGS: 'prisma-settings',
+  MODEL: 'prisma-selected-model',
+  SESSION_ID: 'prisma-active-session-id'
+};
+
+export const DEFAULT_CONFIG: AppConfig = {
+  planningLevel: 'high',
+  expertLevel: 'high',
+  synthesisLevel: 'high',
+  customApiKey: '',
+  customBaseUrl: '',
+  enableCustomApi: false,
+  enableRecursiveLoop: false
+};
 
 export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {
   if (model === 'gemini-3-pro-preview') {
