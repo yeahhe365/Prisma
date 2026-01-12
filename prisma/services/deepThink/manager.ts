@@ -5,6 +5,7 @@ import { cleanJsonString } from '../../utils';
 import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
 import { withRetry } from '../utils/retry';
 import { generateContent as generateOpenAIContent } from './openaiClient';
+import { logger } from '../logger';
 
 const isGoogleProvider = (ai: any): boolean => {
   return ai?.models?.generateContent !== undefined;
@@ -68,6 +69,7 @@ export const executeManagerAnalysis = async (
           responseMimeType: "application/json",
           responseSchema: managerSchema,
           thinkingConfig: {
+           includeThoughts: true,
            thinkingBudget: budget
         }
         }
@@ -82,7 +84,7 @@ export const executeManagerAnalysis = async (
       }
       return analysisJson;
     } catch (e) {
-      console.error("Manager Analysis Error:", e);
+      logger.error("Manager", "Analysis generation failed", e);
       return {
         thought_process: "Direct processing fallback due to analysis error.",
         experts: []
@@ -135,7 +137,7 @@ export const executeManagerAnalysis = async (
       }
       return analysisJson;
     } catch (e) {
-      console.error("Manager Analysis Error:", e);
+      logger.error("Manager", "Analysis generation failed (OpenAI)", e);
       return {
         thought_process: "Direct processing fallback due to analysis error.",
         experts: []
@@ -192,6 +194,7 @@ export const executeManagerReview = async (
           responseMimeType: "application/json",
           responseSchema: reviewSchema,
           thinkingConfig: {
+           includeThoughts: true,
            thinkingBudget: budget
         }
         }
@@ -201,7 +204,7 @@ export const executeManagerReview = async (
       const cleanText = cleanJsonString(rawText);
       return JSON.parse(cleanText) as ReviewResult;
     } catch (e) {
-      console.error("Review Error:", e);
+      logger.error("Manager", "Review generation failed", e);
       return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
     }
   } else {
@@ -220,7 +223,7 @@ export const executeManagerReview = async (
 
       return JSON.parse(response.text) as ReviewResult;
     } catch (e) {
-      console.error("Review Error:", e);
+      logger.error("Manager", "Review generation failed (OpenAI)", e);
       return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
     }
   }

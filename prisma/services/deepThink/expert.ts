@@ -3,6 +3,7 @@ import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getExpertSystemInstruction } from './prompts';
 import { withRetry } from '../utils/retry';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
+import { logger } from '../logger';
 
 const isGoogleProvider = (ai: any): boolean => {
   return ai?.models?.generateContentStream !== undefined;
@@ -44,7 +45,8 @@ export const streamExpertResponse = async (
         systemInstruction: getExpertSystemInstruction(expert.role, expert.description, context),
         temperature: expert.temperature,
         thinkingConfig: {
-          thinkingBudget: budget
+          thinkingBudget: budget,
+          includeThoughts: true
         }
       }
     }));
@@ -53,11 +55,22 @@ export const streamExpertResponse = async (
       for await (const chunk of (streamResult as any)) {
         if (signal.aborted) break;
 
-        const chunkText = chunk.text || "";
-        onChunk(chunkText, "");
+        let chunkText = "";
+        let chunkThought = "";
+
+        if (chunk.candidates?.[0]?.content?.parts) {
+          for (const part of chunk.candidates[0].content.parts) {
+            if (part.thought) {
+              chunkThought += (part.text || "");
+            } else if (part.text) {
+              chunkText += part.text;
+            }
+          }
+          onChunk(chunkText, chunkThought);
+        }
       }
     } catch (streamError) {
-      console.error(`Stream interrupted for expert ${expert.role}:`, streamError);
+      logger.error("Expert", `Stream interrupted for expert ${expert.role}`, streamError);
       throw streamError;
     }
   } else {
@@ -95,7 +108,7 @@ export const streamExpertResponse = async (
         onChunk(chunk.text, chunk.thought || '');
       }
     } catch (streamError) {
-      console.error(`Stream interrupted for expert ${expert.role}:`, streamError);
+      logger.error("Expert", `Stream interrupted for expert ${expert.role} (OpenAI)`, streamError);
       throw streamError;
     }
   }

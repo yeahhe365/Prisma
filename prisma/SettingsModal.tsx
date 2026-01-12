@@ -6,6 +6,7 @@ import ApiSection from './components/settings/ApiSection';
 import ModelSection from './components/settings/ModelSection';
 import ThinkingSection from './components/settings/ThinkingSection';
 import GithubSection from './components/settings/GithubSection';
+import LogSection from './components/settings/LogSection';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -49,6 +50,8 @@ const SettingsModal = ({
             setConfig={setConfig}
             model={model}
           />
+          
+          <LogSection />
 
           <GithubSection isOpen={isOpen} />
         </div>
