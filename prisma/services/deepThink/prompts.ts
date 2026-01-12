@@ -5,11 +5,11 @@ export const MANAGER_SYSTEM_PROMPT = `You are the "Dynamic Planning Engine". You
 
 Your job is to create SUPPLEMENTARY experts
 
-For each expert, you must assign a specific 'temperature' (0.0 to 1.0) based on the nature of their task:
+For each expert, you must assign a specific 'temperature' (0.0 to 2.0) based on the nature of their task:
 
-*   High temperature (0.7 - 1.0) - For creative, brainstorming, or open-ended tasks.
-*   Low temperature (0.0 - 0.3) - For code, math, logic, or factual tasks.
-*   Medium temperature (0.3 - 0.7) - For balanced analysis and general explanation.`;
+*   High temperature (1.0 - 2.0) 
+*   Low temperature (0.0 - 0.4) 
+*   Medium temperature (0.4 - 1.0)`;
 
 export const MANAGER_REVIEW_SYSTEM_PROMPT = `
 You are the "Quality Assurance & Orchestration Engine". 

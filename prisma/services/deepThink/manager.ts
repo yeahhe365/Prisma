@@ -68,7 +68,6 @@ export const executeManagerAnalysis = async (
           responseMimeType: "application/json",
           responseSchema: managerSchema,
           thinkingConfig: {
-           includeThoughts: true,
            thinkingBudget: budget
         }
         }
@@ -193,7 +192,6 @@ export const executeManagerReview = async (
           responseMimeType: "application/json",
           responseSchema: reviewSchema,
           thinkingConfig: {
-           includeThoughts: true,
            thinkingBudget: budget
         }
         }

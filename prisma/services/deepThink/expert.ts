@@ -44,8 +44,7 @@ export const streamExpertResponse = async (
         systemInstruction: getExpertSystemInstruction(expert.role, expert.description, context),
         temperature: expert.temperature,
         thinkingConfig: {
-          thinkingBudget: budget,
-          includeThoughts: true
+          thinkingBudget: budget
         }
       }
     }));
@@ -54,19 +53,8 @@ export const streamExpertResponse = async (
       for await (const chunk of (streamResult as any)) {
         if (signal.aborted) break;
 
-        let chunkText = "";
-        let chunkThought = "";
-
-        if (chunk.candidates?.[0]?.content?.parts) {
-          for (const part of chunk.candidates[0].content.parts) {
-            if (part.thought) {
-              chunkThought += (part.text || "");
-            } else if (part.text) {
-              chunkText += part.text;
-            }
-          }
-          onChunk(chunkText, chunkThought);
-        }
+        const chunkText = chunk.text || "";
+        onChunk(chunkText, "");
       }
     } catch (streamError) {
       console.error(`Stream interrupted for expert ${expert.role}:`, streamError);
