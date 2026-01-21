@@ -51,6 +51,7 @@ export type AppConfig = {
   customBaseUrl?: string;
   enableCustomApi?: boolean;
   enableRecursiveLoop?: boolean;
+  enableWebSearch?: boolean;
   apiProvider?: ApiProvider;
   customModels?: CustomModel[];
 };

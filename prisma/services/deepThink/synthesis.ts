@@ -17,6 +17,7 @@ export const streamSynthesisResponse = async (
   expertResults: ExpertResult[],
   attachments: MessageAttachment[],
   budget: number,
+  enableWebSearch: boolean,
   signal: AbortSignal,
   onChunk: (text: string, thought: string) => void
 ): Promise<void> => {
@@ -24,6 +25,7 @@ export const streamSynthesisResponse = async (
   const isGoogle = isGoogleProvider(ai);
 
   if (isGoogle) {
+    const tools = enableWebSearch ? [{ googleSearch: {} }] : undefined;
     const contents: any = {
       role: 'user',
       parts: [{ text: prompt }]
@@ -40,7 +42,20 @@ export const streamSynthesisResponse = async (
       });
     }
 
-    const synthesisStream = await withRetry(() => ai.models.generateContentStream({
+    let synthesisStream: any;
+    if (tools) {
+      try {
+        synthesisStream = await withRetry(() => ai.models.generateContentStream({
+          model: model,
+          contents: contents,
+          config: { tools, thinkingConfig: { thinkingBudget: budget, includeThoughts: true } }
+        }));
+      } catch (e) {
+        logger.warn("Synthesis", "Web search tool failed; retrying without it", e);
+      }
+    }
+
+    synthesisStream = synthesisStream || await withRetry(() => ai.models.generateContentStream({
       model: model,
       contents: contents,
       config: {

@@ -38,7 +38,7 @@ const App = () => {
   } = useAppLogic();
 
   return (
-    <div className="flex flex-col h-screen bg-white text-slate-800 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="flex flex-col h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900 overflow-hidden">
       
       <SettingsModal 
         isOpen={isSettingsOpen} 
@@ -57,7 +57,7 @@ const App = () => {
         config={config}
       />
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative isolate">
         <Sidebar 
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -68,7 +68,7 @@ const App = () => {
           onDeleteSession={handleDeleteSession}
         />
 
-        <main className="flex-1 flex flex-col min-w-0 bg-white relative">
+        <main className="flex-1 flex flex-col min-w-0 relative z-0">
           <ChatArea 
             messages={messages}
             appState={appState}
@@ -79,10 +79,10 @@ const App = () => {
             processEndTime={processEndTime}
           />
 
-          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none p-4 pb-6 flex justify-center bg-gradient-to-t from-white via-white/80 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none p-6 pb-8 flex justify-center bg-gradient-to-t from-slate-50 via-slate-50/95 to-transparent">
             <div className="pointer-events-auto w-full max-w-4xl">
               <ChatInput 
-                query={query} 
+                query={query}  
                 setQuery={setQuery} 
                 onRun={handleRun} 
                 onStop={stopDeepThink}

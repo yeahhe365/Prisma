@@ -36,6 +36,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   customBaseUrl: '',
   enableCustomApi: false,
   enableRecursiveLoop: false,
+  enableWebSearch: false,
   apiProvider: 'google',
   customModels: []
 };
