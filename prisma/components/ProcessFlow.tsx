@@ -38,8 +38,8 @@ const GlobalTimer = ({ start, end, appState }: { start: number | null | undefine
 
   const seconds = (elapsed / 1000).toFixed(1);
   return (
-    <div className="absolute right-0 top-0 flex items-center gap-1.5 bg-slate-800 text-slate-100 text-xs font-mono py-1 px-2 rounded-lg shadow-sm">
-      <Clock size={12} className="text-blue-400" />
+    <div className="absolute right-0 top-0 flex items-center gap-1.5 bg-slate-800 text-slate-100 text-xs font-mono py-1 px-2 rounded-lg shadow-sm z-20">
+      <Clock size={12} className="text-indigo-400" />
       <span>{seconds}s</span>
     </div>
   );
@@ -54,16 +54,12 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
   const isComplete = appState === 'completed';
 
   // Experts are active if ANY expert is currently thinking or pending
-  // We use this logic instead of just `appState` because now experts run IN PARALLEL with analysis
   const hasExperts = experts.length > 0;
   const anyExpertWorking = experts.some(e => e.status === 'thinking' || e.status === 'pending');
   const allExpertsDone = experts.length > 0 && experts.every(e => e.status === 'completed' || e.status === 'error');
   
   // Logic for Node Active States
-  // 1. Manager: Active if analyzing, OR if we don't have analysis yet but experts have started (edge case), Completed if analysis exists.
   const managerStatus = (appState === 'analyzing' && !managerAnalysis) ? 'active' : (isAnalysisDone ? 'completed' : 'idle');
-  
-  // 2. Experts: Active if any is working, Completed if all are done, Idle otherwise
   const expertsStatus = anyExpertWorking ? 'active' : (allExpertsDone ? 'completed' : 'idle');
 
   return (
@@ -100,7 +96,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
               </>
             ) : (
               <div className="flex items-center gap-3 text-slate-500 text-sm">
-                 <Loader2 size={14} className="animate-spin text-blue-500" />
+                 <Loader2 size={14} className="animate-spin text-indigo-500" />
                  <span>Analyzing request...</span>
               </div>
             )}
@@ -116,7 +112,8 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-2">
+            {/* Modified: Compact Grid for Widgets */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
               {experts.map((expert) => (
                 <ExpertCard key={expert.id} expert={expert} />
               ))}
@@ -136,11 +133,11 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             <div className="text-sm text-slate-600 pl-2">
               {isSynthesisActive ? (
                 <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin text-purple-600" size={14} />
+                  <Loader2 className="animate-spin text-indigo-600" size={14} />
                   <span>Synthesizing final answer...</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-emerald-600">
+                <div className="flex items-center gap-2 text-teal-600">
                   <CheckCircle2 size={14} />
                   <span>Reasoning complete.</span>
                 </div>

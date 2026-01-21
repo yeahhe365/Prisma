@@ -7,67 +7,58 @@
     <!-- SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='300' cy='300' r='300' fill='white'/%3E%3Cg stroke-width='16' stroke-linecap='round' stroke-linejoin='round' fill='none' stroke='%23334155'%3E%3Cpath d='M300 180 L200 420 L400 420 Z'/%3E%3Cpath d='M300 50 L300 180'/%3E%3Cpath d='M100 480 L200 420'/%3E%3Cpath d='M500 480 L400 420'/%3E%3Cpath d='M300 50 L100 480 L500 480 Z'/%3E%3C/g%3E%3Cg stroke-width='12' stroke-linejoin='round' fill='none'%3E%3Cline x1='0' y1='275' x2='195' y2='275' stroke='%23334155'/%3E%3Cpolyline points='194,270 380,225 600,245' stroke='%232563eb' opacity='0.95'/%3E%3Cpolyline points='194,275 400,275 600,305' stroke='%234ade80' opacity='0.95'/%3E%3Cpolyline points='194,280 420,325 600,370' stroke='%239333ea' opacity='0.95'/%3E%3C/g%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+              display: ['Inter', 'sans-serif'],
+            },
+            boxShadow: {
+              'floating': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            },
+            animation: {
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f8fafc; /* Slate 50 */
-        color: #1e293b; /* Slate 800 */
+        background-color: #f8fafc; /* slate-50 */
+        color: #0f172a; /* slate-900 */
+        background-image: 
+          radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0, transparent 50%), 
+          radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.05) 0, transparent 50%),
+          radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.03) 0, transparent 50%);
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      .mono {
-        font-family: 'JetBrains Mono', monospace;
-      }
-      /* Custom scrollbar */
+      
+      /* Refined Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #f1f5f9; 
+        background: transparent; 
       }
       ::-webkit-scrollbar-thumb {
         background: #cbd5e1; 
         border-radius: 4px;
+        border: 2px solid #f8fafc; /* Matches body bg */
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+        background-color: #94a3b8; 
       }
       
-      .animate-pulse-slow {
-        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-      
-      @keyframes flow {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-      
-      .gradient-border {
-        position: relative;
-        border-radius: 0.5rem;
-        background: #ffffff;
-      }
-      
-      .gradient-border::before {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        z-index: -1;
-        border-radius: 0.6rem;
-        background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
-        background-size: 200% 200%;
-        animation: flow 4s ease infinite;
-        opacity: 0.4;
-      }
-
-      .node-connector {
-        position: absolute;
-        width: 2px;
-        background-color: #e2e8f0;
-        z-index: 0;
-      }
     </style>
 <script type="importmap">
 {

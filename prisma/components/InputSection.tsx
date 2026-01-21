@@ -138,7 +138,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
       )}
 
       {/* Input Container */}
-      <div className="w-full flex items-end p-2 bg-white/70 backdrop-blur-xl border border-slate-200/50 rounded-[26px] shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 transition-colors duration-200">
+      <div className="w-full flex items-end p-2 bg-white/80 backdrop-blur-2xl border border-white/50 rounded-[26px] shadow-floating focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/30 focus-within:bg-white/95 transition-all duration-300 ease-out relative z-30">
         
         <input 
           type="file" 
@@ -151,11 +151,11 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex-shrink-0 p-2.5 mb-0.5 ml-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="flex-shrink-0 p-3 mb-1 ml-1 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all duration-200 group"
           title="Attach Image"
           disabled={isRunning}
         >
-          <Paperclip size={20} />
+          <Paperclip size={20} className="group-hover:rotate-45 transition-transform" strokeWidth={2.5} />
         </button>
 
         <textarea
@@ -169,15 +169,15 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
           placeholder="Ask a complex question..."
           rows={1}
           autoFocus
-          className="flex-1 max-h-[200px] py-3 pl-2 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 placeholder:text-slate-400 leading-relaxed custom-scrollbar text-base"
-          style={{ minHeight: '48px' }}
+          className="flex-1 max-h-[200px] py-4 pl-3 pr-3 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-900 placeholder:text-slate-400 leading-relaxed custom-scrollbar text-lg font-medium"
+          style={{ minHeight: '56px' }}
         />
 
-        <div className="flex-shrink-0 pb-0.5 pr-0.5">
+        <div className="flex-shrink-0 pb-1 pr-1">
           {isRunning ? (
             <button
               onClick={onStop}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-900 text-white hover:bg-slate-700 transition-colors shadow-md"
+              className="flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-900 text-white hover:bg-red-600 hover:rotate-90 transition-all duration-300 shadow-lg hover:shadow-red-500/30 active:scale-90"
             >
               <Square size={14} className="fill-current" />
             </button>
@@ -185,9 +185,9 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
             <button
               onClick={handleSubmit}
               disabled={!query.trim() && attachments.length === 0}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-all shadow-md hover:scale-105 active:scale-95"
+              className="flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 hover:scale-105 active:scale-95 group"
             >
-              <ArrowUp size={20} />
+              <ArrowUp size={24} strokeWidth={3} className="group-hover:-translate-y-0.5 transition-transform" />
             </button>
           )}
         </div>
