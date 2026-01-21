@@ -16,12 +16,28 @@ export const streamExpertResponse = async (
   context: string,
   attachments: MessageAttachment[],
   budget: number,
+  enableWebSearch: boolean,
   signal: AbortSignal,
   onChunk: (text: string, thought: string) => void
 ): Promise<void> => {
   const isGoogle = isGoogleProvider(ai);
 
   if (isGoogle) {
+    const tools = enableWebSearch ? [{ googleSearch: {} }] : undefined;
+    const sourceMap = new Map<string, string | undefined>();
+
+    const addSources = (resp: any) => {
+      const chunks = resp?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (!Array.isArray(chunks)) return;
+      for (const chunk of chunks) {
+        const uri = chunk?.web?.uri;
+        const title = chunk?.web?.title;
+        if (typeof uri === 'string' && uri.trim() && !sourceMap.has(uri)) {
+          sourceMap.set(uri, typeof title === 'string' && title.trim() ? title : undefined);
+        }
+      }
+    };
+
     const contents: any = {
       role: 'user',
       parts: [{ text: expert.prompt }]
@@ -38,7 +54,20 @@ export const streamExpertResponse = async (
       });
     }
 
-    const streamResult = await withRetry(() => ai.models.generateContentStream({
+    let streamResult: any;
+    if (tools) {
+      try {
+        streamResult = await withRetry(() => ai.models.generateContentStream({
+          model: model,
+          contents: contents,
+          config: { systemInstruction: getExpertSystemInstruction(expert.role, expert.description, context), temperature: expert.temperature, tools, thinkingConfig: { thinkingBudget: budget, includeThoughts: true } }
+        }));
+      } catch (e) {
+        logger.warn("Expert", `Web search tool failed for expert ${expert.role}; retrying without it`, e);
+      }
+    }
+
+    streamResult = streamResult || await withRetry(() => ai.models.generateContentStream({
       model: model,
       contents: contents,
       config: {
@@ -58,6 +87,8 @@ export const streamExpertResponse = async (
         let chunkText = "";
         let chunkThought = "";
 
+        if (enableWebSearch) addSources(chunk);
+
         if (chunk.candidates?.[0]?.content?.parts) {
           for (const part of chunk.candidates[0].content.parts) {
             if (part.thought) {
@@ -68,6 +99,11 @@ export const streamExpertResponse = async (
           }
           onChunk(chunkText, chunkThought);
         }
+      }
+
+      if (!signal.aborted && enableWebSearch && sourceMap.size > 0) {
+        const sourcesMd = Array.from(sourceMap.entries()).map(([uri, title]) => (title ? `- [${title}](${uri})` : `- ${uri}`)).join('\n');
+        onChunk(`\n\n---\n\n**Sources**\n${sourcesMd}\n`, '');
       }
     } catch (streamError) {
       logger.error("Expert", `Stream interrupted for expert ${expert.role}`, streamError);

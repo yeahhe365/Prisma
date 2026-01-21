@@ -17,12 +17,14 @@ export const executeManagerAnalysis = async (
   query: string,
   context: string,
   attachments: MessageAttachment[],
-  budget: number
+  budget: number,
+  enableWebSearch: boolean
 ): Promise<AnalysisResult> => {
   const isGoogle = isGoogleProvider(ai);
   const textPrompt = `Context:\n${context}\n\nCurrent Query: "${query}"`;
 
   if (isGoogle) {
+    const tools = enableWebSearch ? [{ googleSearch: {} }] : undefined;
     const managerSchema = {
       type: Type.OBJECT,
       properties: {
@@ -61,7 +63,20 @@ export const executeManagerAnalysis = async (
     }
 
     try {
-      const analysisResp = await withRetry(() => ai.models.generateContent({
+      let analysisResp: any;
+      if (tools) {
+        try {
+          analysisResp = await withRetry(() => ai.models.generateContent({
+            model: model,
+            contents: contents,
+            config: { systemInstruction: MANAGER_SYSTEM_PROMPT, responseMimeType: "application/json", responseSchema: managerSchema, tools, thinkingConfig: { includeThoughts: true, thinkingBudget: budget } }
+          }));
+        } catch (e) {
+          logger.warn("Manager", "Web search tool failed; retrying without it", e);
+        }
+      }
+
+      analysisResp = analysisResp || await withRetry(() => ai.models.generateContent({
         model: model,
         contents: contents,
         config: {
@@ -151,7 +166,8 @@ export const executeManagerReview = async (
   model: ModelOption,
   query: string,
   currentExperts: ExpertResult[],
-  budget: number
+  budget: number,
+  enableWebSearch: boolean
 ): Promise<ReviewResult> => {
   const isGoogle = isGoogleProvider(ai);
   const expertOutputs = currentExperts.map(e =>
@@ -161,6 +177,7 @@ export const executeManagerReview = async (
   const content = `User Query: "${query}"\n\nCurrent Expert Outputs:\n${expertOutputs}`;
 
   if (isGoogle) {
+    const tools = enableWebSearch ? [{ googleSearch: {} }] : undefined;
     const reviewSchema = {
       type: Type.OBJECT,
       properties: {
@@ -186,7 +203,20 @@ export const executeManagerReview = async (
     };
 
     try {
-      const resp = await withRetry(() => ai.models.generateContent({
+      let resp: any;
+      if (tools) {
+        try {
+          resp = await withRetry(() => ai.models.generateContent({
+            model: model,
+            contents: content,
+            config: { systemInstruction: MANAGER_REVIEW_SYSTEM_PROMPT, responseMimeType: "application/json", responseSchema: reviewSchema, tools, thinkingConfig: { includeThoughts: true, thinkingBudget: budget } }
+          }));
+        } catch (e) {
+          logger.warn("Manager", "Web search tool failed during review; retrying without it", e);
+        }
+      }
+
+      resp = resp || await withRetry(() => ai.models.generateContent({
         model: model,
         contents: content,
         config: {

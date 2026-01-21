@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { AppConfig, ModelOption } from '../../types';
 import { getValidThinkingLevels } from '../../config';
 import LevelSelect from './LevelSelect';
@@ -34,6 +34,25 @@ const ThinkingSection = ({ config, setConfig, model }: ThinkingSectionProps) => 
               checked={config.enableRecursiveLoop ?? false} 
               onChange={(e) => setConfig({ ...config, enableRecursiveLoop: e.target.checked })} 
               className="sr-only peer" 
+            />
+            <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+       </div>
+
+       <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+             <Search size={16} className="text-indigo-600" />
+             <div>
+                <p className="text-sm font-medium text-indigo-900">Web Search</p>
+                <p className="text-[10px] text-indigo-600/80">Allow the model to use grounded web search when supported.</p>
+             </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={config.enableWebSearch ?? false}
+              onChange={(e) => setConfig({ ...config, enableWebSearch: e.target.checked })}
+              className="sr-only peer"
             />
             <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
           </label>

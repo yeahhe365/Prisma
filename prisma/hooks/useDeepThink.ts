@@ -27,6 +27,8 @@ export const useDeepThink = () => {
     appendExperts
   } = useDeepThinkState();
 
+  let enableWebSearch = false;
+
   /**
    * Orchestrates a single expert's lifecycle (Start -> Stream -> End)
    */
@@ -57,6 +59,7 @@ export const useDeepThink = () => {
         context,
         attachments,
         budget,
+        enableWebSearch,
         signal,
         (textChunk, thoughtChunk) => {
           fullContent += textChunk;
@@ -98,6 +101,7 @@ export const useDeepThink = () => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
+    enableWebSearch = config.enableWebSearch ?? false;
 
     logger.info('System', 'Starting DeepThink Process', { model, provider: getAIProvider(model) });
 
@@ -137,7 +141,7 @@ export const useDeepThink = () => {
         query, 
         recentHistory,
         currentAttachments,
-        getThinkingBudget(config.planningLevel, model)
+        getThinkingBudget(config.planningLevel, model), enableWebSearch
       );
 
       const primaryExpert: ExpertResult = {
@@ -197,7 +201,7 @@ export const useDeepThink = () => {
           
           const reviewResult = await executeManagerReview(
             ai, model, query, expertsDataRef.current,
-            getThinkingBudget(config.planningLevel, model)
+            getThinkingBudget(config.planningLevel, model), enableWebSearch
           );
 
           if (signal.aborted) return;
@@ -243,7 +247,7 @@ export const useDeepThink = () => {
       await streamSynthesisResponse(
         ai, model, query, recentHistory, expertsDataRef.current,
         currentAttachments,
-        getThinkingBudget(config.synthesisLevel, model), signal,
+        getThinkingBudget(config.synthesisLevel, model), enableWebSearch, signal,
         (textChunk, thoughtChunk) => {
             fullFinalText += textChunk;
             fullFinalThoughts += thoughtChunk;
