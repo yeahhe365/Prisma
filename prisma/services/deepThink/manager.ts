@@ -5,7 +5,6 @@ import { cleanJsonString } from '../../utils';
 import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
 import { withRetry } from '../utils/retry';
 import { generateContent as generateOpenAIContent } from './openaiClient';
-import { logger } from '../logger';
 
 const isGoogleProvider = (ai: any): boolean => {
   return ai?.models?.generateContent !== undefined;
@@ -84,7 +83,7 @@ export const executeManagerAnalysis = async (
       }
       return analysisJson;
     } catch (e) {
-      logger.error("Manager", "Analysis generation failed", e);
+      console.error("Manager Analysis Error:", e);
       return {
         thought_process: "Direct processing fallback due to analysis error.",
         experts: []
@@ -137,7 +136,7 @@ export const executeManagerAnalysis = async (
       }
       return analysisJson;
     } catch (e) {
-      logger.error("Manager", "Analysis generation failed (OpenAI)", e);
+      console.error("Manager Analysis Error:", e);
       return {
         thought_process: "Direct processing fallback due to analysis error.",
         experts: []
@@ -204,7 +203,7 @@ export const executeManagerReview = async (
       const cleanText = cleanJsonString(rawText);
       return JSON.parse(cleanText) as ReviewResult;
     } catch (e) {
-      logger.error("Manager", "Review generation failed", e);
+      console.error("Review Error:", e);
       return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
     }
   } else {
@@ -223,7 +222,7 @@ export const executeManagerReview = async (
 
       return JSON.parse(response.text) as ReviewResult;
     } catch (e) {
-      logger.error("Manager", "Review generation failed (OpenAI)", e);
+      console.error("Review Error:", e);
       return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
     }
   }

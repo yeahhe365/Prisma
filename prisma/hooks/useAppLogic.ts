@@ -5,7 +5,6 @@ import { STORAGE_KEYS, DEFAULT_CONFIG, getValidThinkingLevels } from '../config'
 import { useDeepThink } from './useDeepThink';
 import { useChatSessions } from './useChatSessions';
 import { setInterceptorUrl } from '../interceptor';
-import { logger } from '../services/logger';
 
 export const useAppLogic = () => {
   // Session Management
@@ -73,12 +72,10 @@ export const useAppLogic = () => {
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(config));
-    logger.info('System', 'Settings updated', config);
   }, [config]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.MODEL, selectedModel);
-    logger.info('User', 'Model changed', { model: selectedModel });
   }, [selectedModel]);
 
   useEffect(() => {
@@ -123,7 +120,6 @@ export const useAppLogic = () => {
       if (session) {
         setMessages(session.messages);
         setSelectedModel(session.model || 'gemini-3-flash-preview');
-        logger.debug('User', 'Session switched', { id: currentSessionId, title: session.title });
       }
     } else {
       setMessages([]);
@@ -133,9 +129,6 @@ export const useAppLogic = () => {
   // Handle AI Completion
   useEffect(() => {
     if (appState === 'completed') {
-      const duration = (processStartTime && processEndTime) ? (processEndTime - processStartTime) : undefined;
-      logger.info('System', 'Request processing completed', { duration });
-
       const finalizedMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: 'model',
@@ -144,7 +137,7 @@ export const useAppLogic = () => {
         experts: experts,
         synthesisThoughts: synthesisThoughts,
         isThinking: false,
-        totalDuration: duration
+        totalDuration: (processStartTime && processEndTime) ? (processEndTime - processStartTime) : undefined
       };
       
       const newMessages = [...messages, finalizedMessage];
@@ -165,8 +158,6 @@ export const useAppLogic = () => {
   const handleRun = useCallback((attachments: MessageAttachment[] = []) => {
     if (!query.trim() && attachments.length === 0) return;
     
-    logger.info('User', 'New Request', { query, hasAttachments: attachments.length > 0 });
-
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -189,7 +180,6 @@ export const useAppLogic = () => {
   }, [query, messages, currentSessionId, selectedModel, config, createSession, updateSessionMessages, runDynamicDeepThink]);
 
   const handleNewChat = useCallback(() => {
-    logger.info('User', 'New Chat initiated');
     stopDeepThink();
     setCurrentSessionId(null);
     setMessages([]);
@@ -209,7 +199,6 @@ export const useAppLogic = () => {
 
   const handleDeleteSession = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    logger.info('User', 'Session deleted', { id });
     deleteSession(id);
     if (currentSessionId === id) {
       handleNewChat();

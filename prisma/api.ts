@@ -1,8 +1,6 @@
-
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import { ApiProvider, CustomModel } from './types';
-import { logger } from './services/logger';
 
 type AIProviderConfig = {
   provider?: ApiProvider;
@@ -48,8 +46,7 @@ if (typeof window !== 'undefined' && originalFetch) {
     if (urlString.includes('/custom-api') && currentCustomApiUrl) {
       const headers = new Headers(init?.headers);
       headers.set('X-Target-URL', currentCustomApiUrl);
-      
-      logger.debug('API', 'Using Custom Proxy', { target: currentCustomApiUrl, path: urlString });
+      console.log('[Fetch] Adding X-Target-URL header:', currentCustomApiUrl);
       
       return originalFetch(input, {
         ...init,
@@ -62,7 +59,6 @@ if (typeof window !== 'undefined' && originalFetch) {
 
   try {
     window.fetch = proxyFetch;
-    logger.info('System', 'Fetch proxy interceptor installed');
   } catch (e) {
     try {
       Object.defineProperty(window, 'fetch', {
@@ -73,7 +69,6 @@ if (typeof window !== 'undefined' && originalFetch) {
       });
     } catch (e2) {
       console.error('[API] Failed to intercept fetch:', e2);
-      logger.error('System', 'Failed to intercept fetch', e2);
     }
   }
 }
@@ -95,6 +90,10 @@ export const getAI = (config?: AIProviderConfig) => {
         currentCustomApiUrl = config.baseUrl;
         // Use proxy path
         options.baseURL = `${window.location.origin}/custom-api`;
+        console.log('[API] Using custom API proxy:', {
+          proxyPath: options.baseURL,
+          targetUrl: currentCustomApiUrl,
+        });
       } else {
         // In production, use the URL directly
         options.baseURL = config.baseUrl;
@@ -111,12 +110,12 @@ export const getAI = (config?: AIProviderConfig) => {
       }
     }
 
-    logger.info('API', 'Initializing OpenAI Client', { 
+    console.log('[API] OpenAI client config:', { 
       provider, 
-      baseURL: options.baseURL,
-      isCustom: provider === 'custom'
+      baseURL: options.baseURL, 
+      hasApiKey: !!options.apiKey,
+      customTarget: currentCustomApiUrl,
     });
-    
     return new OpenAI(options);
   } else {
     const options: any = {
@@ -127,7 +126,6 @@ export const getAI = (config?: AIProviderConfig) => {
       options.baseUrl = config.baseUrl;
     }
 
-    logger.info('API', 'Initializing Google GenAI Client');
     return new GoogleGenAI(options);
   }
 };

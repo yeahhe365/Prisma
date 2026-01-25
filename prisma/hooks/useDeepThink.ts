@@ -8,7 +8,6 @@ import { executeManagerAnalysis, executeManagerReview } from '../services/deepTh
 import { streamExpertResponse } from '../services/deepThink/expert';
 import { streamSynthesisResponse } from '../services/deepThink/synthesis';
 import { useDeepThinkState } from './useDeepThinkState';
-import { logger } from '../services/logger';
 
 export const useDeepThink = () => {
   const {
@@ -42,7 +41,6 @@ export const useDeepThink = () => {
   ): Promise<ExpertResult> => {
     if (signal.aborted) return expert;
 
-    logger.info('Expert', `Starting expert: ${expert.role}`, { id: expert.id, round: expert.round });
     const startTime = Date.now();
     updateExpertAt(globalIndex, { status: 'thinking', startTime });
 
@@ -65,18 +63,13 @@ export const useDeepThink = () => {
         }
       );
       
-      if (signal.aborted) {
-         logger.warn('Expert', `Expert aborted: ${expert.role}`);
-         return expertsDataRef.current[globalIndex];
-      }
+      if (signal.aborted) return expertsDataRef.current[globalIndex];
 
-      logger.info('Expert', `Expert completed: ${expert.role}`);
       updateExpertAt(globalIndex, { status: 'completed', endTime: Date.now() });
       return expertsDataRef.current[globalIndex];
 
     } catch (error) {
        console.error(`Expert ${expert.role} error:`, error);
-       logger.error('Expert', `Expert failed: ${expert.role}`, error);
        if (!signal.aborted) {
            updateExpertAt(globalIndex, { status: 'error', content: "Failed to generate response.", endTime: Date.now() });
        }
@@ -98,8 +91,6 @@ export const useDeepThink = () => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
-
-    logger.info('System', 'Starting DeepThink Process', { model, provider: getAIProvider(model) });
 
     // Reset UI state
     setAppState('analyzing');
@@ -129,7 +120,6 @@ export const useDeepThink = () => {
       ).join('\n');
 
       // --- Phase 1: Planning & Initial Experts ---
-      logger.debug('Manager', 'Phase 1: Planning started');
       
       const managerTask = executeManagerAnalysis(
         ai, 
@@ -161,7 +151,6 @@ export const useDeepThink = () => {
       const analysisJson = await managerTask;
       if (signal.aborted) return;
       setManagerAnalysis(analysisJson);
-      logger.info('Manager', 'Plan generated', analysisJson);
 
       const round1Experts: ExpertResult[] = analysisJson.experts.map((exp, idx) => ({
         ...exp,
@@ -192,7 +181,6 @@ export const useDeepThink = () => {
 
       while (loopActive && roundCounter < MAX_ROUNDS) {
           if (signal.aborted) return;
-          logger.info('Manager', `Phase 2: Reviewing Round ${roundCounter}`);
           setAppState('reviewing');
           
           const reviewResult = await executeManagerReview(
@@ -201,9 +189,6 @@ export const useDeepThink = () => {
           );
 
           if (signal.aborted) return;
-          
-          logger.info('Manager', `Review Result: ${reviewResult.satisfied ? 'Satisfied' : 'Not Satisfied'}`, reviewResult);
-          
           if (reviewResult.satisfied) {
             loopActive = false;
           } else {
@@ -213,7 +198,6 @@ export const useDeepThink = () => {
              }));
 
              if (nextRoundExperts.length === 0) {
-                 logger.warn('Manager', 'Not satisfied but no new experts proposed. Breaking loop.');
                  loopActive = false;
                  break;
              }
@@ -235,7 +219,6 @@ export const useDeepThink = () => {
 
       // --- Phase 3: Synthesis ---
       setAppState('synthesizing');
-      logger.info('Synthesis', 'Phase 3: Synthesis started');
 
       let fullFinalText = '';
       let fullFinalThoughts = '';
@@ -253,7 +236,6 @@ export const useDeepThink = () => {
       );
 
       if (!signal.aborted) {
-        logger.info('Synthesis', 'Response generation completed');
         setAppState('completed');
         setProcessEndTime(Date.now());
       }
@@ -261,11 +243,8 @@ export const useDeepThink = () => {
     } catch (e: any) {
       if (!signal.aborted) {
         console.error(e);
-        logger.error('System', 'DeepThink Process Error', e);
         setAppState('idle');
         setProcessEndTime(Date.now());
-      } else {
-        logger.warn('System', 'Process aborted by user');
       }
     } finally {
        abortControllerRef.current = null;

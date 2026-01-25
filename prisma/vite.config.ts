@@ -1,3 +1,4 @@
+
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -18,9 +19,18 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
     }
 
     try {
-      const url = new URL(targetUrl);
+      // Clean up target base URL to ensure no trailing slash
+      let targetBase = targetUrl.trim();
+      if (targetBase.endsWith('/')) {
+        targetBase = targetBase.slice(0, -1);
+      }
+
+      // Extract path from original request (removing /custom-api prefix)
       const targetPath = req.url.replace(/^\/custom-api/, '');
-      const fullUrl = `${url.origin}${targetPath}`;
+      
+      // Combine to form full URL, preserving the path from X-Target-URL
+      const fullUrl = `${targetBase}${targetPath}`;
+      const url = new URL(fullUrl);
       
       console.log('[Custom Proxy] Forwarding:', req.method, req.url, '->', fullUrl);
 

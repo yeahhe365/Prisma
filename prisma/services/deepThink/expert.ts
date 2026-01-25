@@ -3,7 +3,6 @@ import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getExpertSystemInstruction } from './prompts';
 import { withRetry } from '../utils/retry';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
-import { logger } from '../logger';
 
 const isGoogleProvider = (ai: any): boolean => {
   return ai?.models?.generateContentStream !== undefined;
@@ -70,7 +69,7 @@ export const streamExpertResponse = async (
         }
       }
     } catch (streamError) {
-      logger.error("Expert", `Stream interrupted for expert ${expert.role}`, streamError);
+      console.error(`Stream interrupted for expert ${expert.role}:`, streamError);
       throw streamError;
     }
   } else {
@@ -108,7 +107,7 @@ export const streamExpertResponse = async (
         onChunk(chunk.text, chunk.thought || '');
       }
     } catch (streamError) {
-      logger.error("Expert", `Stream interrupted for expert ${expert.role} (OpenAI)`, streamError);
+      console.error(`Stream interrupted for expert ${expert.role}:`, streamError);
       throw streamError;
     }
   }

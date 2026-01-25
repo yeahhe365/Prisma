@@ -3,7 +3,6 @@ import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getSynthesisPrompt } from './prompts';
 import { withRetry } from '../utils/retry';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
-import { logger } from '../logger';
 
 const isGoogleProvider = (ai: any): boolean => {
   return ai?.models?.generateContentStream !== undefined;
@@ -70,7 +69,7 @@ export const streamSynthesisResponse = async (
         }
       }
     } catch (streamError) {
-      logger.error("Synthesis", "Stream interrupted", streamError);
+      console.error("Synthesis stream interrupted:", streamError);
       throw streamError;
     }
   } else {
@@ -108,7 +107,7 @@ export const streamSynthesisResponse = async (
         onChunk(chunk.text, chunk.thought || '');
       }
     } catch (streamError) {
-      logger.error("Synthesis", "Stream interrupted (OpenAI)", streamError);
+      console.error("Synthesis stream interrupted:", streamError);
       throw streamError;
     }
   }
