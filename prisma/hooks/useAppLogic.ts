@@ -4,7 +4,7 @@ import { ModelOption, AppConfig, ChatMessage, MessageAttachment } from '../types
 import { STORAGE_KEYS, DEFAULT_CONFIG, getValidThinkingLevels } from '../config';
 import { useDeepThink } from './useDeepThink';
 import { useChatSessions } from './useChatSessions';
-import { setInterceptorUrl } from '../interceptor';
+import { setNetworkConfig } from '../api';
 
 export const useAppLogic = () => {
   // Session Management
@@ -61,13 +61,19 @@ export const useAppLogic = () => {
 
   // Network Interceptor Sync
   useEffect(() => {
-    if (config.enableCustomApi && config.customBaseUrl) {
-      setInterceptorUrl(config.customBaseUrl);
+    const shouldUseCustom = config.enableCustomApi;
+    const customUrl = config.customBaseUrl || null;
+    const provider = config.apiProvider || null;
+
+    if (shouldUseCustom && customUrl) {
+      setNetworkConfig(customUrl, provider);
     } else {
-      setInterceptorUrl(null);
+      setNetworkConfig(null, null);
     }
-    return () => setInterceptorUrl(null);
-  }, [config.enableCustomApi, config.customBaseUrl]);
+    
+    // Also handle dynamic clean up when component unmounts
+    return () => setNetworkConfig(null, null);
+  }, [config.enableCustomApi, config.customBaseUrl, config.apiProvider]);
 
   // Persistence Effects
   useEffect(() => {

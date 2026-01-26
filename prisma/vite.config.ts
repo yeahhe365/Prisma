@@ -11,28 +11,36 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
       return next();
     }
 
-    const targetUrl = req.headers['x-target-url'] as string;
+    const targetUrlHeader = req.headers['x-target-url'];
+    const targetUrl = Array.isArray(targetUrlHeader) ? targetUrlHeader[0] : targetUrlHeader;
+
     if (!targetUrl) {
+      console.error('[Custom Proxy] Missing X-Target-URL header');
       res.statusCode = 400;
       res.end(JSON.stringify({ error: 'Missing X-Target-URL header' }));
       return;
     }
 
     try {
-      // Clean up target base URL to ensure no trailing slash
+      // 1. Clean up target base URL (remove trailing slash)
       let targetBase = targetUrl.trim();
       if (targetBase.endsWith('/')) {
         targetBase = targetBase.slice(0, -1);
       }
 
-      // Extract path from original request (removing /custom-api prefix)
-      const targetPath = req.url.replace(/^\/custom-api/, '');
+      // 2. Extract relative path (remove /custom-api prefix)
+      let targetPath = req.url.replace(/^\/custom-api/, '');
       
-      // Combine to form full URL, preserving the path from X-Target-URL
+      // 3. Ensure targetPath starts with /
+      if (!targetPath.startsWith('/')) {
+        targetPath = '/' + targetPath;
+      }
+
+      // 4. Construct full URL
       const fullUrl = `${targetBase}${targetPath}`;
       const url = new URL(fullUrl);
       
-      console.log('[Custom Proxy] Forwarding:', req.method, req.url, '->', fullUrl);
+      console.log(`[Custom Proxy] ${req.method} ${req.url} -> ${fullUrl}`);
 
       // Collect request body
       const chunks: Buffer[] = [];
@@ -41,27 +49,33 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
       }
       const body = Buffer.concat(chunks);
 
-      // Forward headers (excluding hop-by-hop headers)
+      // Forward headers
       const forwardHeaders: Record<string, string> = {};
-      const skipHeaders = ['host', 'connection', 'x-target-url', 'transfer-encoding'];
+      // Filter out headers that confuse the upstream server or are hop-by-hop
+      const skipHeaders = ['host', 'connection', 'x-target-url', 'transfer-encoding', 'origin', 'referer'];
+      
       for (const [key, value] of Object.entries(req.headers)) {
         if (!skipHeaders.includes(key.toLowerCase()) && value) {
           forwardHeaders[key] = Array.isArray(value) ? value[0] : value;
         }
       }
+      
+      // Explicitly set Host to the target host (crucial for some APIs like OpenAI/Vercel)
       forwardHeaders['host'] = url.host;
+      forwardHeaders['accept-encoding'] = 'identity'; // Disable compression to simplify relay
 
-      // Make the request
-      const response = await fetch(fullUrl, {
+      const fetchOptions: RequestInit = {
         method: req.method,
         headers: forwardHeaders,
         body: ['GET', 'HEAD'].includes(req.method || '') ? undefined : body,
-      });
+      };
+
+      const response = await fetch(fullUrl, fetchOptions);
 
       // Forward response status and headers
       res.statusCode = response.status;
       response.headers.forEach((value, key) => {
-        if (!['transfer-encoding', 'connection'].includes(key.toLowerCase())) {
+        if (!['transfer-encoding', 'connection', 'content-encoding', 'content-length'].includes(key.toLowerCase())) {
           res.setHeader(key, value);
         }
       });
@@ -97,51 +111,12 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
         proxy: {
-          // Proxy for OpenAI API
+          // Fallback proxies for specific known routes if not using custom-api
           '/openai/v1': {
             target: 'https://api.openai.com',
             changeOrigin: true,
             secure: true,
             rewrite: (path) => path.replace(/^\/openai\/v1/, '/v1'),
-          },
-          // Proxy for DeepSeek API
-          '/deepseek/v1': {
-            target: 'https://api.deepseek.com',
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/deepseek\/v1/, '/v1'),
-          },
-          // Proxy for Anthropic API
-          '/anthropic/v1': {
-            target: 'https://api.anthropic.com',
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/anthropic\/v1/, '/v1'),
-          },
-          // Proxy for xAI API
-          '/xai/v1': {
-            target: 'https://api.x.ai',
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/xai\/v1/, '/v1'),
-          },
-          // Proxy for Mistral API
-          '/mistral/v1': {
-            target: 'https://api.mistral.ai',
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/mistral\/v1/, '/v1'),
-          },
-          // Proxy for Google Gemini API
-          '/v1beta/models': {
-            target: 'https://generativelanguage.googleapis.com',
-            changeOrigin: true,
-            secure: true,
-          },
-          '/v1/models': {
-            target: 'https://generativelanguage.googleapis.com',
-            changeOrigin: true,
-            secure: true,
           },
         }
       },
