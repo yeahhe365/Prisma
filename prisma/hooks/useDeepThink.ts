@@ -68,10 +68,15 @@ export const useDeepThink = () => {
       updateExpertAt(globalIndex, { status: 'completed', endTime: Date.now() });
       return expertsDataRef.current[globalIndex];
 
-    } catch (error) {
+    } catch (error: any) {
        console.error(`Expert ${expert.role} error:`, error);
        if (!signal.aborted) {
-           updateExpertAt(globalIndex, { status: 'error', content: "Failed to generate response.", endTime: Date.now() });
+           const errorMessage = error?.message || (typeof error === 'string' ? error : "An unexpected error occurred.");
+           updateExpertAt(globalIndex, { 
+             status: 'error', 
+             content: `**Error:** ${errorMessage}\n\nPlease check your API Key and connection settings in Configuration.`, 
+             endTime: Date.now() 
+           });
        }
        return expertsDataRef.current[globalIndex];
     }
@@ -128,7 +133,13 @@ export const useDeepThink = () => {
         recentHistory,
         currentAttachments,
         getThinkingBudget(config.planningLevel, model)
-      );
+      ).catch(e => {
+        console.error("Manager Analysis failure:", e);
+        return {
+          thought_process: `Analysis failed: ${e.message || "Unknown error"}. Proceeding with primary responder only.`,
+          experts: []
+        };
+      });
 
       const primaryExpert: ExpertResult = {
         id: 'expert-0',
@@ -152,20 +163,18 @@ export const useDeepThink = () => {
       if (signal.aborted) return;
       setManagerAnalysis(analysisJson);
 
-      const round1Experts: ExpertResult[] = analysisJson.experts.map((exp, idx) => ({
+      const round1Experts: ExpertResult[] = (analysisJson.experts || []).map((exp, idx) => ({
         ...exp,
         id: `expert-r1-${idx + 1}`,
         status: 'pending',
         round: 1
       }));
 
-      appendExperts(round1Experts);
+      if (round1Experts.length > 0) {
+        appendExperts(round1Experts);
+      }
       setAppState('experts_working');
 
-      // Supplementary experts usually don't need the images unless specified, 
-      // but for simplicity/consistency we pass them if the model supports it.
-      // However, to save tokens/bandwidth, we might limit this.
-      // For now, let's pass them to ensure they have full context.
       const round1Tasks = round1Experts.map((exp, idx) => 
         runExpertLifecycle(exp, idx + 1, ai, model, recentHistory, currentAttachments,
            getThinkingBudget(config.expertLevel, model), signal)
@@ -176,42 +185,47 @@ export const useDeepThink = () => {
 
       // --- Phase 2: Recursive Loop (Optional) ---
       let roundCounter = 1;
-      const MAX_ROUNDS = 3;
-      let loopActive = config.enableRecursiveLoop ?? false;
+      const MAX_ROUNDS = 2; // Reduced default rounds for better UX on error
+      let loopActive = (config.enableRecursiveLoop ?? false) && round1Experts.length > 0;
 
       while (loopActive && roundCounter < MAX_ROUNDS) {
           if (signal.aborted) return;
           setAppState('reviewing');
           
-          const reviewResult = await executeManagerReview(
-            ai, model, query, expertsDataRef.current,
-            getThinkingBudget(config.planningLevel, model)
-          );
+          try {
+            const reviewResult = await executeManagerReview(
+              ai, model, query, expertsDataRef.current,
+              getThinkingBudget(config.planningLevel, model)
+            );
 
-          if (signal.aborted) return;
-          if (reviewResult.satisfied) {
-            loopActive = false;
-          } else {
-             roundCounter++;
-             const nextRoundExperts = (reviewResult.refined_experts || []).map((exp, idx) => ({
-                ...exp, id: `expert-r${roundCounter}-${idx}`, status: 'pending' as const, round: roundCounter
-             }));
+            if (signal.aborted) return;
+            if (reviewResult.satisfied) {
+              loopActive = false;
+            } else {
+               roundCounter++;
+               const nextRoundExperts = (reviewResult.refined_experts || []).map((exp, idx) => ({
+                  ...exp, id: `expert-r${roundCounter}-${idx}`, status: 'pending' as const, round: roundCounter
+               }));
 
-             if (nextRoundExperts.length === 0) {
-                 loopActive = false;
-                 break;
-             }
+               if (nextRoundExperts.length === 0) {
+                   loopActive = false;
+                   break;
+               }
 
-             const startIndex = expertsDataRef.current.length;
-             appendExperts(nextRoundExperts);
-             setAppState('experts_working');
+               const startIndex = expertsDataRef.current.length;
+               appendExperts(nextRoundExperts);
+               setAppState('experts_working');
 
-             const nextRoundTasks = nextRoundExperts.map((exp, idx) => 
-                runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
-                   getThinkingBudget(config.expertLevel, model), signal)
-             );
+               const nextRoundTasks = nextRoundExperts.map((exp, idx) => 
+                  runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
+                     getThinkingBudget(config.expertLevel, model), signal)
+               );
 
-             await Promise.all(nextRoundTasks);
+               await Promise.all(nextRoundTasks);
+            }
+          } catch (reviewError) {
+            console.error("Review round error:", reviewError);
+            loopActive = false; // Exit loop on review error
           }
       }
 
@@ -223,17 +237,24 @@ export const useDeepThink = () => {
       let fullFinalText = '';
       let fullFinalThoughts = '';
 
-      await streamSynthesisResponse(
-        ai, model, query, recentHistory, expertsDataRef.current,
-        currentAttachments,
-        getThinkingBudget(config.synthesisLevel, model), signal,
-        (textChunk, thoughtChunk) => {
-            fullFinalText += textChunk;
-            fullFinalThoughts += thoughtChunk;
-            setFinalOutput(fullFinalText);
-            setSynthesisThoughts(fullFinalThoughts);
+      try {
+        await streamSynthesisResponse(
+          ai, model, query, recentHistory, expertsDataRef.current,
+          currentAttachments,
+          getThinkingBudget(config.synthesisLevel, model), signal,
+          (textChunk, thoughtChunk) => {
+              fullFinalText += textChunk;
+              fullFinalThoughts += thoughtChunk;
+              setFinalOutput(fullFinalText);
+              setSynthesisThoughts(fullFinalThoughts);
+          }
+        );
+      } catch (synthesisError: any) {
+        console.error("Synthesis error:", synthesisError);
+        if (!fullFinalText) {
+          setFinalOutput(`## Error in Synthesis\n\n${synthesisError.message || "Failed to aggregate expert responses."}\n\nPlease check your API keys and try again.`);
         }
-      );
+      }
 
       if (!signal.aborted) {
         setAppState('completed');
@@ -242,7 +263,7 @@ export const useDeepThink = () => {
 
     } catch (e: any) {
       if (!signal.aborted) {
-        console.error(e);
+        console.error("Global DeepThink Error:", e);
         setAppState('idle');
         setProcessEndTime(Date.now());
       }
