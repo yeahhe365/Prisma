@@ -74,12 +74,13 @@ export const streamSynthesisResponse = async (
     }
   } else {
     let contentPayload: any = prompt;
+    const imageAttachments = attachments.filter(a => a.type === 'image');
 
-    if (attachments.length > 0) {
+    if (imageAttachments.length > 0) {
       contentPayload = [
         { type: 'text', text: prompt }
       ];
-      attachments.forEach(att => {
+      imageAttachments.forEach(att => {
         contentPayload.push({
           type: 'image_url',
           image_url: {

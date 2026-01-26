@@ -5,7 +5,8 @@ export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'xai'
 
 export type CustomModel = {
   id: string;
-  name: string;
+  name: string; // The Actual Model ID (e.g., 'gpt-4o')
+  displayName?: string; // Friendly name for UI (e.g., 'My GPT-4')
   provider: ApiProvider;
   apiKey?: string;
   baseUrl?: string;
@@ -57,7 +58,8 @@ export type AppConfig = {
 
 export type MessageAttachment = {
   id: string;
-  type: 'image';
+  type: 'image' | 'pdf' | 'video' | 'audio' | 'document';
+  name?: string;
   mimeType: string;
   data: string; // Base64 string
   url?: string; // For display

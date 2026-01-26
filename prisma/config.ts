@@ -35,7 +35,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   customApiKey: '',
   customBaseUrl: '',
   enableCustomApi: false,
-  enableRecursiveLoop: false,
+  enableRecursiveLoop: true, // Enabled by default as requested
   apiProvider: 'google',
   customModels: []
 };
@@ -76,7 +76,7 @@ export const getAllModels = (config: AppConfig): { value: ModelOption; label: st
 
   const customModels = (config.customModels || []).map(m => ({
     value: m.name as ModelOption,
-    label: m.name,
+    label: m.displayName || m.name,
     desc: `Custom ${m.provider} model`,
     provider: m.provider
   }));

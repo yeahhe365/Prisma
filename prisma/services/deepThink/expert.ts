@@ -74,12 +74,13 @@ export const streamExpertResponse = async (
     }
   } else {
     let contentPayload: any = expert.prompt;
+    const imageAttachments = attachments.filter(a => a.type === 'image');
 
-    if (attachments.length > 0) {
+    if (imageAttachments.length > 0) {
       contentPayload = [
         { type: 'text', text: expert.prompt }
       ];
-      attachments.forEach(att => {
+      imageAttachments.forEach(att => {
         contentPayload.push({
           type: 'image_url',
           image_url: {

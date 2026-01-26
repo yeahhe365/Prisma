@@ -1,16 +1,16 @@
 
 import React, { useState } from 'react';
-import { User, Sparkles, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
+import { User, Sparkles, ChevronDown, ChevronRight, Copy, Check, FileText, Download, PlayCircle, Music, FileCode } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import ProcessFlow from './ProcessFlow';
-import { ChatMessage } from '../types';
+import { ChatMessage, MessageAttachment } from '../types';
 
-interface ChatMessageProps {
+interface ChatMessageItemProps {
   message: ChatMessage;
   isLast?: boolean;
 }
 
-const ChatMessageItem = ({ message, isLast }: ChatMessageProps) => {
+const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
   const isUser = message.role === 'user';
   const [showThinking, setShowThinking] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -23,6 +23,13 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageProps) => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadFile = (att: MessageAttachment) => {
+    const link = document.createElement('a');
+    link.href = att.url || `data:${att.mimeType};base64,${att.data}`;
+    link.download = att.name || 'file';
+    link.click();
   };
 
   return (
@@ -92,7 +99,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageProps) => {
               {showThinking && (
                 <div className="mt-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
                    <ProcessFlow 
-                      appState={message.isThinking ? 'experts_working' : 'completed'} // Visual approximation for history
+                      appState={message.isThinking ? 'experts_working' : 'completed'} 
                       managerAnalysis={message.analysis || null}
                       experts={message.experts || []}
                       defaultExpanded={true}
@@ -104,15 +111,60 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageProps) => {
 
           {/* Attachments */}
           {message.attachments && message.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-4 mb-4">
               {message.attachments.map(att => (
-                 <img 
-                   key={att.id} 
-                   src={att.url || `data:${att.mimeType};base64,${att.data}`}
-                   alt="attachment" 
-                   className="h-32 w-32 object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                   onClick={() => window.open(att.url || `data:${att.mimeType};base64,${att.data}`, '_blank')}
-                 />
+                 att.type === 'image' ? (
+                   <img 
+                     key={att.id} 
+                     src={att.url || `data:${att.mimeType};base64,${att.data}`}
+                     alt="attachment" 
+                     className="h-48 w-48 object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                     onClick={() => window.open(att.url || `data:${att.mimeType};base64,${att.data}`, '_blank')}
+                   />
+                 ) : att.type === 'video' ? (
+                    <div key={att.id} className="relative w-full max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-black group/video">
+                      <video 
+                        src={att.url || `data:${att.mimeType};base64,${att.data}`}
+                        controls
+                        className="w-full aspect-video"
+                      />
+                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] text-white flex items-center gap-1 opacity-0 group-hover/video:opacity-100 transition-opacity">
+                        <PlayCircle size={10} />
+                        <span className="truncate max-w-[150px]">{att.name || 'Video'}</span>
+                      </div>
+                    </div>
+                 ) : att.type === 'audio' ? (
+                    <div key={att.id} className="w-full max-w-sm flex flex-col gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                      <div className="flex items-center gap-2">
+                         <Music size={16} className="text-blue-600" />
+                         <span className="text-xs font-medium text-blue-900 truncate">{att.name || 'Audio File'}</span>
+                      </div>
+                      <audio 
+                        src={att.url || `data:${att.mimeType};base64,${att.data}`}
+                        controls
+                        className="w-full h-8"
+                      />
+                    </div>
+                 ) : (
+                   <div 
+                     key={att.id}
+                     className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group/file"
+                     onClick={() => handleDownloadFile(att)}
+                   >
+                     <div className={`p-2 rounded-lg group-hover/file:scale-110 transition-transform ${att.type === 'pdf' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                       {att.type === 'pdf' ? <FileText size={24} /> : <FileCode size={24} />}
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">
+                         {att.name || (att.type === 'pdf' ? 'document.pdf' : 'file.txt')}
+                       </p>
+                       <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                         {att.type === 'pdf' ? 'PDF Document' : 'Text/Code File'}
+                       </p>
+                     </div>
+                     <Download size={16} className="text-slate-400 group-hover/file:text-slate-600 ml-2" />
+                   </div>
+                 )
               ))}
             </div>
           )}

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Bot, Key, Globe, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Bot, Key, Globe, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import { AppConfig, ApiProvider, CustomModel } from '../../types';
 import { MODELS } from '../../config';
 
@@ -10,7 +10,8 @@ interface ModelSectionProps {
 }
 
 const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
-  const [newModelName, setNewModelName] = useState('');
+  const [newModelName, setNewModelName] = useState(''); // This is Model ID
+  const [newDisplayName, setNewDisplayName] = useState(''); // This is Friendly Name
   const [newModelProvider, setNewModelProvider] = useState<ApiProvider>('custom');
   const [newModelApiKey, setNewModelApiKey] = useState('');
   const [newModelBaseUrl, setNewModelBaseUrl] = useState('');
@@ -22,24 +23,19 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
     if (!newModelName.trim()) return;
 
     const trimmedName = newModelName.trim();
+    const trimmedDisplayName = newDisplayName.trim() || trimmedName;
 
-    // Check if model name already exists in preset models
-    const existingPresetModel = MODELS.find(m => m.value === trimmedName);
-    if (existingPresetModel) {
-      alert(`Model name "${trimmedName}" already exists as a preset model. Please choose a different name.`);
-      return;
-    }
-
-    // Check if model name already exists in custom models
+    // Check if model ID already exists in custom models to prevent logic duplicates
     const existingCustomModel = customModels.find(m => m.name === trimmedName);
     if (existingCustomModel) {
-      alert(`Model name "${trimmedName}" already exists. Please choose a different name.`);
+      alert(`Model ID "${trimmedName}" already exists. Please choose a different Model ID.`);
       return;
     }
 
     const newModel: CustomModel = {
       id: `custom-${Date.now()}`,
       name: trimmedName,
+      displayName: trimmedDisplayName,
       provider: newModelProvider,
       apiKey: newModelApiKey || undefined,
       baseUrl: newModelBaseUrl || undefined
@@ -51,6 +47,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
     });
 
     setNewModelName('');
+    setNewDisplayName('');
     setNewModelApiKey('');
     setNewModelBaseUrl('');
   };
@@ -80,19 +77,35 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
 
       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
         <div className="space-y-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <Bot size={14} className="text-slate-400" />
-              Model Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., llama-3-8b-instruct, qwen-72b-chat"
-              value={newModelName}
-              onChange={(e) => setNewModelName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
-              className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
-            />
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <Bot size={14} className="text-slate-400" />
+                Model ID (Required)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., llama-3-8b-instruct"
+                value={newModelName}
+                onChange={(e) => setNewModelName(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <Tag size={14} className="text-slate-400" />
+                Display Name (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Llama 3 (8B)"
+                value={newDisplayName}
+                onChange={(e) => setNewDisplayName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
+                className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -112,7 +125,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
             </select>
           </div>
 
-          {(newModelProvider === 'custom' || newModelProvider === 'openai' || newModelProvider === 'anthropic' || newModelProvider === 'xai' || newModelProvider === 'mistral') && (
+          {(newModelProvider === 'custom' || newModelProvider === 'openai' || newModelProvider === 'anthropic' || newModelProvider === 'xai' || newModelProvider === 'mistral' || newModelProvider === 'google' || newModelProvider === 'deepseek') && (
             <>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
@@ -171,10 +184,10 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-slate-800 truncate">
-                        {model.name}
+                        {model.displayName || model.name}
                       </div>
-                      <div className="text-xs text-slate-500 capitalize">
-                        {model.provider} {model.apiKey && '• Configured'}
+                      <div className="text-[10px] text-slate-400 font-mono truncate">
+                        ID: {model.name} • {model.provider}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -199,8 +212,21 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                   {expandedModelId === model.id && (
                     <div className="px-3 pb-3 pt-0 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                          <Key size={14} className="text-slate-400" />
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                          <Tag size={10} />
+                          Display Name
+                        </label>
+                        <input
+                          type="text"
+                          value={model.displayName || ''}
+                          onChange={(e) => handleUpdateModel(model.id, { displayName: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                          <Key size={10} />
                           API Key
                         </label>
                         <input
@@ -208,13 +234,13 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                           placeholder="sk-..."
                           value={model.apiKey || ''}
                           onChange={(e) => handleUpdateModel(model.id, { apiKey: e.target.value || undefined })}
-                          className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none placeholder:text-slate-400"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                          <Globe size={14} className="text-slate-400" />
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                          <Globe size={10} />
                           Base URL
                         </label>
                         <input
@@ -222,7 +248,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                           placeholder="https://api.example.com/v1"
                           value={model.baseUrl || ''}
                           onChange={(e) => handleUpdateModel(model.id, { baseUrl: e.target.value || undefined })}
-                          className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none placeholder:text-slate-400"
                         />
                       </div>
                     </div>

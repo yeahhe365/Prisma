@@ -93,11 +93,14 @@ export const executeManagerAnalysis = async (
     try {
       let contentPayload: any = textPrompt;
 
-      if (attachments.length > 0) {
+      // OpenAI only supports images in this payload structure
+      const imageAttachments = attachments.filter(a => a.type === 'image');
+
+      if (imageAttachments.length > 0) {
         contentPayload = [
           { type: 'text', text: textPrompt }
         ];
-        attachments.forEach(att => {
+        imageAttachments.forEach(att => {
           contentPayload.push({
             type: 'image_url',
             image_url: {
@@ -107,9 +110,6 @@ export const executeManagerAnalysis = async (
         });
       }
 
-      // Append formatting instruction to prompt if needed (OpenAI sometimes needs this explicit in text)
-      // but usually responseFormat: json_object + system prompt is enough.
-      // We append it to the text part or the string.
       const jsonInstruction = `\n\nReturn a JSON response with this structure:\n{\n  "thought_process": "...",\n  "experts": [\n    { "role": "...", "description": "...", "temperature": number, "prompt": "..." }\n  ]\n}`;
       
       if (Array.isArray(contentPayload)) {
