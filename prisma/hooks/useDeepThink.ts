@@ -7,7 +7,11 @@ import { AppConfig, ModelOption, ExpertResult, ChatMessage, MessageAttachment } 
 import { executeManagerAnalysis, executeManagerReview } from '../services/deepThink/manager';
 import { streamExpertResponse } from '../services/deepThink/expert';
 import { streamSynthesisResponse } from '../services/deepThink/synthesis';
+import { RequestQueue } from '../services/utils/retry';
 import { useDeepThinkState } from './useDeepThinkState';
+
+// Limit concurrent expert API calls to avoid 429 rate limits
+const expertQueue = new RequestQueue(2);
 
 export const useDeepThink = () => {
   const {
@@ -176,8 +180,8 @@ export const useDeepThink = () => {
       setAppState('experts_working');
 
       const round1Tasks = round1Experts.map((exp, idx) => 
-        runExpertLifecycle(exp, idx + 1, ai, model, recentHistory, currentAttachments,
-           getThinkingBudget(config.expertLevel, model), signal)
+        expertQueue.add(() => runExpertLifecycle(exp, idx + 1, ai, model, recentHistory, currentAttachments,
+           getThinkingBudget(config.expertLevel, model), signal))
       );
 
       await Promise.all([primaryTask, ...round1Tasks]);
@@ -217,8 +221,8 @@ export const useDeepThink = () => {
                setAppState('experts_working');
 
                const nextRoundTasks = nextRoundExperts.map((exp, idx) => 
-                  runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
-                     getThinkingBudget(config.expertLevel, model), signal)
+                  expertQueue.add(() => runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
+                     getThinkingBudget(config.expertLevel, model), signal))
                );
 
                await Promise.all(nextRoundTasks);
