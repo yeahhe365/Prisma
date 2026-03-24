@@ -130,7 +130,7 @@ export const executeManagerAnalysis = async (
         }
       });
 
-      const analysisJson = JSON.parse(response.text) as AnalysisResult;
+      const analysisJson = JSON.parse(cleanJsonString(response.text)) as AnalysisResult;
       if (!analysisJson.experts || !Array.isArray(analysisJson.experts)) {
         throw new Error("Invalid schema structure");
       }
@@ -220,7 +220,7 @@ export const executeManagerReview = async (
         }
       });
 
-      return JSON.parse(response.text) as ReviewResult;
+      return JSON.parse(cleanJsonString(response.text)) as ReviewResult;
     } catch (e) {
       console.error("Review Error:", e);
       return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };

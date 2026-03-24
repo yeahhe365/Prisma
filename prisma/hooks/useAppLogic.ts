@@ -4,7 +4,7 @@ import { ModelOption, AppConfig, ChatMessage, MessageAttachment } from '../types
 import { STORAGE_KEYS, DEFAULT_CONFIG, getValidThinkingLevels } from '../config';
 import { useDeepThink } from './useDeepThink';
 import { useChatSessions } from './useChatSessions';
-import { setNetworkConfig } from '../api';
+import { setNetworkConfig, findCustomModel } from '../api';
 
 export const useAppLogic = () => {
   // Session Management
@@ -61,19 +61,19 @@ export const useAppLogic = () => {
 
   // Network Interceptor Sync
   useEffect(() => {
-    const shouldUseCustom = config.enableCustomApi;
-    const customUrl = config.customBaseUrl || null;
-    const provider = config.apiProvider || null;
-
-    if (shouldUseCustom && customUrl) {
-      setNetworkConfig(customUrl, provider);
+    // Check if current selected model is a custom model with its own baseUrl
+    const customModelConfig = findCustomModel(selectedModel, config.customModels);
+    if (customModelConfig?.baseUrl) {
+      setNetworkConfig(customModelConfig.baseUrl, customModelConfig.provider || null);
+    } else if (config.enableCustomApi && config.customBaseUrl) {
+      setNetworkConfig(config.customBaseUrl, config.apiProvider || null);
     } else {
       setNetworkConfig(null, null);
     }
     
     // Also handle dynamic clean up when component unmounts
     return () => setNetworkConfig(null, null);
-  }, [config.enableCustomApi, config.customBaseUrl, config.apiProvider]);
+  }, [selectedModel, config.enableCustomApi, config.customBaseUrl, config.apiProvider, config.customModels]);
 
   // Persistence Effects
   useEffect(() => {
