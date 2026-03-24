@@ -65,9 +65,15 @@ export const generateContent = async (
 
   try {
     const response = await withRetry(() => ai.chat.completions.create(requestOptions));
-    const content = response.choices[0]?.message?.content || '';
+    const message = response.choices[0]?.message;
+    const content = message?.content || '';
 
     if (config.thinkingConfig?.includeThoughts) {
+      // Check for reasoning_content field (DeepSeek-R1, GLM-thinking, etc.)
+      const reasoningContent = (message as any)?.reasoning_content || '';
+      if (reasoningContent) {
+        return { text: content, thought: reasoningContent };
+      }
       const { thought, text } = parseThinkingTokens(content);
       return { text, thought };
     }
@@ -111,22 +117,28 @@ export async function* generateContentStream(
   let currentThought = '';
 
   for await (const chunk of (stream as any)) {
-    const delta = chunk.choices[0]?.delta?.content || '';
+    const delta = chunk.choices[0]?.delta;
 
-    if (!delta) continue;
+    // Handle reasoning_content (DeepSeek-R1, GLM-thinking, etc.)
+    if (config.thinkingConfig?.includeThoughts && delta?.reasoning_content) {
+      yield { text: '', thought: delta.reasoning_content };
+    }
 
-    accumulatedText += delta;
+    const content = delta?.content || '';
+    if (!content) continue;
+
+    accumulatedText += content;
 
     if (config.thinkingConfig?.includeThoughts) {
-      if (delta.includes('<thinking>')) {
+      if (content.includes('<thinking>')) {
         inThinking = true;
         continue;
       }
 
       if (inThinking) {
-        if (delta.includes('</thinking>')) {
+        if (content.includes('</thinking>')) {
           inThinking = false;
-          const parts = delta.split('</thinking>', 2);
+          const parts = content.split('</thinking>', 2);
           currentThought += parts[0];
 
           if (currentThought.trim()) {
@@ -138,17 +150,17 @@ export async function* generateContentStream(
             yield { text: parts[1], thought: '' };
           }
         } else {
-          currentThought += delta;
+          currentThought += content;
           if (currentThought.length > 100) {
             yield { text: '', thought: currentThought };
             currentThought = '';
           }
         }
       } else {
-        yield { text: delta, thought: '' };
+        yield { text: content, thought: '' };
       }
     } else {
-      yield { text: delta, thought: '' };
+      yield { text: content, thought: '' };
     }
   }
 
