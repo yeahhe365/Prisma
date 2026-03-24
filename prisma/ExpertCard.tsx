@@ -136,24 +136,32 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
             {view === 'thoughts' && (
               <div className="prose prose-xs max-w-none">
                 {expert.thoughts ? (
-                  <MarkdownRenderer 
-                    content={expert.thoughts} 
-                    className="text-slate-500 font-mono text-[11px] leading-relaxed" 
-                  />
+                  isWorking ? (
+                    <pre className="text-slate-500 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words">{expert.thoughts}</pre>
+                  ) : (
+                    <MarkdownRenderer
+                      content={expert.thoughts}
+                      className="text-slate-500 font-mono text-[11px] leading-relaxed"
+                    />
+                  )
                 ) : (
                   <span className="italic opacity-50 text-[11px]">Initializing thought process...</span>
                 )}
                 {isWorking && <span className="inline-block w-1.5 h-3 ml-1 bg-blue-400 animate-pulse"/>}
               </div>
             )}
-            
+
             {view === 'output' && (
               <div className="prose prose-sm max-w-none">
                 {expert.content ? (
-                   <MarkdownRenderer 
-                    content={expert.content} 
-                    className="text-slate-700 text-xs leading-relaxed" 
-                   />
+                  isWorking ? (
+                    <pre className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap break-words">{expert.content}</pre>
+                  ) : (
+                    <MarkdownRenderer
+                      content={expert.content}
+                      className="text-slate-700 text-xs leading-relaxed"
+                    />
+                  )
                 ) : (
                   <span className="text-slate-400 italic text-[11px]">
                     {isWorking ? "Formulating output..." : "No output generated."}

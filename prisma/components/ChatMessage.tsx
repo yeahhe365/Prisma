@@ -172,7 +172,11 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
           {/* Text Content */}
           <div className="prose prose-slate max-w-none prose-p:leading-7 prose-pre:bg-slate-900 prose-pre:text-slate-50">
             {message.content ? (
-              <MarkdownRenderer content={message.content} />
+              message.isThinking ? (
+                <pre className="whitespace-pre-wrap break-words text-slate-700 text-sm">{message.content}</pre>
+              ) : (
+                <MarkdownRenderer content={message.content} />
+              )
             ) : (
               message.isThinking && <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse" />
             )}
