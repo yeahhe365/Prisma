@@ -67,14 +67,14 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
   const expertsStatus = anyExpertWorking ? 'active' : (allExpertsDone ? 'completed' : 'idle');
 
   return (
-    <div className="relative space-y-4 pt-4 w-full">
+    <div className="relative space-y-4 pt-8 w-full">
       
       {/* Global Timer Overlay */}
       <GlobalTimer start={processStartTime} end={processEndTime} appState={appState} />
 
       <div className="relative space-y-2">
         {/* Connector Line */}
-        <div className={`absolute left-8 top-2 bottom-2 w-0.5 bg-slate-100 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`} />
+        <div className={`absolute left-8 top-2 bottom-2 w-0.5 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'} ${isAnalysisDone || anyExpertWorking ? 'connector-flowing' : 'bg-slate-100'}`} />
 
         {/* Node 1: Manager Analysis */}
         <ProcessNode 
@@ -83,6 +83,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
           status={managerStatus}
           isExpanded={isExpanded}
           onToggle={() => setIsExpanded(!isExpanded)}
+          glow={managerStatus === 'active'}
         >
           <div className="space-y-3 pl-2">
             {managerAnalysis ? (
@@ -115,6 +116,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             status={expertsStatus}
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
+            glow={expertsStatus === 'active'}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-2">
               {experts.map((expert) => (
@@ -132,6 +134,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             status={isSynthesisActive ? 'active' : (isComplete ? 'completed' : 'idle')}
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
+            glow={isSynthesisActive}
           >
             <div className="text-sm text-slate-600 pl-2">
               {isSynthesisActive ? (

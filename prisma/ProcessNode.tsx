@@ -8,6 +8,7 @@ interface ProcessNodeProps {
   children?: React.ReactNode;
   isExpanded: boolean;
   onToggle: () => void;
+  glow?: boolean;
 }
 
 const ProcessNode = ({ 
@@ -16,13 +17,17 @@ const ProcessNode = ({
   status, 
   children, 
   isExpanded, 
-  onToggle 
+  onToggle,
+  glow = false
 }: ProcessNodeProps) => {
   const isActive = status === 'active';
   const isCompleted = status === 'completed';
   
   return (
-    <div className={`relative z-10 rounded-xl border ${isActive ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200 bg-white'} transition-all duration-500 overflow-hidden shadow-sm`}>
+    <div className={`relative z-10 rounded-xl border transition-all duration-500 overflow-hidden shadow-sm
+      ${isActive ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200 bg-white'}
+      ${glow ? 'shadow-[0_0_20px_rgba(59,130,246,0.15)]' : ''}
+    `}>
       <div 
         className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50"
         onClick={onToggle}

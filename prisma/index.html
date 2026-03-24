@@ -30,12 +30,88 @@
         background: #cbd5e1; 
         border-radius: 4px;
       }
+      .prose a {
+        color: #2563eb;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .prose a:hover {
+        color: #1d4ed8;
+      }
+      
+      ::selection {
+        background: #dbeafe;
+        color: #1e3a5f;
+      }
+      
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      *:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      
       ::-webkit-scrollbar-thumb:hover {
         background: #94a3b8; 
       }
       
       .animate-pulse-slow {
         animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      
+      .animate-pulse-subtle {
+        animation: pulseSubtle 2s ease-in-out infinite;
+      }
+
+      .animate-in.fade-in {
+        animation: fadeIn 0.2s ease-out;
+      }
+      .animate-in.slide-in-from-top-1 {
+        animation: slideInFromTop 0.2s ease-out;
+      }
+      .animate-in.slide-in-from-top-2 {
+        animation: slideInFromTop 0.3s ease-out;
+      }
+      .animate-in.zoom-in-95 {
+        animation: zoomIn95 0.2s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideInFromTop {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes zoomIn95 {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      @keyframes pulseSubtle {
+        0%, 100% { box-shadow: 0 0 10px rgba(59,130,246,0.08); }
+        50% { box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+      }
+      
+      @keyframes flowLine {
+        0% { background-position: 0 0; }
+        100% { background-position: 0 20px; }
+      }
+
+      .connector-flowing {
+        background: repeating-linear-gradient(
+          to bottom,
+          #e2e8f0 0px,
+          #e2e8f0 6px,
+          transparent 6px,
+          transparent 12px
+        );
+        background-size: 2px 20px;
+        animation: flowLine 1s linear infinite;
       }
       
       @keyframes flow {

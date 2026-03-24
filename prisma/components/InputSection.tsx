@@ -203,7 +203,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
           onPaste={handlePaste}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
-          placeholder="Ask about images, videos, audio, or files..."
+          placeholder="Ask anything..."
           rows={1}
           autoFocus
           className="flex-1 max-h-[200px] py-3 pl-2 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 placeholder:text-slate-400 leading-relaxed custom-scrollbar text-base"

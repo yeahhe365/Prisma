@@ -4,6 +4,14 @@ import { ChatMessage, AppState, AnalysisResult, ExpertResult } from '../types';
 import ChatMessageItem from './ChatMessage';
 import ProcessFlow from './ProcessFlow';
 import Logo from './Logo';
+import { Code, BookOpen, Lightbulb, BarChart3 } from 'lucide-react';
+
+const SUGGESTIONS = [
+  { icon: Lightbulb, text: 'Explain quantum computing in simple terms', color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  { icon: Code, text: 'Write a sorting algorithm with time complexity analysis', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  { icon: BookOpen, text: 'Summarize the key ideas of systems thinking', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+  { icon: BarChart3, text: 'Compare different machine learning approaches', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+];
 
 interface ChatAreaProps {
   messages: ChatMessage[];
@@ -13,6 +21,7 @@ interface ChatAreaProps {
   finalOutput: string;
   processStartTime: number | null;
   processEndTime: number | null;
+  onSuggestionClick?: (text: string) => void;
 }
 
 const ChatArea = ({
@@ -22,19 +31,39 @@ const ChatArea = ({
   experts,
   finalOutput,
   processStartTime,
-  processEndTime
+  processEndTime,
+  onSuggestionClick
 }: ChatAreaProps) => {
   const isIdle = messages.length === 0 && appState === 'idle';
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
       {isIdle ? (
-        <div className="h-full flex flex-col items-center justify-center opacity-70 px-4 text-center">
-          <Logo className="w-24 h-24 mb-6 drop-shadow-xl animate-pulse-slow" />
-          <p className="text-xl font-bold text-slate-900">Prisma</p>
-          <p className="text-sm text-slate-500 max-w-xs mt-2">
-            Deep multi-agent reasoning.
-          </p>
+        <div className="h-full flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
+          {/* Background decorations */}
+          <div className="absolute top-1/4 -left-32 w-64 h-64 bg-blue-100/30 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-purple-100/30 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-50/20 rounded-full blur-3xl" />
+          
+          <div className="relative z-10 flex flex-col items-center">
+            <Logo className="w-24 h-24 mb-6 drop-shadow-xl animate-pulse-slow" />
+            <p className="text-2xl font-bold text-slate-900 tracking-tight">Prisma</p>
+            <p className="text-sm text-slate-500 max-w-xs mx-auto mt-2 mb-8">
+              Deep multi-agent reasoning with expert collaboration.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+              {SUGGESTIONS.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSuggestionClick?.(s.text)}
+                  className={`flex items-center gap-3 p-3 rounded-xl border text-left text-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${s.color}`}
+                >
+                  <s.icon size={16} className="shrink-0 opacity-70" />
+                  <span className="text-slate-700 font-medium leading-snug">{s.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <div className="pb-40">

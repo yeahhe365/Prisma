@@ -77,6 +77,7 @@ const App = () => {
             finalOutput={finalOutput}
             processStartTime={processStartTime}
             processEndTime={processEndTime}
+            onSuggestionClick={(text) => { setQuery(text); }}
           />
 
           <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none p-4 pb-6 flex justify-center bg-gradient-to-t from-white via-white/80 to-transparent">

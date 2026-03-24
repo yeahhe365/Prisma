@@ -36,7 +36,7 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
           >
             <Logo className="w-8 h-8 transition-transform group-hover:scale-110" />
             <h1 className="font-bold text-lg tracking-tight text-blue-600 group-hover:opacity-70 transition-opacity">
-              <span className="font-light">Prisma</span>
+              Prisma
             </h1>
           </div>
         </div>

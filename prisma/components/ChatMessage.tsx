@@ -33,17 +33,17 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
   };
 
   return (
-    <div className={`group w-full text-slate-800 ${isUser ? 'bg-transparent' : 'bg-transparent'}`}>
-      <div className="max-w-6xl mx-auto px-4 py-8 flex gap-4 md:gap-6">
+    <div className={`group w-full text-slate-800 ${isUser ? 'bg-blue-50/50' : 'bg-transparent'}`}>
+      <div className="max-w-6xl mx-auto px-4 py-6 flex gap-4 md:gap-6">
         {/* Avatar */}
         <div className="flex-shrink-0 flex flex-col relative items-end">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
             isUser 
-              ? 'bg-slate-100 border-slate-200' 
+              ? 'bg-blue-100 border-blue-200' 
               : 'bg-white border-blue-100 shadow-sm'
           }`}>
             {isUser ? (
-              <User size={16} className="text-slate-500" />
+              <User size={16} className="text-blue-600" />
             ) : (
               <Sparkles size={16} className="text-blue-600" />
             )}
@@ -56,7 +56,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
             <div className="font-semibold text-sm text-slate-900">
               {isUser ? 'You' : 'Prisma'}
             </div>
-            {message.content && (
+            {!isUser && message.content && (
               <button
                 onClick={handleCopy}
                 className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1.5
@@ -78,8 +78,74 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
             )}
           </div>
 
+          {/* User message bubble */}
+          {isUser ? (
+            <div className="bg-blue-100/70 border border-blue-200/60 rounded-2xl rounded-tl-sm px-4 py-3">
+              {/* Attachments */}
+              {message.attachments && message.attachments.length > 0 && (
+                <div className="flex flex-wrap gap-4 mb-3">
+                  {message.attachments.map(att => (
+                     att.type === 'image' ? (
+                       <img 
+                         key={att.id} 
+                         src={att.url || `data:${att.mimeType};base64,${att.data}`}
+                         alt="attachment" 
+                         className="h-48 w-48 object-cover rounded-lg border border-blue-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                         onClick={() => window.open(att.url || `data:${att.mimeType};base64,${att.data}`, '_blank')}
+                       />
+                     ) : att.type === 'video' ? (
+                        <div key={att.id} className="relative w-full max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-black group/video">
+                          <video 
+                            src={att.url || `data:${att.mimeType};base64,${att.data}`}
+                            controls
+                            className="w-full aspect-video"
+                          />
+                        </div>
+                     ) : att.type === 'audio' ? (
+                        <div key={att.id} className="w-full max-w-sm flex flex-col gap-2 p-3 bg-white/70 border border-blue-100 rounded-xl">
+                          <audio 
+                            src={att.url || `data:${att.mimeType};base64,${att.data}`}
+                            controls
+                            className="w-full h-8"
+                          />
+                        </div>
+                     ) : (
+                       <div 
+                         key={att.id}
+                         className="flex items-center gap-3 p-3 bg-white/70 border border-blue-100 rounded-xl cursor-pointer group/file"
+                         onClick={() => handleDownloadFile(att)}
+                       >
+                         <div className={`p-2 rounded-lg group-hover/file:scale-110 transition-transform ${att.type === 'pdf' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                           {att.type === 'pdf' ? <FileText size={24} /> : <FileCode size={24} />}
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">
+                             {att.name || (att.type === 'pdf' ? 'document.pdf' : 'file.txt')}
+                           </p>
+                         </div>
+                         <Download size={16} className="text-slate-400 group-hover/file:text-slate-600 ml-2" />
+                       </div>
+                     )
+                  ))}
+                </div>
+              )}
+              <div className="text-slate-800 whitespace-pre-wrap break-words leading-relaxed">{message.content}</div>
+              {message.content && (
+                <div className="flex justify-end mt-1">
+                  <button
+                    onClick={handleCopy}
+                    className={`p-1 rounded transition-all flex items-center gap-1 text-[10px]
+                      ${copied ? 'text-emerald-600' : 'text-blue-400 hover:text-blue-600'}`}
+                  >
+                    {copied ? <><Check size={12} /> Copied</> : <Copy size={12} />}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
           {/* Thinking Process Accordion (Only for AI) */}
-          {!isUser && hasThinkingData && (
+          {hasThinkingData && (
             <div className="mb-4">
               <button
                 onClick={() => setShowThinking(!showThinking)}
@@ -128,17 +194,9 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                         controls
                         className="w-full aspect-video"
                       />
-                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] text-white flex items-center gap-1 opacity-0 group-hover/video:opacity-100 transition-opacity">
-                        <PlayCircle size={10} />
-                        <span className="truncate max-w-[150px]">{att.name || 'Video'}</span>
-                      </div>
                     </div>
                  ) : att.type === 'audio' ? (
                     <div key={att.id} className="w-full max-w-sm flex flex-col gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                      <div className="flex items-center gap-2">
-                         <Music size={16} className="text-blue-600" />
-                         <span className="text-xs font-medium text-blue-900 truncate">{att.name || 'Audio File'}</span>
-                      </div>
                       <audio 
                         src={att.url || `data:${att.mimeType};base64,${att.data}`}
                         controls
@@ -183,7 +241,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
           </div>
           
           {/* Internal Monologue (Synthesis Thoughts) - Optional Footer */}
-          {!isUser && message.synthesisThoughts && (
+          {message.synthesisThoughts && (
              <div className="mt-4 pt-4 border-t border-slate-100">
                <details className="group/thoughts">
                  <summary className="cursor-pointer list-none text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
@@ -195,6 +253,8 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                  </div>
                </details>
              </div>
+          )}
+            </>
           )}
         </div>
       </div>

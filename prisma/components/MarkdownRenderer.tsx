@@ -4,10 +4,11 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Copy, Check, Terminal } from 'lucide-react';
+import { Copy, Check, Terminal, ChevronDown, ChevronUp } from 'lucide-react';
 
 const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
 
@@ -21,6 +22,9 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
   }
 
   const codeString = String(children).replace(/\n$/, '');
+  const lineCount = codeString.split('\n').length;
+  const isLong = lineCount > 15;
+  const MAX_HEIGHT = 400;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(codeString);
@@ -35,28 +39,50 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
         <div className="flex items-center gap-2">
           <Terminal size={14} />
           <span className="font-mono text-slate-300">{language || 'text'}</span>
+          <span className="text-[10px] text-slate-500">{lineCount} lines</span>
         </div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 hover:text-white transition-colors"
-        >
-          {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-          <span>{copied ? 'Copied!' : 'Copy'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 hover:text-white transition-colors"
+            >
+              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              <span>{expanded ? 'Collapse' : 'Expand'}</span>
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 hover:text-white transition-colors"
+          >
+            {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
+          </button>
+        </div>
       </div>
       
       {/* Syntax Highlighter */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" style={!expanded && isLong ? { maxHeight: MAX_HEIGHT, overflowY: 'auto' } : {}}>
+        {!expanded && isLong && (
+          <div className="sticky top-0 z-10 h-6 bg-gradient-to-b from-[#1e1e1e] to-transparent pointer-events-none" />
+        )}
         <SyntaxHighlighter
           language={language}
           style={vscDarkPlus}
+          showLineNumbers={lineCount > 3}
           customStyle={{
             margin: 0,
             padding: '1rem',
             background: 'transparent',
-            fontSize: '0.875rem', // text-sm
+            fontSize: '0.875rem',
             lineHeight: '1.5',
             fontFamily: 'JetBrains Mono, monospace',
+          }}
+          lineNumberStyle={{
+            minWidth: '2.5em',
+            paddingRight: '1em',
+            color: '#555',
+            userSelect: 'none',
           }}
           codeTagProps={{
             style: { fontFamily: 'JetBrains Mono, monospace' }

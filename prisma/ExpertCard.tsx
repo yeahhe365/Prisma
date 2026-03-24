@@ -60,8 +60,8 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
 
   return (
     <div className={`
-      relative flex flex-col h-80 rounded-xl border transition-all duration-300 shadow-sm overflow-hidden
-      ${isWorking ? 'border-blue-400 bg-white shadow-[0_0_15px_rgba(59,130,246,0.1)]' : ''}
+      relative flex flex-col min-h-[200px] max-h-[400px] rounded-xl border transition-all duration-300 shadow-sm overflow-hidden
+      ${isWorking ? 'border-blue-400 bg-white shadow-[0_0_15px_rgba(59,130,246,0.1)] animate-pulse-subtle' : ''}
       ${isDone ? 'border-emerald-400 bg-white' : ''}
       ${isPending ? 'border-slate-200 bg-slate-50/50' : ''}
       ${isError ? 'border-red-400 bg-red-50' : ''}
