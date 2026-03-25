@@ -5,10 +5,9 @@ import { cleanJsonString } from '../../utils';
 import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
 import { withRetry } from '../utils/retry';
 import { generateContent as generateOpenAIContent } from './openaiClient';
+import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
 
-const isGoogleProvider = (ai: any): boolean => {
-  return ai?.models?.generateContent !== undefined;
-};
+import { isGoogleProvider } from '../../api';
 
 export const executeManagerAnalysis = async (
   ai: any,
@@ -43,21 +42,7 @@ export const executeManagerAnalysis = async (
       required: ["thought_process", "experts"]
     };
 
-    const contents: any = {
-      role: 'user',
-      parts: [{ text: textPrompt }]
-    };
-
-    if (attachments.length > 0) {
-      attachments.forEach(att => {
-        contents.parts.push({
-          inlineData: {
-            mimeType: att.mimeType,
-            data: att.data
-          }
-        });
-      });
-    }
+    const contents = buildGoogleContents(textPrompt, attachments);
 
     try {
       const analysisResp = await withRetry(() => ai.models.generateContent({
@@ -91,24 +76,7 @@ export const executeManagerAnalysis = async (
     }
   } else {
     try {
-      let contentPayload: any = textPrompt;
-
-      // OpenAI only supports images in this payload structure
-      const imageAttachments = attachments.filter(a => a.type === 'image');
-
-      if (imageAttachments.length > 0) {
-        contentPayload = [
-          { type: 'text', text: textPrompt }
-        ];
-        imageAttachments.forEach(att => {
-          contentPayload.push({
-            type: 'image_url',
-            image_url: {
-              url: `data:${att.mimeType};base64,${att.data}`
-            }
-          });
-        });
-      }
+      let contentPayload: any = buildOpenAIContent(textPrompt, attachments);
 
       const jsonInstruction = `\n\nReturn a JSON response with this structure:\n{\n  "thought_process": "...",\n  "experts": [\n    { "role": "...", "description": "...", "temperature": number, "prompt": "..." }\n  ]\n}`;
       

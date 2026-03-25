@@ -11,7 +11,16 @@ import { RequestQueue } from '../services/utils/retry';
 import { useDeepThinkState } from './useDeepThinkState';
 
 // Limit concurrent expert API calls to avoid 429 rate limits
-const expertQueue = new RequestQueue(2);
+let expertQueue = new RequestQueue(3);
+
+// Update queue concurrency when config changes (tracked via ref)
+let lastConcurrency = 3;
+const updateQueueConcurrency = (concurrency: number) => {
+  if (concurrency !== lastConcurrency) {
+    lastConcurrency = concurrency;
+    expertQueue = new RequestQueue(concurrency);
+  }
+};
 
 export const useDeepThink = () => {
   const {
@@ -103,6 +112,7 @@ export const useDeepThink = () => {
 
     // Reset UI state
     setAppState('analyzing');
+    updateQueueConcurrency(config.expertConcurrency || 3);
     setManagerAnalysis(null);
     setInitialExperts([]);
     setFinalOutput('');
@@ -167,7 +177,7 @@ export const useDeepThink = () => {
       if (signal.aborted) return;
       setManagerAnalysis(analysisJson);
 
-      const round1Experts: ExpertResult[] = (analysisJson.experts || []).map((exp, idx) => ({
+      const round1Experts: ExpertResult[] = (analysisJson.experts || []).slice(0, 6).map((exp, idx) => ({
         ...exp,
         id: `expert-r1-${idx + 1}`,
         status: 'pending',
@@ -207,7 +217,7 @@ export const useDeepThink = () => {
               loopActive = false;
             } else {
                roundCounter++;
-               const nextRoundExperts = (reviewResult.refined_experts || []).map((exp, idx) => ({
+               const nextRoundExperts = (reviewResult.refined_experts || []).slice(0, 6).map((exp, idx) => ({
                   ...exp, id: `expert-r${roundCounter}-${idx}`, status: 'pending' as const, round: roundCounter
                }));
 

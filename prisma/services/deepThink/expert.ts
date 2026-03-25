@@ -1,12 +1,10 @@
 
 import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
-import { getExpertSystemInstruction } from './prompts';
-import { withRetry } from '../utils/retry';
+import { getExpertSystemInstruction, getExpertUserPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
+import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
 
-const isGoogleProvider = (ai: any): boolean => {
-  return ai?.models?.generateContentStream !== undefined;
-};
+import { isGoogleProvider } from '../../api';
 
 export const streamExpertResponse = async (
   ai: any,
@@ -21,34 +19,20 @@ export const streamExpertResponse = async (
   const isGoogle = isGoogleProvider(ai);
 
   if (isGoogle) {
-    const contents: any = {
-      role: 'user',
-      parts: [{ text: expert.prompt }]
-    };
+    const contents = buildGoogleContents(getExpertUserPrompt(expert.prompt, context), attachments);
 
-    if (attachments.length > 0) {
-      attachments.forEach(att => {
-        contents.parts.push({
-          inlineData: {
-            mimeType: att.mimeType,
-            data: att.data
-          }
-        });
-      });
-    }
-
-    const streamResult = await withRetry(() => ai.models.generateContentStream({
+    const streamResult = await ai.models.generateContentStream({
       model: model,
       contents: contents,
       config: {
-        systemInstruction: getExpertSystemInstruction(expert.role, expert.description, context),
+        systemInstruction: getExpertSystemInstruction(expert.role, expert.description),
         temperature: expert.temperature,
         thinkingConfig: {
           thinkingBudget: budget,
           includeThoughts: true
         }
       }
-    }));
+    });
 
     try {
       for await (const chunk of (streamResult as any)) {
@@ -73,22 +57,7 @@ export const streamExpertResponse = async (
       throw streamError;
     }
   } else {
-    let contentPayload: any = expert.prompt;
-    const imageAttachments = attachments.filter(a => a.type === 'image');
-
-    if (imageAttachments.length > 0) {
-      contentPayload = [
-        { type: 'text', text: expert.prompt }
-      ];
-      imageAttachments.forEach(att => {
-        contentPayload.push({
-          type: 'image_url',
-          image_url: {
-            url: `data:${att.mimeType};base64,${att.data}`
-          }
-        });
-      });
-    }
+    let contentPayload: any = buildOpenAIContent(getExpertUserPrompt(expert.prompt, context), attachments);
 
     const stream = generateOpenAIStream(ai, {
       model,

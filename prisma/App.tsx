@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAppLogic } from './hooks/useAppLogic';
 
+import ErrorBoundary from './components/ErrorBoundary';
 import SettingsModal from './SettingsModal';
 import Header from './components/Header';
 import ChatInput from './components/InputSection';
@@ -38,6 +39,7 @@ const App = () => {
   } = useAppLogic();
 
   return (
+    <ErrorBoundary>
     <div className="flex flex-col h-screen bg-white text-slate-800 font-sans selection:bg-blue-100 selection:text-blue-900">
       
       <SettingsModal 
@@ -95,6 +97,7 @@ const App = () => {
         </main>
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 

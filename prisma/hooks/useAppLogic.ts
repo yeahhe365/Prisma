@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ModelOption, AppConfig, ChatMessage, MessageAttachment } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG, getValidThinkingLevels } from '../config';
 import { useDeepThink } from './useDeepThink';
@@ -26,11 +26,13 @@ export const useAppLogic = () => {
   // Active Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState('');
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   // App Configuration with Persistence
   const [selectedModel, setSelectedModel] = useState<ModelOption>(() => {
     const cached = localStorage.getItem(STORAGE_KEYS.MODEL);
-    return (cached as ModelOption) || 'gemini-3-flash-preview';
+    return (cached as ModelOption) || 'glm-5-turbo';
   });
 
   const [config, setConfig] = useState<AppConfig>(() => {
@@ -171,7 +173,8 @@ export const useAppLogic = () => {
       attachments: attachments
     };
 
-    const newMessages = [...messages, userMsg];
+    const currentMessages = messagesRef.current;
+    const newMessages = [...currentMessages, userMsg];
     setMessages(newMessages); 
     
     let activeSessionId = currentSessionId;
@@ -183,7 +186,7 @@ export const useAppLogic = () => {
 
     runDynamicDeepThink(query, newMessages, selectedModel, config);
     setQuery('');
-  }, [query, messages, currentSessionId, selectedModel, config, createSession, updateSessionMessages, runDynamicDeepThink]);
+  }, [query, currentSessionId, selectedModel, config, createSession, updateSessionMessages, runDynamicDeepThink]);
 
   const handleNewChat = useCallback(() => {
     stopDeepThink();

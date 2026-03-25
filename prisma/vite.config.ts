@@ -1,5 +1,6 @@
 
 import path from 'path';
+import { Readable } from 'stream';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import type { Connect } from 'vite';
@@ -80,20 +81,12 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
         }
       });
 
-      // Stream the response body
+      // Stream the response body using Node.js pipeline for proper backpressure
       if (response.body) {
-        const reader = response.body.getReader();
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(value);
-          }
-        } finally {
-          reader.releaseLock();
-        }
+        Readable.fromWeb(response.body as any).pipe(res);
+      } else {
+        res.end();
       }
-      res.end();
       
     } catch (error: any) {
       console.error('[Custom Proxy] Error:', error.message);

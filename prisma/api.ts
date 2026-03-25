@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
-import { ApiProvider, CustomModel } from './types';
+import { ApiProvider, CustomModel, AIClient } from './types';
 
 // --- Configuration & Types ---
 
@@ -22,21 +22,18 @@ const PROVIDER_BASE_URLS: Record<string, string> = {
 
 const isDevelopment = import.meta.env?.MODE === 'development' || process.env.NODE_ENV === 'development';
 
-// --- Unified Network Interceptor ---
+// --- Network Configuration State ---
 
-// Global state for the interceptor
 let activeBaseUrl: string | null = null;
 let activeProvider: ApiProvider | null = null;
 
 /**
  * Configure the network layer with the current custom API settings.
- * This is called by the UI when settings change.
  */
 export const setNetworkConfig = (baseUrl: string | null, provider: ApiProvider | null = null) => {
   activeBaseUrl = baseUrl ? baseUrl.trim() : null;
   activeProvider = provider;
-  
-  // Normalize base URL (remove trailing slash)
+
   if (activeBaseUrl && activeBaseUrl.endsWith('/')) {
     activeBaseUrl = activeBaseUrl.slice(0, -1);
   }
@@ -44,82 +41,63 @@ export const setNetworkConfig = (baseUrl: string | null, provider: ApiProvider |
   console.log('[Network] Config updated:', { activeBaseUrl, activeProvider });
 };
 
-// Store original fetch once and bind it to window to prevent illegal invocation errors
-const originalFetch = window.fetch.bind(window);
-
-// The unified proxy fetch function
-const proxyFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-  let urlString: string;
-  if (typeof input === 'string') {
-    urlString = input;
-  } else if (input instanceof URL) {
-    urlString = input.toString();
-  } else {
-    urlString = input.url;
-  }
-
-  // Scenario 1: Local Vite Proxy Request (OpenAI/Custom)
-  // We identify this by the path starting with /custom-api
-  if (urlString.includes('/custom-api') && activeBaseUrl) {
-    const headers = new Headers(init?.headers);
-    
-    // Inject the target URL for the Vite middleware
-    headers.set('X-Target-URL', activeBaseUrl);
-    
-    console.debug('[Fetch Proxy] Proxying to:', activeBaseUrl, 'Path:', urlString);
-    
-    return originalFetch(input, {
-      ...init,
-      headers,
-    });
-  }
-
-  // Scenario 2: Google Gemini Interception (Google GenAI SDK)
-  // The SDK calls googleapis.com. We redirect if a custom base URL is set.
-  if (urlString.includes('generativelanguage.googleapis.com') && activeBaseUrl) {
-    try {
-      const url = new URL(urlString);
-      const customUrl = new URL(activeBaseUrl);
-      
-      // Replace protocol and host
-      url.protocol = customUrl.protocol;
-      url.host = customUrl.host;
-      url.port = customUrl.port;
-      
-      // Prepend custom path if exists (e.g. if customUrl is http://localhost:8080/gemini-proxy)
-      if (customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
-        // Avoid double slashes
-        const prefix = customUrl.pathname.endsWith('/') ? customUrl.pathname.slice(0, -1) : customUrl.pathname;
-        url.pathname = prefix + url.pathname;
-      }
-
-      console.debug('[Fetch Google] Redirecting Gemini to:', url.toString());
-      
-      return originalFetch(url.toString(), init);
-    } catch (e) {
-      console.warn('[Fetch Google] Failed to rewrite URL:', e);
-    }
-  }
-
-  return originalFetch(input, init);
+export const isGoogleProvider = (ai: any): boolean => {
+  return ai?.models?.generateContent !== undefined;
 };
 
-// Apply the interceptor safely
-try {
-  window.fetch = proxyFetch;
-} catch (e) {
-  // If direct assignment fails (e.g., getter-only property), try defineProperty
-  console.warn('[Network] Direct override of window.fetch failed, attempting Object.defineProperty');
-  try {
-    Object.defineProperty(window, 'fetch', {
-      value: proxyFetch,
-      writable: true,
-      configurable: true
-    });
-  } catch (e2) {
-    console.error('[Network] Critical: Failed to install fetch interceptor', e2);
-  }
-}
+// --- Custom Fetch for SDK-Level URL Rewriting ---
+
+/**
+ * Creates a custom fetch function that rewrites URLs for:
+ * 1. Vite proxy requests (/custom-api → injects X-Target-URL header)
+ * 2. Google GenAI SDK requests (googleapis.com → custom base URL)
+ */
+const createCustomFetch = (): typeof globalThis.fetch => {
+  const nativeFetch = window.fetch.bind(window);
+
+  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    let urlString: string;
+    if (typeof input === 'string') {
+      urlString = input;
+    } else if (input instanceof URL) {
+      urlString = input.toString();
+    } else {
+      urlString = input.url;
+    }
+
+    // Vite proxy: inject X-Target-URL header
+    if (urlString.includes('/custom-api') && activeBaseUrl) {
+      const headers = new Headers(init?.headers);
+      headers.set('X-Target-URL', activeBaseUrl);
+      return nativeFetch(input, { ...init, headers });
+    }
+
+    // Google GenAI SDK: rewrite googleapis.com to custom base URL
+    if (urlString.includes('generativelanguage.googleapis.com') && activeBaseUrl) {
+      try {
+        const url = new URL(urlString);
+        const customUrl = new URL(activeBaseUrl);
+
+        url.protocol = customUrl.protocol;
+        url.host = customUrl.host;
+        url.port = customUrl.port;
+
+        if (customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
+          const prefix = customUrl.pathname.endsWith('/')
+            ? customUrl.pathname.slice(0, -1)
+            : customUrl.pathname;
+          url.pathname = prefix + url.pathname;
+        }
+
+        return nativeFetch(url.toString(), init);
+      } catch (e) {
+        console.warn('[Fetch] Failed to rewrite Google URL:', e);
+      }
+    }
+
+    return nativeFetch(input, init);
+  };
+};
 
 // --- Helper Functions ---
 
@@ -139,52 +117,46 @@ export const getAIProvider = (model: string): ApiProvider => {
 
 // --- API Client Factory ---
 
-export const getAI = (config?: AIProviderConfig) => {
+export const getAI = (config?: AIProviderConfig): AIClient => {
   const provider = config?.provider || 'google';
   const apiKey = config?.apiKey || import.meta.env?.VITE_API_KEY || process.env.API_KEY;
+  const customFetch = createCustomFetch();
 
   // Handle OpenAI-compatible providers
   if (['openai', 'deepseek', 'custom', 'anthropic', 'xai', 'mistral'].includes(provider)) {
     const options: any = {
       apiKey: apiKey,
       dangerouslyAllowBrowser: true,
+      fetch: customFetch,
     };
 
     if (config?.baseUrl) {
-      // 1. Explicit Custom URL provided (via Settings > Custom Models)
       if (isDevelopment) {
-        // In Dev: Route through local proxy to avoid CORS
         options.baseURL = `${window.location.origin}/custom-api`;
-        // The interceptor will pick up the real URL from `activeBaseUrl` via setNetworkConfig
       } else {
-        // In Prod: Direct connection (Warning: CORS might fail if not using a proxy)
-        options.baseURL = config.baseUrl; 
+        options.baseURL = config.baseUrl;
         console.warn('[API] Using direct custom URL in production. CORS errors may occur.');
       }
     } else {
-      // 2. Preset Provider (e.g. "DeepSeek" selected from dropdown)
       const providerBaseUrl = PROVIDER_BASE_URLS[provider];
-      
+
       if (isDevelopment && providerBaseUrl) {
-         // In Dev: Use proxy for known providers too, to avoid CORS issues
-         options.baseURL = `${window.location.origin}/custom-api`;
-         // IMPORTANT: The UI/Hook must have called setNetworkConfig(providerBaseUrl) for this to work
+        options.baseURL = `${window.location.origin}/custom-api`;
       } else if (providerBaseUrl) {
-         options.baseURL = providerBaseUrl;
+        options.baseURL = providerBaseUrl;
       }
     }
 
     return new OpenAI(options);
-  } 
-  
-  // Handle Google
+  }
+
+  // Handle Google — pass custom fetch via httpOptions
   else {
     const options: any = {
       apiKey: apiKey,
+      httpOptions: { fetch: customFetch },
     };
-    
-    // Google SDK doesn't support 'baseUrl' in constructor easily, 
-    // but our fetch interceptor handles the rewrite if `config.baseUrl` was set in the UI.
+
     return new GoogleGenAI(options);
   }
 };

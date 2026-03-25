@@ -1,12 +1,10 @@
 
 import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getSynthesisPrompt } from './prompts';
-import { withRetry } from '../utils/retry';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
+import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
 
-const isGoogleProvider = (ai: any): boolean => {
-  return ai?.models?.generateContentStream !== undefined;
-};
+import { isGoogleProvider } from '../../api';
 
 export const streamSynthesisResponse = async (
   ai: any,
@@ -23,23 +21,9 @@ export const streamSynthesisResponse = async (
   const isGoogle = isGoogleProvider(ai);
 
   if (isGoogle) {
-    const contents: any = {
-      role: 'user',
-      parts: [{ text: prompt }]
-    };
+    const contents = buildGoogleContents(prompt, attachments);
 
-    if (attachments.length > 0) {
-      attachments.forEach(att => {
-        contents.parts.push({
-          inlineData: {
-            mimeType: att.mimeType,
-            data: att.data
-          }
-        });
-      });
-    }
-
-    const synthesisStream = await withRetry(() => ai.models.generateContentStream({
+    const synthesisStream = await ai.models.generateContentStream({
       model: model,
       contents: contents,
       config: {
@@ -48,7 +32,7 @@ export const streamSynthesisResponse = async (
           includeThoughts: true
         }
       }
-    }));
+    });
 
     try {
       for await (const chunk of (synthesisStream as any)) {
@@ -73,22 +57,7 @@ export const streamSynthesisResponse = async (
       throw streamError;
     }
   } else {
-    let contentPayload: any = prompt;
-    const imageAttachments = attachments.filter(a => a.type === 'image');
-
-    if (imageAttachments.length > 0) {
-      contentPayload = [
-        { type: 'text', text: prompt }
-      ];
-      imageAttachments.forEach(att => {
-        contentPayload.push({
-          type: 'image_url',
-          image_url: {
-            url: `data:${att.mimeType};base64,${att.data}`
-          }
-        });
-      });
-    }
+    let contentPayload: any = buildOpenAIContent(prompt, attachments);
 
     const stream = generateOpenAIStream(ai, {
       model,

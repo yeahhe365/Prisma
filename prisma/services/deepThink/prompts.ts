@@ -32,8 +32,13 @@ If you ARE satisfied:
 2. Leave refined_experts empty.
 `;
 
-export const getExpertSystemInstruction = (role: string, description: string, context: string) => {
-  return `You are a ${role}. ${description}. Context: ${context}`;
+export const getExpertSystemInstruction = (role: string, description: string) => {
+  return `You are a ${role}. ${description}.`;
+};
+
+export const getExpertUserPrompt = (expertPrompt: string, context: string) => {
+  if (!context) return expertPrompt;
+  return `Context:\n${context}\n\nTask:\n${expertPrompt}`;
 };
 
 export const getSynthesisPrompt = (recentHistory: string, query: string, expertResults: ExpertResult[]) => {

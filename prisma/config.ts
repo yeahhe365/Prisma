@@ -32,12 +32,16 @@ export const DEFAULT_CONFIG: AppConfig = {
   planningLevel: 'high',
   expertLevel: 'high',
   synthesisLevel: 'high',
-  customApiKey: '',
-  customBaseUrl: '',
-  enableCustomApi: false,
-  enableRecursiveLoop: true, // Enabled by default as requested
-  apiProvider: 'google',
-  customModels: []
+  customApiKey: 'sk-ZuxZpSrBi95X9ZtGjTm3XdS3sH702XhvOOc8sZiytHpNRhQT',
+  customBaseUrl: 'http://localhost:3000/v1',
+  enableCustomApi: true,
+  apiProvider: 'custom',
+  customModels: [
+    { name: 'glm-5-turbo', displayName: 'GLM-5 Turbo', provider: 'custom' },
+    { name: 'glm-5-turbo-thinking', displayName: 'GLM-5 Turbo Thinking', provider: 'custom' },
+  ],
+  expertConcurrency: 3,
+  enableRecursiveLoop: true,
 };
 
 export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {

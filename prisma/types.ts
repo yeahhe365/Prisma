@@ -1,4 +1,23 @@
 
+export type AIClient = GoogleGenAIClient | OpenAIClient;
+
+export interface GoogleGenAIClient {
+  provider: 'google';
+  models: {
+    generateContent: (...args: any[]) => Promise<any>;
+    generateContentStream: (...args: any[]) => Promise<any>;
+  };
+}
+
+export interface OpenAIClient {
+  provider: 'openai' | 'deepseek' | 'anthropic' | 'xai' | 'mistral' | 'custom';
+  chat: {
+    completions: {
+      create: (...args: any[]) => Promise<any>;
+    };
+  };
+}
+
 export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3-pro-preview' | 'custom' | string;
 export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
 export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'xai' | 'mistral' | 'custom';
@@ -54,6 +73,7 @@ export type AppConfig = {
   enableRecursiveLoop?: boolean;
   apiProvider?: ApiProvider;
   customModels?: CustomModel[];
+  expertConcurrency?: number;
 };
 
 export type MessageAttachment = {
