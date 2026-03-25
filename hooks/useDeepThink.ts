@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { getAI, getAIProvider, findCustomModel } from '../api';
 import { getThinkingBudget } from '../config';
@@ -13,7 +12,7 @@ import { useDeepThinkState } from './useDeepThinkState';
 // Limit concurrent expert API calls to avoid 429 rate limits
 let expertQueue = new RequestQueue(3);
 
-// Update queue concurrency when config changes (tracked via ref)
+// Update queue concurrency when config changes
 let lastConcurrency = 3;
 const updateQueueConcurrency = (concurrency: number) => {
   if (concurrency !== lastConcurrency) {
@@ -50,6 +49,7 @@ export const useDeepThink = () => {
     context: string,
     attachments: MessageAttachment[],
     budget: number,
+    thinkingLevel: string,
     signal: AbortSignal
   ): Promise<ExpertResult> => {
     if (signal.aborted) return expert;
@@ -68,6 +68,7 @@ export const useDeepThink = () => {
         context,
         attachments,
         budget,
+        thinkingLevel,
         signal,
         (textChunk, thoughtChunk) => {
           fullContent += textChunk;
@@ -129,6 +130,10 @@ export const useDeepThink = () => {
       baseUrl: customModelConfig?.baseUrl || config.customBaseUrl
     });
 
+    const planningBudget = getThinkingBudget(config.planningLevel, model);
+    const expertBudget = getThinkingBudget(config.expertLevel, model);
+    const synthesisBudget = getThinkingBudget(config.synthesisLevel, model);
+
     try {
       // Get the last message (which is the user's current query) to retrieve attachments
       const lastMessage = history[history.length - 1];
@@ -146,7 +151,8 @@ export const useDeepThink = () => {
         query, 
         recentHistory,
         currentAttachments,
-        getThinkingBudget(config.planningLevel, model)
+        planningBudget,
+        config.expertLevel
       ).catch(e => {
         console.error("Manager Analysis failure:", e);
         return {
@@ -167,10 +173,9 @@ export const useDeepThink = () => {
 
       setInitialExperts([primaryExpert]);
 
-      // Primary expert sees the images
       const primaryTask = runExpertLifecycle(
         primaryExpert, 0, ai, model, recentHistory, currentAttachments,
-        getThinkingBudget(config.expertLevel, model), signal
+        expertBudget, config.expertLevel, signal
       );
 
       const analysisJson = await managerTask;
@@ -191,7 +196,7 @@ export const useDeepThink = () => {
 
       const round1Tasks = round1Experts.map((exp, idx) => 
         expertQueue.add(() => runExpertLifecycle(exp, idx + 1, ai, model, recentHistory, currentAttachments,
-           getThinkingBudget(config.expertLevel, model), signal))
+           expertBudget, config.expertLevel, signal))
       );
 
       await Promise.all([primaryTask, ...round1Tasks]);
@@ -199,7 +204,7 @@ export const useDeepThink = () => {
 
       // --- Phase 2: Recursive Loop (Optional) ---
       let roundCounter = 1;
-      const MAX_ROUNDS = 2; // Reduced default rounds for better UX on error
+      const MAX_ROUNDS = 2;
       let loopActive = (config.enableRecursiveLoop ?? false) && round1Experts.length > 0;
 
       while (loopActive && roundCounter < MAX_ROUNDS) {
@@ -209,7 +214,8 @@ export const useDeepThink = () => {
           try {
             const reviewResult = await executeManagerReview(
               ai, model, query, expertsDataRef.current,
-              getThinkingBudget(config.planningLevel, model)
+              planningBudget,
+              config.expertLevel
             );
 
             if (signal.aborted) return;
@@ -232,14 +238,14 @@ export const useDeepThink = () => {
 
                const nextRoundTasks = nextRoundExperts.map((exp, idx) => 
                   expertQueue.add(() => runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
-                     getThinkingBudget(config.expertLevel, model), signal))
+                     expertBudget, config.expertLevel, signal))
                );
 
                await Promise.all(nextRoundTasks);
             }
           } catch (reviewError) {
             console.error("Review round error:", reviewError);
-            loopActive = false; // Exit loop on review error
+            loopActive = false;
           }
       }
 
@@ -255,7 +261,9 @@ export const useDeepThink = () => {
         await streamSynthesisResponse(
           ai, model, query, recentHistory, expertsDataRef.current,
           currentAttachments,
-          getThinkingBudget(config.synthesisLevel, model), signal,
+          synthesisBudget,
+          config.synthesisLevel,
+          signal,
           (textChunk, thoughtChunk) => {
               fullFinalText += textChunk;
               fullFinalThoughts += thoughtChunk;

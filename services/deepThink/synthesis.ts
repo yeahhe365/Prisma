@@ -1,4 +1,3 @@
-
 import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getSynthesisPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
@@ -14,6 +13,7 @@ export const streamSynthesisResponse = async (
   expertResults: ExpertResult[],
   attachments: MessageAttachment[],
   budget: number,
+  thinkingLevel: string,
   signal: AbortSignal,
   onChunk: (text: string, thought: string) => void
 ): Promise<void> => {
@@ -66,6 +66,7 @@ export const streamSynthesisResponse = async (
       temperature: 0.7,
       thinkingConfig: {
         thinkingBudget: budget,
+        thinkingLevel,
         includeThoughts: true
       }
     });

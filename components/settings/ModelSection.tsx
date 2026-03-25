@@ -105,7 +105,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
   const handleUpdatePresetOverride = (presetValue: string, updates: Partial<CustomModel>) => {
     const overrides = (config.presetOverrides || []).filter(o => o.name !== presetValue);
     const existing = presetOverrides[presetValue];
-    overrides.push({ ...(existing || { id: `override-${presetValue}`, name: presetValue }), ...updates });
+    overrides.push({ ...(existing || { id: `override-${presetValue}`, name: presetValue, provider: 'google' as ApiProvider }), ...updates });
     setConfig({ ...config, presetOverrides: overrides });
   };
 

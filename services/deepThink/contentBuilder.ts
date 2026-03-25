@@ -1,17 +1,17 @@
-import { MessageAttachment } from '../types';
+import { MessageAttachment } from '../../types';
 
 /**
  * Build Google GenAI SDK contents object with inline data for attachments.
+ * Note: For PDFs and other file types, Google recommends using the File API (uploadAsync)
+ * rather than inlineData. This fallback sends all attachments as inlineData,
+ * which works for small files but may fail for large ones.
  */
 export const buildGoogleContents = (text: string, attachments: MessageAttachment[]) => {
-  const contents: any = {
-    role: 'user',
-    parts: [{ text }],
-  };
+  const parts: any[] = [{ text }];
 
   if (attachments.length > 0) {
     attachments.forEach(att => {
-      contents.parts.push({
+      parts.push({
         inlineData: {
           mimeType: att.mimeType,
           data: att.data,
@@ -20,11 +20,13 @@ export const buildGoogleContents = (text: string, attachments: MessageAttachment
     });
   }
 
-  return contents;
+  return { role: 'user', parts };
 };
 
 /**
  * Build OpenAI-compatible content payload (string or multimodal array).
+ * Note: OpenAI API only supports image_url for vision. Non-image attachments
+ * (PDF, video, audio, document) are not supported and will be silently dropped.
  */
 export const buildOpenAIContent = (text: string, attachments: MessageAttachment[]) => {
   const imageAttachments = attachments.filter(a => a.type === 'image');

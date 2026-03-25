@@ -1,4 +1,3 @@
-
 import { Type } from "@google/genai";
 import { ModelOption, AnalysisResult, ExpertResult, ReviewResult, MessageAttachment } from '../../types';
 import { cleanJsonString } from '../../utils';
@@ -15,7 +14,8 @@ export const executeManagerAnalysis = async (
   query: string,
   context: string,
   attachments: MessageAttachment[],
-  budget: number
+  budget: number,
+  thinkingLevel: string
 ): Promise<AnalysisResult> => {
   const isGoogle = isGoogleProvider(ai);
   const textPrompt = `Context:\n${context}\n\nCurrent Query: "${query}"`;
@@ -94,7 +94,8 @@ export const executeManagerAnalysis = async (
         responseFormat: 'json_object',
         thinkingConfig: {
           includeThoughts: true,
-          thinkingBudget: budget
+          thinkingBudget: budget,
+          thinkingLevel
         }
       });
 
@@ -118,7 +119,8 @@ export const executeManagerReview = async (
   model: ModelOption,
   query: string,
   currentExperts: ExpertResult[],
-  budget: number
+  budget: number,
+  thinkingLevel: string
 ): Promise<ReviewResult> => {
   const isGoogle = isGoogleProvider(ai);
   const expertOutputs = currentExperts.map(e =>
@@ -184,7 +186,8 @@ export const executeManagerReview = async (
         responseFormat: 'json_object',
         thinkingConfig: {
           includeThoughts: true,
-          thinkingBudget: budget
+          thinkingBudget: budget,
+          thinkingLevel
         }
       });
 

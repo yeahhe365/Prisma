@@ -1,4 +1,3 @@
-
 import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getExpertSystemInstruction, getExpertUserPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
@@ -13,6 +12,7 @@ export const streamExpertResponse = async (
   context: string,
   attachments: MessageAttachment[],
   budget: number,
+  thinkingLevel: string,
   signal: AbortSignal,
   onChunk: (text: string, thought: string) => void
 ): Promise<void> => {
@@ -61,11 +61,12 @@ export const streamExpertResponse = async (
 
     const stream = generateOpenAIStream(ai, {
       model,
-      systemInstruction: getExpertSystemInstruction(expert.role, expert.description, context),
+      systemInstruction: getExpertSystemInstruction(expert.role, expert.description),
       content: contentPayload,
       temperature: expert.temperature,
       thinkingConfig: {
         thinkingBudget: budget,
+        thinkingLevel,
         includeThoughts: true
       }
     });

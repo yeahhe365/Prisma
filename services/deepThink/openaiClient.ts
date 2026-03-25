@@ -1,7 +1,7 @@
-
 import OpenAI from "openai";
 import { ModelOption } from '../../types';
 import { withRetry } from '../utils/retry';
+import { getReasoningEffort } from '../../config';
 
 export interface OpenAIStreamChunk {
   text: string;
@@ -17,8 +17,16 @@ export interface OpenAIConfig {
   thinkingConfig?: {
     includeThoughts: boolean;
     thinkingBudget: number;
+    thinkingLevel?: string;
   };
 }
+
+/** Models that support the reasoning_effort parameter */
+const REASONING_EFFORT_MODELS = /^(o[134]-)/;
+
+const supportsReasoningEffort = (model: string): boolean => {
+  return REASONING_EFFORT_MODELS.test(model);
+};
 
 const parseThinkingTokens = (text: string): { thought: string; text: string } => {
   const thinkPattern = /<thinking>([\s\S]*?)<\/thinking>/g;
@@ -61,6 +69,11 @@ export const generateContent = async (
 
   if (config.responseFormat === 'json_object') {
     requestOptions.response_format = { type: 'json_object' };
+  }
+
+  // Pass reasoning_effort for models that support it (o1/o3/o4 series)
+  if (supportsReasoningEffort(config.model) && config.thinkingConfig?.thinkingLevel) {
+    requestOptions.reasoning_effort = config.thinkingConfig.thinkingLevel;
   }
 
   try {
@@ -109,6 +122,11 @@ export async function* generateContentStream(
     temperature: config.temperature,
     stream: true,
   };
+
+  // Pass reasoning_effort for models that support it
+  if (supportsReasoningEffort(config.model) && config.thinkingConfig?.thinkingLevel) {
+    requestOptions.reasoning_effort = config.thinkingConfig.thinkingLevel;
+  }
 
   const stream = await withRetry(() => ai.chat.completions.create(requestOptions) as any);
 

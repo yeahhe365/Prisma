@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Settings, X } from 'lucide-react';
-import { AppConfig, ModelOption } from './types';
+import { AppConfig, ModelOption, ThinkingLevel } from './types';
 import ModelSection from './components/settings/ModelSection';
 import ThinkingSection from './components/settings/ThinkingSection';
 import GithubSection from './components/settings/GithubSection';
@@ -11,7 +10,10 @@ interface SettingsModalProps {
   onClose: () => void;
   config: AppConfig;
   setConfig: (c: AppConfig) => void;
+  effectiveConfig: AppConfig;
   model: ModelOption;
+  onSetThinkingLevel: (key: 'planningLevel' | 'expertLevel' | 'synthesisLevel', value: ThinkingLevel) => void;
+  onSetRecursiveLoop: (value: boolean) => void;
 }
 
 const SettingsModal = ({ 
@@ -19,7 +21,10 @@ const SettingsModal = ({
   onClose, 
   config, 
   setConfig, 
-  model 
+  effectiveConfig,
+  model,
+  onSetThinkingLevel,
+  onSetRecursiveLoop,
 }: SettingsModalProps) => {
   if (!isOpen) return null;
 
@@ -43,9 +48,11 @@ const SettingsModal = ({
           <ModelSection config={config} setConfig={setConfig} />
 
           <ThinkingSection
-            config={config}
-            setConfig={setConfig}
+            config={effectiveConfig}
+            globalConfig={config}
             model={model}
+            onSetThinkingLevel={onSetThinkingLevel}
+            onSetRecursiveLoop={onSetRecursiveLoop}
           />
 
           <GithubSection isOpen={isOpen} />

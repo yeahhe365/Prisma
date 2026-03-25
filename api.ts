@@ -10,38 +10,24 @@ type AIProviderConfig = {
   baseUrl?: string;
 };
 
-const isDevelopment = import.meta.env?.MODE === 'development' || process.env.NODE_ENV === 'development';
-
-// --- Network Configuration State ---
-
-let activeBaseUrl: string | null = null;
-
-/**
- * Configure the network layer with the current custom API settings.
- */
-export const setNetworkConfig = (baseUrl: string | null) => {
-  activeBaseUrl = baseUrl ? baseUrl.trim() : null;
-
-  if (activeBaseUrl && activeBaseUrl.endsWith('/')) {
-    activeBaseUrl = activeBaseUrl.slice(0, -1);
-  }
-
-  console.log('[Network] Config updated:', { activeBaseUrl });
-};
+// --- Provider Detection ---
 
 export const isGoogleProvider = (ai: any): boolean => {
   return ai?.models?.generateContent !== undefined;
 };
 
-// --- Custom Fetch for SDK-Level URL Rewriting ---
+// --- Custom Fetch (per-instance, not global) ---
 
 /**
- * Creates a custom fetch function that rewrites URLs for:
- * 1. Vite proxy requests (/custom-api → injects X-Target-URL header)
- * 2. Google GenAI SDK requests (googleapis.com → custom base URL)
+ * Creates a custom fetch function scoped to a specific base URL.
+ * Only handles API version prefix deduplication as a safety net.
+ * URL routing is handled by SDK-level options (httpOptions.baseUrl / baseURL).
  */
-const createCustomFetch = (): typeof globalThis.fetch => {
+const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
+  if (!baseUrl) return window.fetch.bind(window);
+
   const nativeFetch = window.fetch.bind(window);
+  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
 
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     let urlString: string;
@@ -53,62 +39,21 @@ const createCustomFetch = (): typeof globalThis.fetch => {
       urlString = input.url;
     }
 
-    // Vite proxy: inject X-Target-URL header
-    if (urlString.includes('/custom-api') && activeBaseUrl) {
-      const headers = new Headers(init?.headers);
-      headers.set('X-Target-URL', activeBaseUrl);
-      return nativeFetch(input, { ...init, headers });
-    }
-
-    // Google GenAI SDK with custom baseUrl: deduplicate API version prefix
-    // When httpOptions.baseUrl includes /v1beta, SDK still appends /v1beta in the path,
-    // resulting in URLs like /v1beta/v1beta/models/... — fix by removing the duplicate
-    if (activeBaseUrl) {
-      const activeHost = (() => { try { return new URL(activeBaseUrl).host; } catch { return null; } })();
-      if (activeHost && urlString.includes(activeHost)) {
-        try {
+    // Safety: deduplicate API version prefix (e.g., /v1beta/v1beta → /v1beta)
+    // Some Google SDK versions may double-append version prefixes when httpOptions.baseUrl includes one
+    if (cleanBaseUrl) {
+      try {
+        const baseHost = new URL(cleanBaseUrl).host;
+        if (baseHost && urlString.includes(baseHost)) {
           const url = new URL(urlString);
-          const basePath = new URL(activeBaseUrl).pathname.replace(/\/$/, '');
-          // Check for duplicated version prefix: /v1beta/v1beta or /v1/v1 etc.
+          const basePath = new URL(cleanBaseUrl).pathname.replace(/\/$/, '');
           const versionPrefix = basePath.match(/\/v\d+(beta|alpha)?$/)?.[0];
           if (versionPrefix && url.pathname.includes(versionPrefix + versionPrefix)) {
             url.pathname = url.pathname.replace(versionPrefix + versionPrefix, versionPrefix);
             return nativeFetch(url.toString(), init);
           }
-        } catch (e) {
-          // ignore parse errors
         }
-      }
-    }
-
-    // Google GenAI SDK: rewrite googleapis.com to custom base URL (fallback for non-httpOptions.baseUrl path)
-    if (urlString.includes('generativelanguage.googleapis.com') && activeBaseUrl) {
-      try {
-        const url = new URL(urlString);
-        const customUrl = new URL(activeBaseUrl);
-
-        url.protocol = customUrl.protocol;
-        url.host = customUrl.host;
-        url.port = customUrl.port;
-
-        // Replace the SDK's /v1beta (or /v1) prefix with the custom base path to avoid duplication
-        const apiVersionMatch = url.pathname.match(/^\/v\d+(beta|alpha)?\//);
-        if (apiVersionMatch && customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
-          const basePath = customUrl.pathname.endsWith('/')
-            ? customUrl.pathname.slice(0, -1)
-            : customUrl.pathname;
-          url.pathname = basePath + url.pathname.slice(apiVersionMatch[0].length - 1);
-        } else if (customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
-          const prefix = customUrl.pathname.endsWith('/')
-            ? customUrl.pathname.slice(0, -1)
-            : customUrl.pathname;
-          url.pathname = prefix + url.pathname;
-        }
-
-        return nativeFetch(url.toString(), init);
-      } catch (e) {
-        console.warn('[Fetch] Failed to rewrite Google URL:', e);
-      }
+      } catch { /* ignore URL parse errors */ }
     }
 
     return nativeFetch(input, init);
@@ -121,18 +66,29 @@ export const findCustomModel = (modelName: string, customModels?: CustomModel[])
   return customModels?.find(m => m.name === modelName);
 };
 
+/**
+ * Detect API provider from model name prefix.
+ * Fallback when customModelConfig is unavailable.
+ */
 export const getAIProvider = (model: string): ApiProvider => {
-  if (model.startsWith('gpt-') || model.startsWith('o1-') || model.startsWith('deepseek-') || model.startsWith('claude-') || model.startsWith('grok-') || model.startsWith('mistral-') || model.startsWith('mixtral-')) return 'openai';
+  const openaiPrefixes = [
+    'gpt-', 'o1-', 'o3-', 'o4-',
+    'deepseek-', 'claude-',
+    'grok-', 'mistral-', 'mixtral-',
+    'qwen-', 'yi-', 'glm-',
+  ];
+  if (openaiPrefixes.some(p => model.startsWith(p))) return 'openai';
   if (model === 'custom') return 'openai';
   return 'google';
 };
 
 // --- API Client Factory ---
 
-export const getAI = (config?: AIProviderConfig): AIClient => {
+export const getAI = (config?: AIProviderConfig): any => {
   const provider = config?.provider || 'google';
   const apiKey = config?.apiKey || import.meta.env?.VITE_API_KEY || process.env.API_KEY;
-  const customFetch = createCustomFetch();
+  const baseUrl = config?.baseUrl || null;
+  const customFetch = createCustomFetch(baseUrl);
 
   // Handle OpenAI-compatible providers
   if (provider === 'openai') {
@@ -140,13 +96,8 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
       apiKey: apiKey,
       dangerouslyAllowBrowser: true,
       fetch: customFetch,
+      baseURL: baseUrl || 'https://api.openai.com/v1',
     };
-
-    if (config?.baseUrl) {
-      options.baseURL = config.baseUrl;
-    } else {
-      options.baseURL = 'https://api.openai.com/v1';
-    }
 
     return new OpenAI(options);
   }
@@ -158,15 +109,14 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
       httpOptions: { fetch: customFetch },
     };
 
-    // If a custom base URL is configured, pass it to the Google SDK
     // Strip trailing API version prefix (e.g. /v1beta) since the SDK adds it automatically
-    if (config?.baseUrl) {
-      let baseUrl = config.baseUrl.replace(/\/+$/, '');
-      const versionMatch = baseUrl.match(/\/(v\d+(?:alpha|beta)?)$/);
+    if (baseUrl) {
+      let cleanUrl = baseUrl.replace(/\/+$/, '');
+      const versionMatch = cleanUrl.match(/\/(v\d+(?:alpha|beta)?)$/);
       if (versionMatch) {
-        baseUrl = baseUrl.slice(0, -versionMatch[0].length);
+        cleanUrl = cleanUrl.slice(0, -versionMatch[0].length);
       }
-      options.httpOptions.baseUrl = baseUrl || 'https://generativelanguage.googleapis.com';
+      options.httpOptions.baseUrl = cleanUrl;
     }
 
     return new GoogleGenAI(options);

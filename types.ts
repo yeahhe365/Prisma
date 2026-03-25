@@ -22,6 +22,14 @@ export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 
 export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
 export type ApiProvider = 'google' | 'openai';
 
+export type ModelPreferences = {
+  planningLevel?: ThinkingLevel;
+  expertLevel?: ThinkingLevel;
+  synthesisLevel?: ThinkingLevel;
+  expertConcurrency?: number;
+  enableRecursiveLoop?: boolean;
+};
+
 export type CustomModel = {
   id: string;
   name: string; // The Actual Model ID (e.g., 'gpt-4o')
@@ -75,6 +83,8 @@ export type AppConfig = {
   customModels?: CustomModel[];
   presetOverrides?: CustomModel[];
   expertConcurrency?: number;
+  /** Per-model preference overrides. Key = model name (e.g. 'glm-5-turbo'). */
+  modelPreferences?: Record<string, ModelPreferences>;
 };
 
 export type MessageAttachment = {

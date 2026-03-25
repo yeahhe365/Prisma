@@ -1,6 +1,7 @@
 /**
  * Retry Utility for API calls
  * Implements exponential backoff with jitter and handles transient errors (429, 5xx).
+ * Respects AbortSignal — if the signal fires during a retry delay, throws immediately.
  */
 
 const getRetryAfterMs = (error: any): number | null => {
@@ -16,10 +17,22 @@ const getRetryAfterMs = (error: any): number | null => {
   return null;
 };
 
+const sleep = (ms: number, signal?: AbortSignal): Promise<void> => {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+  });
+};
+
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 5,
-  initialDelay: number = 2000
+  initialDelay: number = 2000,
+  signal?: AbortSignal
 ): Promise<T> {
   let lastError: any;
   
@@ -28,9 +41,11 @@ export async function withRetry<T>(
       return await fn();
     } catch (error: any) {
       lastError = error;
-      
+
+      // Don't retry on abort
+      if (signal?.aborted || error?.name === 'AbortError') throw error;
+
       const status = error?.status || error?.response?.status;
-      const message = error?.message || "";
       
       const isRateLimit = status === 429;
       const isServerError = status >= 500 && status < 600;
@@ -45,7 +60,7 @@ export async function withRetry<T>(
       // Respect Retry-After header if present
       const retryAfterMs = getRetryAfterMs(error);
       
-      // Exponential backoff with jitter: base * 2^(attempt-1) + random jitter
+      // Exponential backoff with jitter
       const jitter = Math.random() * 1000;
       const delay = retryAfterMs || (initialDelay * Math.pow(2, attempt - 1) + jitter);
       
@@ -54,7 +69,7 @@ export async function withRetry<T>(
         `Status: ${status || 'Network Error'}. Retrying in ${Math.round(delay)}ms...`
       );
       
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await sleep(delay, signal);
     }
   }
 

@@ -1,10 +1,8 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ModelOption, AppConfig, ChatMessage, MessageAttachment } from '../types';
-import { STORAGE_KEYS, DEFAULT_CONFIG, getValidThinkingLevels } from '../config';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { ModelOption, AppConfig, ChatMessage, MessageAttachment, ThinkingLevel } from '../types';
+import { STORAGE_KEYS, DEFAULT_CONFIG, getValidThinkingLevels, getEffectiveConfig, setModelPreference } from '../config';
 import { useDeepThink } from './useDeepThink';
 import { useChatSessions } from './useChatSessions';
-import { setNetworkConfig, findCustomModel } from '../api';
 
 export const useAppLogic = () => {
   // Session Management
@@ -21,7 +19,7 @@ export const useAppLogic = () => {
   // UI State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [focusTrigger, setFocusTrigger] = useState(0); // Trigger for input focus
+  const [focusTrigger, setFocusTrigger] = useState(0);
 
   // Active Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -61,19 +59,11 @@ export const useAppLogic = () => {
     processEndTime
   } = useDeepThink();
 
-  // Network Interceptor Sync
-  useEffect(() => {
-    const customModelConfig = findCustomModel(selectedModel, config.customModels);
-    if (customModelConfig?.baseUrl) {
-      setNetworkConfig(customModelConfig.baseUrl);
-    } else if (config.enableCustomApi && config.customBaseUrl) {
-      setNetworkConfig(config.customBaseUrl);
-    } else {
-      setNetworkConfig(null);
-    }
-    
-    return () => setNetworkConfig(null);
-  }, [selectedModel, config.enableCustomApi, config.customBaseUrl, config.customModels]);
+  // Effective config: per-model preferences override global defaults
+  const effectiveConfig = useMemo(
+    () => getEffectiveConfig(selectedModel, config),
+    [selectedModel, config]
+  );
 
   // Persistence Effects
   useEffect(() => {
@@ -98,26 +88,6 @@ export const useAppLogic = () => {
       localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
     }
   }, [currentSessionId]);
-
-  // Handle Model Constraints
-  useEffect(() => {
-    const validLevels = getValidThinkingLevels(selectedModel);
-    setConfig(prev => {
-      const newPlanning = validLevels.includes(prev.planningLevel) ? prev.planningLevel : 'low';
-      const newExpert = validLevels.includes(prev.expertLevel) ? prev.expertLevel : 'low';
-      const newSynthesis = validLevels.includes(prev.synthesisLevel) ? prev.synthesisLevel : 'high';
-      
-      if (newPlanning !== prev.planningLevel || newExpert !== prev.expertLevel || newSynthesis !== prev.synthesisLevel) {
-        return {
-          ...prev,
-          planningLevel: newPlanning as any,
-          expertLevel: newExpert as any,
-          synthesisLevel: newSynthesis as any,
-        };
-      }
-      return prev;
-    });
-  }, [selectedModel]);
 
   // Sync Messages when switching sessions
   useEffect(() => {
@@ -156,10 +126,19 @@ export const useAppLogic = () => {
       }
 
       resetDeepThink();
-      // Refocus after completion
       setFocusTrigger(prev => prev + 1);
     }
   }, [appState, finalOutput, managerAnalysis, experts, synthesisThoughts, resetDeepThink, processStartTime, processEndTime, currentSessionId, messages, selectedModel, createSession, updateSessionMessages]);
+
+  // Update a per-model thinking setting
+  const handleSetThinkingLevel = useCallback((key: 'planningLevel' | 'expertLevel' | 'synthesisLevel', value: ThinkingLevel) => {
+    setConfig(prev => setModelPreference(prev, selectedModel, { [key]: value }));
+  }, [selectedModel]);
+
+  // Update per-model recursive loop toggle
+  const handleSetRecursiveLoop = useCallback((value: boolean) => {
+    setConfig(prev => setModelPreference(prev, selectedModel, { enableRecursiveLoop: value }));
+  }, [selectedModel]);
 
   const handleRun = useCallback((attachments: MessageAttachment[] = []) => {
     if (!query.trim() && attachments.length === 0) return;
@@ -182,9 +161,9 @@ export const useAppLogic = () => {
       updateSessionMessages(activeSessionId, newMessages);
     }
 
-    runDynamicDeepThink(query, newMessages, selectedModel, config);
+    runDynamicDeepThink(query, newMessages, selectedModel, effectiveConfig);
     setQuery('');
-  }, [query, currentSessionId, selectedModel, config, createSession, updateSessionMessages, runDynamicDeepThink]);
+  }, [query, currentSessionId, selectedModel, effectiveConfig, createSession, updateSessionMessages, runDynamicDeepThink]);
 
   const handleNewChat = useCallback(() => {
     stopDeepThink();
@@ -192,7 +171,7 @@ export const useAppLogic = () => {
     setMessages([]);
     setQuery('');
     resetDeepThink();
-    setFocusTrigger(prev => prev + 1); // Trigger focus
+    setFocusTrigger(prev => prev + 1);
     if (window.innerWidth < 1024) setIsSidebarOpen(false);
   }, [stopDeepThink, setCurrentSessionId, resetDeepThink]);
 
@@ -200,7 +179,7 @@ export const useAppLogic = () => {
     stopDeepThink();
     resetDeepThink();
     setCurrentSessionId(id);
-    setFocusTrigger(prev => prev + 1); // Trigger focus
+    setFocusTrigger(prev => prev + 1);
     if (window.innerWidth < 1024) setIsSidebarOpen(false);
   }, [stopDeepThink, resetDeepThink, setCurrentSessionId]);
 
@@ -222,6 +201,7 @@ export const useAppLogic = () => {
     setSelectedModel,
     config,
     setConfig,
+    effectiveConfig,
     isSidebarOpen,
     setIsSidebarOpen,
     isSettingsOpen,
@@ -237,6 +217,8 @@ export const useAppLogic = () => {
     handleSelectSession,
     handleDeleteSession,
     stopDeepThink,
-    focusTrigger
+    focusTrigger,
+    handleSetThinkingLevel,
+    handleSetRecursiveLoop,
   };
 };

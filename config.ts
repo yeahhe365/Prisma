@@ -1,5 +1,4 @@
-
-import { ModelOption, ThinkingLevel, AppConfig, ApiProvider } from './types';
+import { ModelOption, ThinkingLevel, AppConfig, ApiProvider, ModelPreferences } from './types';
 
 export const MODELS: { value: ModelOption; label: string; desc: string; provider: ApiProvider }[] = [
   {
@@ -33,19 +32,17 @@ export const DEFAULT_CONFIG: AppConfig = {
   expertLevel: 'high',
   synthesisLevel: 'high',
   customApiKey: '',
-  customBaseUrl: 'http://localhost:3000/v1',
-  enableCustomApi: true,
+  customBaseUrl: '',
+  enableCustomApi: false,
   apiProvider: 'openai',
   customModels: [
-    { name: 'glm-5-turbo', displayName: 'GLM-5 Turbo', provider: 'openai' },
-    { name: 'glm-5-turbo-nothinking', displayName: 'GLM-5 Turbo Nothinking', provider: 'openai' },
+    { id: 'custom-glm-5-turbo', name: 'glm-5-turbo', displayName: 'GLM-5 Turbo', provider: 'openai' },
+    { id: 'custom-glm-5-turbo-nothinking', name: 'glm-5-turbo-nothinking', displayName: 'GLM-5 Turbo Nothinking', provider: 'openai' },
   ],
-  presetOverrides: [
-    { id: 'override-gemini-3-flash-preview', name: 'gemini-3-flash-preview', provider: 'google', apiKey: '123456', baseUrl: 'http://localhost:7860/v1beta' },
-    { id: 'override-gemini-3.1-pro-preview', name: 'gemini-3.1-pro-preview', provider: 'google', apiKey: '123456', baseUrl: 'http://localhost:7860/v1beta' },
-  ],
+  presetOverrides: [],
   expertConcurrency: 3,
   enableRecursiveLoop: true,
+  modelPreferences: {},
 };
 
 export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {
@@ -58,19 +55,79 @@ export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {
   return ['minimal', 'low', 'medium', 'high'];
 };
 
+/**
+ * Resolve the effective config for a specific model.
+ * Per-model preferences override global defaults.
+ */
+export const getEffectiveConfig = (model: ModelOption, config: AppConfig): AppConfig => {
+  const prefs = config.modelPreferences?.[model];
+  if (!prefs) return config;
+
+  return {
+    ...config,
+    planningLevel: prefs.planningLevel ?? config.planningLevel,
+    expertLevel: prefs.expertLevel ?? config.expertLevel,
+    synthesisLevel: prefs.synthesisLevel ?? config.synthesisLevel,
+    expertConcurrency: prefs.expertConcurrency ?? config.expertConcurrency,
+    enableRecursiveLoop: prefs.enableRecursiveLoop ?? config.enableRecursiveLoop,
+  };
+};
+
+/**
+ * Update a per-model preference. Returns a new config object.
+ */
+export const setModelPreference = (
+  config: AppConfig,
+  model: string,
+  update: Partial<ModelPreferences>
+): AppConfig => {
+  const existing = config.modelPreferences?.[model] || {};
+  const newPrefs: ModelPreferences = { ...existing, ...update };
+  // Remove undefined values to keep storage clean
+  for (const key of Object.keys(newPrefs) as (keyof ModelPreferences)[]) {
+    if (newPrefs[key] === undefined) delete newPrefs[key];
+  }
+
+  return {
+    ...config,
+    modelPreferences: {
+      ...config.modelPreferences,
+      [model]: Object.keys(newPrefs).length > 0 ? newPrefs : undefined,
+    },
+  };
+};
+
+/**
+ * Get thinking budget for Google Gemini models (controls thinking token allocation).
+ * For OpenAI-compatible models, see getReasoningEffort() instead.
+ */
 export const getThinkingBudget = (level: ThinkingLevel, model: ModelOption): number => {
   const isGeminiPro = model === 'gemini-3.1-pro-preview';
-  const isOpenAIReasoning = model === 'o1-preview' || model === 'o1-mini';
 
   switch (level) {
     case 'minimal': return 0;
     case 'low': return 2048;
     case 'medium': return 8192;
     case 'high':
-      if (isOpenAIReasoning) return 65536;
       if (isGeminiPro) return 32768;
       return 16384;
     default: return 0;
+  }
+};
+
+/**
+ * Map thinking level to OpenAI reasoning_effort parameter.
+ * Supported by: o1/o3/o4-mini series.
+ * Other OpenAI-compatible models (GLM, DeepSeek) handle thinking server-side
+ * and don't support this parameter — they return reasoning_content passively.
+ */
+export const getReasoningEffort = (level: ThinkingLevel): string | undefined => {
+  switch (level) {
+    case 'minimal': return 'low';
+    case 'low': return 'low';
+    case 'medium': return 'medium';
+    case 'high': return 'high';
+    default: return undefined;
   }
 };
 

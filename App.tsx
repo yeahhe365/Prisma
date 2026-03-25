@@ -21,6 +21,7 @@ const App = () => {
     setSelectedModel,
     config,
     setConfig,
+    effectiveConfig,
     isSidebarOpen,
     setIsSidebarOpen,
     isSettingsOpen,
@@ -36,7 +37,9 @@ const App = () => {
     handleSelectSession,
     handleDeleteSession,
     stopDeepThink,
-    focusTrigger
+    focusTrigger,
+    handleSetThinkingLevel,
+    handleSetRecursiveLoop,
   } = useAppLogic();
 
   const { isDark, toggle: toggleDark } = useDarkMode();
@@ -50,7 +53,10 @@ const App = () => {
         onClose={() => setIsSettingsOpen(false)}
         config={config}
         setConfig={setConfig}
+        effectiveConfig={effectiveConfig}
         model={selectedModel}
+        onSetThinkingLevel={handleSetThinkingLevel}
+        onSetRecursiveLoop={handleSetRecursiveLoop}
       />
 
       <Header
