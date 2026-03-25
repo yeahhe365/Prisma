@@ -175,7 +175,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
       )}
 
       {/* Input Container */}
-      <div className="w-full flex items-end p-2 bg-white/70 backdrop-blur-xl border border-slate-200/50 rounded-[26px] shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 transition-colors duration-200">
+      <div className="w-full flex items-end p-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-[26px] shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 dark:focus-within:bg-slate-800/90 transition-colors duration-200">
         
         <input 
           type="file" 
@@ -206,7 +206,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
           placeholder="输入你的问题..."
           rows={1}
           autoFocus
-          className="flex-1 max-h-[200px] py-3 pl-2 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 placeholder:text-slate-400 leading-relaxed custom-scrollbar text-base"
+          className="flex-1 max-h-[200px] py-3 pl-2 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 leading-relaxed custom-scrollbar text-base"
           style={{ minHeight: '48px' }}
         />
 

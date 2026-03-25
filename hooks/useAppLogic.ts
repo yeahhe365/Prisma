@@ -63,19 +63,17 @@ export const useAppLogic = () => {
 
   // Network Interceptor Sync
   useEffect(() => {
-    // Check if current selected model is a custom model with its own baseUrl
     const customModelConfig = findCustomModel(selectedModel, config.customModels);
     if (customModelConfig?.baseUrl) {
-      setNetworkConfig(customModelConfig.baseUrl, customModelConfig.provider || null);
+      setNetworkConfig(customModelConfig.baseUrl);
     } else if (config.enableCustomApi && config.customBaseUrl) {
-      setNetworkConfig(config.customBaseUrl, config.apiProvider || null);
+      setNetworkConfig(config.customBaseUrl);
     } else {
-      setNetworkConfig(null, null);
+      setNetworkConfig(null);
     }
     
-    // Also handle dynamic clean up when component unmounts
-    return () => setNetworkConfig(null, null);
-  }, [selectedModel, config.enableCustomApi, config.customBaseUrl, config.apiProvider, config.customModels]);
+    return () => setNetworkConfig(null);
+  }, [selectedModel, config.enableCustomApi, config.customBaseUrl, config.customModels]);
 
   // Persistence Effects
   useEffect(() => {

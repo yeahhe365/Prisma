@@ -33,14 +33,14 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
   };
 
   return (
-    <div className={`group w-full text-slate-800 ${isUser ? 'bg-blue-50/50' : 'bg-transparent'}`}>
-      <div className="max-w-6xl mx-auto px-4 py-6 flex gap-4 md:gap-6">
+    <div className={`group w-full text-slate-800 dark:text-slate-200 ${isUser ? 'bg-blue-50/50 dark:bg-blue-950/30' : 'bg-transparent'}`}>
+      <div className="max-w-3xl mx-auto px-4 py-6 flex gap-4 md:gap-6">
         {/* Avatar */}
         <div className="flex-shrink-0 flex flex-col relative items-end">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-            isUser 
-              ? 'bg-blue-100 border-blue-200' 
-              : 'bg-white border-blue-100 shadow-sm'
+            isUser
+              ? 'bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800'
+              : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-slate-700 shadow-sm'
           }`}>
             {isUser ? (
               <User size={16} className="text-blue-600" />
@@ -53,16 +53,16 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
         {/* Content */}
         <div className="relative flex-1 overflow-hidden">
           <div className="flex items-center justify-between mb-1">
-            <div className="font-semibold text-sm text-slate-900">
+            <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
               {isUser ? '你' : 'Prisma'}
             </div>
             {!isUser && message.content && (
               <button
                 onClick={handleCopy}
                 className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1.5
-                  ${copied 
-                    ? 'text-emerald-600 bg-emerald-50' 
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 opacity-0 group-hover:opacity-100 focus:opacity-100'
+                  ${copied
+                    ? 'text-emerald-600 bg-emerald-50'
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'
                   }`}
                 title="复制消息"
               >
@@ -80,7 +80,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
 
           {/* User message bubble */}
           {isUser ? (
-            <div className="bg-blue-100/70 border border-blue-200/60 rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="bg-blue-100/70 dark:bg-blue-900/50 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl rounded-tl-sm px-4 py-3">
               {/* Attachments */}
               {message.attachments && message.attachments.length > 0 && (
                 <div className="flex flex-wrap gap-4 mb-3">
@@ -129,7 +129,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                   ))}
                 </div>
               )}
-              <div className="text-slate-800 whitespace-pre-wrap break-words leading-relaxed">{message.content}</div>
+              <div className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words leading-relaxed">{message.content}</div>
               {message.content && (
                 <div className="flex justify-end mt-1">
                   <button
@@ -149,7 +149,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
             <div className="mb-4">
               <button
                 onClick={() => setShowThinking(!showThinking)}
-                className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 transition-colors w-full md:w-auto"
+                className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 transition-colors w-full md:w-auto"
               >
                 <span>
                    {message.isThinking 
@@ -163,7 +163,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
               </button>
 
               {showThinking && (
-                <div className="mt-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
+                <div className="mt-3 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
                    <ProcessFlow 
                       appState={message.isThinking ? 'experts_working' : 'completed'} 
                       managerAnalysis={message.analysis || null}
@@ -228,7 +228,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
           )}
 
           {/* Text Content */}
-          <div className="prose prose-slate max-w-none prose-p:leading-7 prose-pre:bg-slate-900 prose-pre:text-slate-50">
+          <div className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-7 prose-pre:bg-slate-900 prose-pre:text-slate-50">
             {message.content ? (
               message.isThinking ? (
                 <pre className="whitespace-pre-wrap break-words text-slate-700 text-sm">{message.content}</pre>
@@ -242,13 +242,13 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
           
           {/* Internal Monologue (Synthesis Thoughts) - Optional Footer */}
           {message.synthesisThoughts && (
-             <div className="mt-4 pt-4 border-t border-slate-100">
+             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                <details className="group/thoughts">
-                 <summary className="cursor-pointer list-none text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                 <summary className="cursor-pointer list-none text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1">
                    <ChevronRight size={12} className="group-open/thoughts:rotate-90 transition-transform" />
                                       显示内部独白
                  </summary>
-                 <div className="mt-2 text-xs font-mono text-slate-500 bg-slate-50 p-3 rounded border border-slate-100 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                 <div className="mt-2 text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-3 rounded border border-slate-100 dark:border-slate-700 whitespace-pre-wrap max-h-40 overflow-y-auto">
                    {message.synthesisThoughts}
                  </div>
                </details>

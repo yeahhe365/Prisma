@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Zap, Brain, Loader2, CheckCircle2, Clock } from 'lucide-react';
 import { AppState, AnalysisResult, ExpertResult } from '../types';
-import ProcessNode from '../ProcessNode';
-import ExpertCard from '../ExpertCard';
+import ProcessNode from './ProcessNode';
+import ExpertCard from './ExpertCard';
 
 interface ProcessFlowProps {
   appState: AppState;

@@ -18,7 +18,7 @@ export const MODELS: { value: ModelOption; label: string; desc: string; provider
     value: 'custom',
     label: '自定义模型',
     desc: '通过配置自定义基础 URL，使用任何 OpenAI 兼容 API（LM Studio、Ollama、LocalAI 等）。',
-    provider: 'custom'
+    provider: 'openai'
   },
 ];
 
@@ -35,10 +35,14 @@ export const DEFAULT_CONFIG: AppConfig = {
   customApiKey: '',
   customBaseUrl: 'http://localhost:3000/v1',
   enableCustomApi: true,
-  apiProvider: 'custom',
+  apiProvider: 'openai',
   customModels: [
-    { name: 'glm-5-turbo', displayName: 'GLM-5 Turbo', provider: 'custom' },
-    { name: 'glm-5-turbo-thinking', displayName: 'GLM-5 Turbo Thinking', provider: 'custom' },
+    { name: 'glm-5-turbo', displayName: 'GLM-5 Turbo', provider: 'openai' },
+    { name: 'glm-5-turbo-nothinking', displayName: 'GLM-5 Turbo Nothinking', provider: 'openai' },
+  ],
+  presetOverrides: [
+    { id: 'override-gemini-3-flash-preview', name: 'gemini-3-flash-preview', provider: 'google', apiKey: '123456', baseUrl: 'http://localhost:7860/v1beta' },
+    { id: 'override-gemini-3.1-pro-preview', name: 'gemini-3.1-pro-preview', provider: 'google', apiKey: '123456', baseUrl: 'http://localhost:7860/v1beta' },
   ],
   expertConcurrency: 3,
   enableRecursiveLoop: true,

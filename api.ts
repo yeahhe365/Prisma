@@ -10,35 +10,23 @@ type AIProviderConfig = {
   baseUrl?: string;
 };
 
-// External API base URLs for production/default
-const PROVIDER_BASE_URLS: Record<string, string> = {
-  openai: 'https://api.openai.com/v1',
-  deepseek: 'https://api.deepseek.com/v1',
-  anthropic: 'https://api.anthropic.com/v1',
-  xai: 'https://api.x.ai/v1',
-  mistral: 'https://api.mistral.ai/v1',
-  custom: '', // User defined
-};
-
 const isDevelopment = import.meta.env?.MODE === 'development' || process.env.NODE_ENV === 'development';
 
 // --- Network Configuration State ---
 
 let activeBaseUrl: string | null = null;
-let activeProvider: ApiProvider | null = null;
 
 /**
  * Configure the network layer with the current custom API settings.
  */
-export const setNetworkConfig = (baseUrl: string | null, provider: ApiProvider | null = null) => {
+export const setNetworkConfig = (baseUrl: string | null) => {
   activeBaseUrl = baseUrl ? baseUrl.trim() : null;
-  activeProvider = provider;
 
   if (activeBaseUrl && activeBaseUrl.endsWith('/')) {
     activeBaseUrl = activeBaseUrl.slice(0, -1);
   }
 
-  console.log('[Network] Config updated:', { activeBaseUrl, activeProvider });
+  console.log('[Network] Config updated:', { activeBaseUrl });
 };
 
 export const isGoogleProvider = (ai: any): boolean => {
@@ -134,12 +122,8 @@ export const findCustomModel = (modelName: string, customModels?: CustomModel[])
 };
 
 export const getAIProvider = (model: string): ApiProvider => {
-  if (model.startsWith('gpt-') || model.startsWith('o1-')) return 'openai';
-  if (model.startsWith('deepseek-')) return 'deepseek';
-  if (model.startsWith('claude-')) return 'anthropic';
-  if (model.startsWith('grok-')) return 'xai';
-  if (model.startsWith('mistral-') || model.startsWith('mixtral-')) return 'mistral';
-  if (model === 'custom') return 'custom';
+  if (model.startsWith('gpt-') || model.startsWith('o1-') || model.startsWith('deepseek-') || model.startsWith('claude-') || model.startsWith('grok-') || model.startsWith('mistral-') || model.startsWith('mixtral-')) return 'openai';
+  if (model === 'custom') return 'openai';
   return 'google';
 };
 
@@ -151,7 +135,7 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
   const customFetch = createCustomFetch();
 
   // Handle OpenAI-compatible providers
-  if (['openai', 'deepseek', 'custom', 'anthropic', 'xai', 'mistral'].includes(provider)) {
+  if (provider === 'openai') {
     const options: any = {
       apiKey: apiKey,
       dangerouslyAllowBrowser: true,
@@ -161,10 +145,7 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
     if (config?.baseUrl) {
       options.baseURL = config.baseUrl;
     } else {
-      const providerBaseUrl = PROVIDER_BASE_URLS[provider];
-      if (providerBaseUrl) {
-        options.baseURL = providerBaseUrl;
-      }
+      options.baseURL = 'https://api.openai.com/v1';
     }
 
     return new OpenAI(options);

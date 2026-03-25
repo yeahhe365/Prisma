@@ -7,6 +7,11 @@
     <!-- SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='300' cy='300' r='300' fill='white'/%3E%3Cg stroke-width='16' stroke-linecap='round' stroke-linejoin='round' fill='none' stroke='%23334155'%3E%3Cpath d='M300 180 L200 420 L400 420 Z'/%3E%3Cpath d='M300 50 L300 180'/%3E%3Cpath d='M100 480 L200 420'/%3E%3Cpath d='M500 480 L400 420'/%3E%3Cpath d='M300 50 L100 480 L500 480 Z'/%3E%3C/g%3E%3Cg stroke-width='12' stroke-linejoin='round' fill='none'%3E%3Cline x1='0' y1='275' x2='195' y2='275' stroke='%23334155'/%3E%3Cpolyline points='194,270 380,225 600,245' stroke='%232563eb' opacity='0.95'/%3E%3Cpolyline points='194,275 400,275 600,305' stroke='%234ade80' opacity='0.95'/%3E%3Cpolyline points='194,280 420,325 600,370' stroke='%239333ea' opacity='0.95'/%3E%3C/g%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <style>
@@ -14,6 +19,10 @@
         font-family: 'Inter', sans-serif;
         background-color: #f8fafc; /* Slate 50 */
         color: #1e293b; /* Slate 800 */
+      }
+      .dark body {
+        background-color: #020617; /* Slate 950 */
+        color: #e2e8f0; /* Slate 200 */
       }
       .mono {
         font-family: 'JetBrains Mono', monospace;
@@ -24,11 +33,17 @@
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #f1f5f9; 
+        background: #f1f5f9;
+      }
+      .dark ::-webkit-scrollbar-track {
+        background: #0f172a;
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
+        background: #cbd5e1;
         border-radius: 4px;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #334155;
       }
       .prose a {
         color: #2563eb;
@@ -55,7 +70,10 @@
       }
       
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+        background: #94a3b8;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
       }
       
       .animate-pulse-slow {
@@ -95,6 +113,15 @@
       @keyframes pulseSubtle {
         0%, 100% { box-shadow: 0 0 10px rgba(59,130,246,0.08); }
         50% { box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+      }
+
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .animate-fade-in {
+        animation: fadeInUp 0.6s ease-out;
       }
       
       @keyframes flowLine {

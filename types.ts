@@ -10,7 +10,7 @@ export interface GoogleGenAIClient {
 }
 
 export interface OpenAIClient {
-  provider: 'openai' | 'deepseek' | 'anthropic' | 'xai' | 'mistral' | 'custom';
+  provider: 'openai';
   chat: {
     completions: {
       create: (...args: any[]) => Promise<any>;
@@ -20,7 +20,7 @@ export interface OpenAIClient {
 
 export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'custom' | string;
 export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
-export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'xai' | 'mistral' | 'custom';
+export type ApiProvider = 'google' | 'openai';
 
 export type CustomModel = {
   id: string;
@@ -73,6 +73,7 @@ export type AppConfig = {
   enableRecursiveLoop?: boolean;
   apiProvider?: ApiProvider;
   customModels?: CustomModel[];
+  presetOverrides?: CustomModel[];
   expertConcurrency?: number;
 };
 

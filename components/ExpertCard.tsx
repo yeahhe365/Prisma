@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Loader2, CheckCircle2, X, BrainCircuit, MessageSquareText, Thermometer, Timer, Repeat } from 'lucide-react';
-import MarkdownRenderer from './components/MarkdownRenderer';
-import { ExpertResult } from './types';
+import MarkdownRenderer from './MarkdownRenderer';
+import { ExpertResult } from '../types';
 
 // Simple component to format milliseconds to ss.ms or mm:ss
 const TimeDisplay = ({ start, end, status }: { start?: number, end?: number, status: string }) => {

@@ -1,6 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, MessageSquare, Trash2, X, History, Search, Sparkles } from 'lucide-react';
 import { ChatSession } from '../types';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    timerRef.current = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timerRef.current);
+  }, [value, delay]);
+
+  return debounced;
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,15 +34,16 @@ const Sidebar = ({
   onDeleteSession
 }: SidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const debouncedSearch = useDebounce(searchQuery, 250);
+
   const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions;
-    const q = searchQuery.toLowerCase();
-    return sessions.filter(s => 
-      s.title.toLowerCase().includes(q) || 
+    if (!debouncedSearch.trim()) return sessions;
+    const q = debouncedSearch.toLowerCase();
+    return sessions.filter(s =>
+      s.title.toLowerCase().includes(q) ||
       s.messages.some(m => m.content.toLowerCase().includes(q))
     );
-  }, [sessions, searchQuery]);
+  }, [sessions, debouncedSearch]);
 
   const getLastMessage = (session: ChatSession) => {
     const lastMsg = session.messages[session.messages.length - 1];
@@ -50,19 +63,19 @@ const Sidebar = ({
 
       {/* Sidebar Container */}
       <div className={`
-        fixed lg:static inset-y-0 left-0 z-40
-        w-[280px] bg-slate-50 border-r border-slate-200 transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0 lg:overflow-hidden'}
-        flex flex-col h-full
+        fixed inset-y-0 left-0 z-40 lg:static lg:z-auto
+        w-[280px] shrink-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col h-full
+        transition-[margin] duration-300 ease-in-out
+        ${isOpen ? '' : '-ml-[280px]'}
       `}>
         
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2 text-slate-700 font-semibold">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold">
             <History size={18} />
             <span>历史记录</span>
           </div>
-          <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="lg:hidden text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
             <X size={20} />
           </button>
         </div>
@@ -91,7 +104,7 @@ const Sidebar = ({
                 placeholder="搜索对话..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-400 transition-colors"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors text-slate-800 dark:text-slate-200"
               />
             </div>
           </div>
@@ -120,9 +133,9 @@ const Sidebar = ({
                 }}
                 className={`
                   group relative flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all
-                  ${currentSessionId === session.id 
-                    ? 'bg-white shadow-sm border border-slate-200 text-slate-900' 
-                    : 'text-slate-600 hover:bg-slate-100 border border-transparent'}
+                  ${currentSessionId === session.id
+                    ? 'bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}
                 `}
               >
                 <MessageSquare size={16} className={`shrink-0 mt-0.5 ${currentSessionId === session.id ? 'text-blue-500' : 'text-slate-400'}`} />
