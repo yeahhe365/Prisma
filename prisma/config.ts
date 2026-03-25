@@ -9,8 +9,8 @@ export const MODELS: { value: ModelOption; label: string; desc: string; provider
     provider: 'google'
   },
   {
-    value: 'gemini-3-pro-preview',
-    label: 'Gemini 3 Pro',
+    value: 'gemini-3.1-pro-preview',
+    label: 'Gemini 3.1 Pro',
     desc: 'Deep reasoning, complex tasks, higher intelligence.',
     provider: 'google'
   },
@@ -45,8 +45,8 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {
-  if (model === 'gemini-3-pro-preview') {
-    return ['low', 'high'];
+  if (model === 'gemini-3.1-pro-preview') {
+    return ['low', 'medium', 'high'];
   }
   if (model === 'o1-preview' || model === 'o1-mini') {
     return ['low', 'medium', 'high'];
@@ -55,7 +55,7 @@ export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {
 };
 
 export const getThinkingBudget = (level: ThinkingLevel, model: ModelOption): number => {
-  const isGeminiPro = model === 'gemini-3-pro-preview';
+  const isGeminiPro = model === 'gemini-3.1-pro-preview';
   const isOpenAIReasoning = model === 'o1-preview' || model === 'o1-mini';
 
   switch (level) {

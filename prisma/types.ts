@@ -18,7 +18,7 @@ export interface OpenAIClient {
   };
 }
 
-export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3-pro-preview' | 'custom' | string;
+export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'custom' | string;
 export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
 export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'xai' | 'mistral' | 'custom';
 
