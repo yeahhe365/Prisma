@@ -24,7 +24,7 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
           <button
             onClick={onToggleSidebar}
             className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-            title="Toggle History"
+            title="切换历史记录"
           >
             <Menu size={20} />
           </button>
@@ -32,7 +32,7 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
           <div
             className="flex items-center gap-3 cursor-pointer group"
             onClick={onNewChat}
-            title="Start New Chat"
+            title="开始新对话"
           >
             <Logo className="w-8 h-8 transition-transform group-hover:scale-110" />
             <h1 className="font-bold text-lg tracking-tight text-blue-600 group-hover:opacity-70 transition-opacity">
@@ -58,7 +58,7 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
           <button
             onClick={onOpenSettings}
             className="p-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-slate-500 hover:text-slate-900 shadow-sm"
-            title="Configuration"
+            title="设置"
           >
             <Settings size={18} />
           </button>

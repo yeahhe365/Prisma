@@ -54,7 +54,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
         <div className="relative flex-1 overflow-hidden">
           <div className="flex items-center justify-between mb-1">
             <div className="font-semibold text-sm text-slate-900">
-              {isUser ? 'You' : 'Prisma'}
+              {isUser ? '你' : 'Prisma'}
             </div>
             {!isUser && message.content && (
               <button
@@ -64,12 +64,12 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                     ? 'text-emerald-600 bg-emerald-50' 
                     : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 opacity-0 group-hover:opacity-100 focus:opacity-100'
                   }`}
-                title="Copy message"
+                title="复制消息"
               >
                 {copied ? (
                   <>
                     <Check size={14} />
-                    <span className="text-[10px] font-medium uppercase tracking-wider">Copied</span>
+                    <span className="text-[10px] font-medium uppercase tracking-wider">已复制</span>
                   </>
                 ) : (
                   <Copy size={14} />
@@ -137,7 +137,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                     className={`p-1 rounded transition-all flex items-center gap-1 text-[10px]
                       ${copied ? 'text-emerald-600' : 'text-blue-400 hover:text-blue-600'}`}
                   >
-                    {copied ? <><Check size={12} /> Copied</> : <Copy size={12} />}
+                    {copied ? <><Check size={12} /> 已复制</> : <Copy size={12} />}
                   </button>
                 </div>
               )}
@@ -153,10 +153,10 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
               >
                 <span>
                    {message.isThinking 
-                      ? "Thinking..." 
+                      ? "思考中..." 
                       : (message.totalDuration 
-                          ? `Thought for ${(message.totalDuration / 1000).toFixed(1)} seconds` 
-                          : "Reasoning Process")
+                          ? `思考了 ${(message.totalDuration / 1000).toFixed(1)} 秒` 
+                          : "推理过程")
                    }
                 </span>
                 {showThinking ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -217,7 +217,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                          {att.name || (att.type === 'pdf' ? 'document.pdf' : 'file.txt')}
                        </p>
                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                         {att.type === 'pdf' ? 'PDF Document' : 'Text/Code File'}
+                         {att.type === 'pdf' ? 'PDF 文档' : '文本/代码文件'}
                        </p>
                      </div>
                      <Download size={16} className="text-slate-400 group-hover/file:text-slate-600 ml-2" />
@@ -246,7 +246,7 @@ const ChatMessageItem = ({ message, isLast }: ChatMessageItemProps) => {
                <details className="group/thoughts">
                  <summary className="cursor-pointer list-none text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
                    <ChevronRight size={12} className="group-open/thoughts:rotate-90 transition-transform" />
-                   Show Internal Monologue
+                                      显示内部独白
                  </summary>
                  <div className="mt-2 text-xs font-mono text-slate-500 bg-slate-50 p-3 rounded border border-slate-100 whitespace-pre-wrap max-h-40 overflow-y-auto">
                    {message.synthesisThoughts}

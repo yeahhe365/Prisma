@@ -79,7 +79,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
         {/* Node 1: Manager Analysis */}
         <ProcessNode 
           icon={Users} 
-          title="Planning Strategy" 
+          title="规划策略" 
           status={managerStatus}
           isExpanded={isExpanded}
           onToggle={() => setIsExpanded(!isExpanded)}
@@ -102,7 +102,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             ) : (
               <div className="flex items-center gap-3 text-slate-500 text-sm">
                  <Loader2 size={14} className="animate-spin text-blue-500" />
-                 <span>Analyzing request...</span>
+                 <span>分析请求中...</span>
               </div>
             )}
           </div>
@@ -112,7 +112,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
         {hasExperts && (
           <ProcessNode 
             icon={Zap} 
-            title="Expert Execution" 
+            title="专家执行" 
             status={expertsStatus}
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
@@ -130,7 +130,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
         {(isSynthesisActive || isComplete) && (
           <ProcessNode 
             icon={Brain} 
-            title="Final Synthesis" 
+            title="最终综合" 
             status={isSynthesisActive ? 'active' : (isComplete ? 'completed' : 'idle')}
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
@@ -140,12 +140,12 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
               {isSynthesisActive ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin text-purple-600" size={14} />
-                  <span>Synthesizing final answer...</span>
+                  <span>综合最终答案中...</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-emerald-600">
                   <CheckCircle2 size={14} />
-                  <span>Reasoning complete.</span>
+                  <span>推理完成。</span>
                 </div>
               )}
             </div>

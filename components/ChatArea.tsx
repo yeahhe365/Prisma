@@ -7,10 +7,10 @@ import Logo from './Logo';
 import { Code, BookOpen, Lightbulb, BarChart3 } from 'lucide-react';
 
 const SUGGESTIONS = [
-  { icon: Lightbulb, text: 'Explain quantum computing in simple terms', color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  { icon: Code, text: 'Write a sorting algorithm with time complexity analysis', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  { icon: BookOpen, text: 'Summarize the key ideas of systems thinking', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-  { icon: BarChart3, text: 'Compare different machine learning approaches', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  { icon: Lightbulb, text: '用简单的方式解释量子计算', color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  { icon: Code, text: '编写一个排序算法并分析时间复杂度', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  { icon: BookOpen, text: '总结系统思维的核心思想', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+  { icon: BarChart3, text: '比较不同的机器学习方法', color: 'text-purple-600 bg-purple-50 border-purple-200' },
 ];
 
 interface ChatAreaProps {
@@ -49,7 +49,7 @@ const ChatArea = ({
             <Logo className="w-24 h-24 mb-6 drop-shadow-xl animate-pulse-slow" />
             <p className="text-2xl font-bold text-slate-900 tracking-tight">Prisma</p>
             <p className="text-sm text-slate-500 max-w-xs mx-auto mt-2 mb-8">
-              Deep multi-agent reasoning with expert collaboration.
+              多智能体深度推理，专家协同协作。
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
               {SUGGESTIONS.map((s, i) => (

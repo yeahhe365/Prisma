@@ -73,7 +73,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
 
   return (
     <div className="space-y-4 pt-1">
-      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Custom Models</h3>
+      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">自定义模型</h3>
 
       <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
         <div className="space-y-3">
@@ -81,11 +81,11 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                 <Bot size={14} className="text-slate-400" />
-                Model ID (Required)
+                Model ID（必填）
               </label>
               <input
                 type="text"
-                placeholder="e.g., llama-3-8b-instruct"
+                placeholder="例如：llama-3-8b-instruct"
                 value={newModelName}
                 onChange={(e) => setNewModelName(e.target.value)}
                 className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
@@ -95,11 +95,11 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                 <Tag size={14} className="text-slate-400" />
-                Display Name (Optional)
+                Display Name（选填）
               </label>
               <input
                 type="text"
-                placeholder="e.g., Llama 3 (8B)"
+                placeholder="例如：Llama 3 (8B)"
                 value={newDisplayName}
                 onChange={(e) => setNewDisplayName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
@@ -109,13 +109,13 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Provider</label>
+            <label className="text-sm font-medium text-slate-700">提供商</label>
             <select
               value={newModelProvider}
               onChange={(e) => setNewModelProvider(e.target.value as ApiProvider)}
               className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none"
             >
-              <option value="custom">Custom (OpenAI-compatible)</option>
+              <option value="custom">自定义（OpenAI 兼容）</option>
               <option value="openai">OpenAI</option>
               <option value="deepseek">DeepSeek</option>
               <option value="anthropic">Anthropic</option>
@@ -130,7 +130,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                   <Key size={14} className="text-slate-400" />
-                  API Key (optional)
+                  API Key（选填）
                 </label>
                 <input
                   type="password"
@@ -144,7 +144,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                   <Globe size={14} className="text-slate-400" />
-                  Base URL (optional)
+                  Base URL（选填）
                 </label>
                 <input
                   type="text"
@@ -163,14 +163,14 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm"
           >
             <Plus size={16} />
-            Add Model
+            添加模型
           </button>
         </div>
 
         {customModels.length > 0 && (
           <div className="border-t border-slate-200 pt-4">
             <div className="text-xs font-medium text-slate-500 mb-3">
-              Added Models ({customModels.length})
+              已添加模型 ({customModels.length})
             </div>
             <div className="space-y-2">
               {customModels.map((model) => (
@@ -202,7 +202,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                           handleDeleteModel(model.id);
                         }}
                         className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Remove model"
+                        title="移除模型"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -214,7 +214,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
                           <Tag size={10} />
-                          Display Name
+                          显示名称
                         </label>
                         <input
                           type="text"
@@ -227,7 +227,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
                           <Key size={10} />
-                          API Key
+                          API 密钥
                         </label>
                         <input
                           type="password"
@@ -241,7 +241,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
                           <Globe size={10} />
-                          Base URL
+                          基础 URL
                         </label>
                         <input
                           type="text"

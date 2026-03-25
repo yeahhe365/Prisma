@@ -32,7 +32,7 @@ const GithubSection = ({ isOpen }: { isOpen: boolean }) => {
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800">yeahhe365 / Prisma</p>
-            <p className="text-xs text-slate-500">Open source on GitHub</p>
+            <p className="text-xs text-slate-500">GitHub 开源项目</p>
           </div>
         </div>
         

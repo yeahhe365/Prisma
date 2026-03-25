@@ -32,7 +32,7 @@ const SettingsModal = ({
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2">
             <Settings size={18} className="text-blue-600" />
-            <h2 className="font-semibold text-slate-800">Configuration</h2>
+            <h2 className="font-semibold text-slate-800">设置</h2>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors rounded-full p-1 hover:bg-slate-200/50">
             <X size={20} />
@@ -59,7 +59,7 @@ const SettingsModal = ({
             onClick={onClose}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all shadow-md active:scale-95"
           >
-            Done
+            完成
           </button>
         </div>
       </div>

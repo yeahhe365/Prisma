@@ -12,7 +12,7 @@ const ApiSection = ({ config, setConfig }: ApiSectionProps) => {
   return (
     <div className="space-y-4 pt-1">
       <div className="flex items-center justify-between mb-2">
-         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Default API Connection</h3>
+         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">默认 API 连接</h3>
          <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -29,15 +29,15 @@ const ApiSection = ({ config, setConfig }: ApiSectionProps) => {
           <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
             <Info size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-blue-800">
-              <p className="font-medium mb-1">Custom Model Configuration</p>
-              <p>Each custom model can now be configured with its own API key and base URL in the Custom Models section below. This default configuration is used for preset models.</p>
+              <p className="font-medium mb-1">自定义模型配置</p>
+              <p>每个自定义模型可以在下方的"自定义模型"部分配置独立的 API 密钥和基础 URL。此默认配置用于预设模型。</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
               <Key size={14} className="text-slate-400" />
-              Default API Key
+                            默认 API 密钥
             </label>
             <input
               type="password"
@@ -51,7 +51,7 @@ const ApiSection = ({ config, setConfig }: ApiSectionProps) => {
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
               <Globe size={14} className="text-slate-400" />
-              Default Base URL
+                            默认基础 URL
             </label>
             <input
               type="text"

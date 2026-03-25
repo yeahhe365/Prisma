@@ -78,7 +78,7 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
                {round > 1 && (
                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[9px] font-bold uppercase tracking-wider border border-indigo-200">
                     <Repeat size={8} />
-                    Round {round}
+                    第 {round} 轮
                  </div>
                )}
             </div>
@@ -112,14 +112,14 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
             className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition-colors ${view === 'thoughts' ? 'bg-slate-100 text-slate-800 border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
           >
             <BrainCircuit size={12} />
-            Reasoning
+            推理
           </button>
           <button 
             onClick={() => setView('output')}
             className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition-colors ${view === 'output' ? 'bg-white text-slate-800 border-b-2 border-emerald-500' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
           >
             <MessageSquareText size={12} />
-            Output
+            输出
           </button>
         </div>
       )}
@@ -129,7 +129,7 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
         {isPending ? (
            <div className="h-full flex flex-col items-center justify-center text-slate-300">
              <Bot size={32} className="mb-2 opacity-50" />
-             <span className="text-xs italic">Waiting for assignment...</span>
+             <span className="text-xs italic">等待分配任务...</span>
            </div>
         ) : (
           <>
@@ -145,7 +145,7 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
                     />
                   )
                 ) : (
-                  <span className="italic opacity-50 text-[11px]">Initializing thought process...</span>
+                  <span className="italic opacity-50 text-[11px]">初始化思考过程...</span>
                 )}
                 {isWorking && <span className="inline-block w-1.5 h-3 ml-1 bg-blue-400 animate-pulse"/>}
               </div>
@@ -164,7 +164,7 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
                   )
                 ) : (
                   <span className="text-slate-400 italic text-[11px]">
-                    {isWorking ? "Formulating output..." : "No output generated."}
+                    {isWorking ? "生成输出中..." : "未生成输出。"}
                   </span>
                 )}
                  {isWorking && !expert.content && <span className="inline-block w-1.5 h-3 ml-1 bg-emerald-400 animate-pulse"/>}

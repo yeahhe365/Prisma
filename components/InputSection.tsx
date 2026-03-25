@@ -189,7 +189,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
         <button
           onClick={() => fileInputRef.current?.click()}
           className="flex-shrink-0 p-2.5 mb-0.5 ml-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          title="Attach Files (Images, Videos, PDFs, Audio, Code)"
+          title="添加附件（图片、视频、PDF、音频、代码）"
           disabled={isRunning}
         >
           <Paperclip size={20} />
@@ -203,7 +203,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
           onPaste={handlePaste}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
-          placeholder="Ask anything..."
+          placeholder="输入你的问题..."
           rows={1}
           autoFocus
           className="flex-1 max-h-[200px] py-3 pl-2 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 placeholder:text-slate-400 leading-relaxed custom-scrollbar text-base"

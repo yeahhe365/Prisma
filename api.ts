@@ -72,7 +72,28 @@ const createCustomFetch = (): typeof globalThis.fetch => {
       return nativeFetch(input, { ...init, headers });
     }
 
-    // Google GenAI SDK: rewrite googleapis.com to custom base URL
+    // Google GenAI SDK with custom baseUrl: deduplicate API version prefix
+    // When httpOptions.baseUrl includes /v1beta, SDK still appends /v1beta in the path,
+    // resulting in URLs like /v1beta/v1beta/models/... — fix by removing the duplicate
+    if (activeBaseUrl) {
+      const activeHost = (() => { try { return new URL(activeBaseUrl).host; } catch { return null; } })();
+      if (activeHost && urlString.includes(activeHost)) {
+        try {
+          const url = new URL(urlString);
+          const basePath = new URL(activeBaseUrl).pathname.replace(/\/$/, '');
+          // Check for duplicated version prefix: /v1beta/v1beta or /v1/v1 etc.
+          const versionPrefix = basePath.match(/\/v\d+(beta|alpha)?$/)?.[0];
+          if (versionPrefix && url.pathname.includes(versionPrefix + versionPrefix)) {
+            url.pathname = url.pathname.replace(versionPrefix + versionPrefix, versionPrefix);
+            return nativeFetch(url.toString(), init);
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+    }
+
+    // Google GenAI SDK: rewrite googleapis.com to custom base URL (fallback for non-httpOptions.baseUrl path)
     if (urlString.includes('generativelanguage.googleapis.com') && activeBaseUrl) {
       try {
         const url = new URL(urlString);
@@ -82,7 +103,14 @@ const createCustomFetch = (): typeof globalThis.fetch => {
         url.host = customUrl.host;
         url.port = customUrl.port;
 
-        if (customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
+        // Replace the SDK's /v1beta (or /v1) prefix with the custom base path to avoid duplication
+        const apiVersionMatch = url.pathname.match(/^\/v\d+(beta|alpha)?\//);
+        if (apiVersionMatch && customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
+          const basePath = customUrl.pathname.endsWith('/')
+            ? customUrl.pathname.slice(0, -1)
+            : customUrl.pathname;
+          url.pathname = basePath + url.pathname.slice(apiVersionMatch[0].length - 1);
+        } else if (customUrl.pathname !== '/' && customUrl.pathname.length > 1) {
           const prefix = customUrl.pathname.endsWith('/')
             ? customUrl.pathname.slice(0, -1)
             : customUrl.pathname;
@@ -131,18 +159,10 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
     };
 
     if (config?.baseUrl) {
-      if (isDevelopment) {
-        options.baseURL = `${window.location.origin}/custom-api`;
-      } else {
-        options.baseURL = config.baseUrl;
-        console.warn('[API] Using direct custom URL in production. CORS errors may occur.');
-      }
+      options.baseURL = config.baseUrl;
     } else {
       const providerBaseUrl = PROVIDER_BASE_URLS[provider];
-
-      if (isDevelopment && providerBaseUrl) {
-        options.baseURL = `${window.location.origin}/custom-api`;
-      } else if (providerBaseUrl) {
+      if (providerBaseUrl) {
         options.baseURL = providerBaseUrl;
       }
     }
@@ -150,12 +170,23 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
     return new OpenAI(options);
   }
 
-  // Handle Google — pass custom fetch via httpOptions
+  // Handle Google — use httpOptions.baseUrl for custom endpoint support
   else {
     const options: any = {
       apiKey: apiKey,
       httpOptions: { fetch: customFetch },
     };
+
+    // If a custom base URL is configured, pass it to the Google SDK
+    // Strip trailing API version prefix (e.g. /v1beta) since the SDK adds it automatically
+    if (config?.baseUrl) {
+      let baseUrl = config.baseUrl.replace(/\/+$/, '');
+      const versionMatch = baseUrl.match(/\/(v\d+(?:alpha|beta)?)$/);
+      if (versionMatch) {
+        baseUrl = baseUrl.slice(0, -versionMatch[0].length);
+      }
+      options.httpOptions.baseUrl = baseUrl || 'https://generativelanguage.googleapis.com';
+    }
 
     return new GoogleGenAI(options);
   }

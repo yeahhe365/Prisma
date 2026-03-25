@@ -60,7 +60,7 @@ const Sidebar = ({
         <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 text-slate-700 font-semibold">
             <History size={18} />
-            <span>History</span>
+            <span>历史记录</span>
           </div>
           <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-slate-600">
             <X size={20} />
@@ -77,7 +77,7 @@ const Sidebar = ({
             className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white py-2.5 px-4 rounded-lg transition-all shadow-sm font-medium text-sm hover:shadow-md active:shadow-sm"
           >
             <Plus size={16} />
-            New Chat
+            新建对话
           </button>
         </div>
 
@@ -88,7 +88,7 @@ const Sidebar = ({
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search chats..."
+                placeholder="搜索对话..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-400 transition-colors"
@@ -102,13 +102,13 @@ const Sidebar = ({
           {sessions.length === 0 ? (
             <div className="text-center py-10">
               <Sparkles size={28} className="mx-auto mb-3 text-slate-300" />
-              <p className="text-slate-400 text-sm font-medium">No chat history yet</p>
-              <p className="text-slate-300 text-xs mt-1">Start a conversation to see it here</p>
+              <p className="text-slate-400 text-sm font-medium">暂无对话记录</p>
+              <p className="text-slate-300 text-xs mt-1">开始对话后将显示在这里</p>
             </div>
           ) : filteredSessions.length === 0 ? (
             <div className="text-center py-10">
               <Search size={28} className="mx-auto mb-3 text-slate-300" />
-              <p className="text-slate-400 text-sm">No results found</p>
+              <p className="text-slate-400 text-sm">未找到结果</p>
             </div>
           ) : (
             filteredSessions.map((session) => (
@@ -141,7 +141,7 @@ const Sidebar = ({
                 <button
                   onClick={(e) => onDeleteSession(session.id, e)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 text-slate-400 transition-all"
-                  title="Delete Chat"
+                  title="删除对话"
                 >
                   <Trash2 size={14} />
                 </button>

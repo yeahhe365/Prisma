@@ -5,19 +5,19 @@ export const MODELS: { value: ModelOption; label: string; desc: string; provider
   {
     value: 'gemini-3-flash-preview',
     label: 'Gemini 3 Flash',
-    desc: 'Low latency, high throughput, dynamic thinking.',
+    desc: '低延迟，高吞吐，动态思考。',
     provider: 'google'
   },
   {
     value: 'gemini-3.1-pro-preview',
     label: 'Gemini 3.1 Pro',
-    desc: 'Deep reasoning, complex tasks, higher intelligence.',
+    desc: '深度推理，复杂任务，更高智能。',
     provider: 'google'
   },
   {
     value: 'custom',
-    label: 'Custom Model',
-    desc: 'Use any OpenAI-compatible API (LM Studio, Ollama, LocalAI, etc.) by configuring custom base URL.',
+    label: '自定义模型',
+    desc: '通过配置自定义基础 URL，使用任何 OpenAI 兼容 API（LM Studio、Ollama、LocalAI 等）。',
     provider: 'custom'
   },
 ];
@@ -32,7 +32,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   planningLevel: 'high',
   expertLevel: 'high',
   synthesisLevel: 'high',
-  customApiKey: 'sk-ZuxZpSrBi95X9ZtGjTm3XdS3sH702XhvOOc8sZiytHpNRhQT',
+  customApiKey: '',
   customBaseUrl: 'http://localhost:3000/v1',
   enableCustomApi: true,
   apiProvider: 'custom',
@@ -81,7 +81,7 @@ export const getAllModels = (config: AppConfig): { value: ModelOption; label: st
   const customModels = (config.customModels || []).map(m => ({
     value: m.name as ModelOption,
     label: m.displayName || m.name,
-    desc: `Custom ${m.provider} model`,
+    desc: `自定义 ${m.provider} 模型`,
     provider: m.provider
   }));
 

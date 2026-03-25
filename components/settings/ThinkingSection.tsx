@@ -17,15 +17,15 @@ const ThinkingSection = ({ config, setConfig, model }: ThinkingSectionProps) => 
   return (
     <div className="border-t border-slate-100 pt-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Thinking Process</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">思考过程</h3>
       </div>
        
        <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
              <RefreshCw size={16} className="text-indigo-600" />
              <div>
-                <p className="text-sm font-medium text-indigo-900">Recursive Refinement</p>
-                <p className="text-[10px] text-indigo-600/80">Loops expert generation until satisfied.</p>
+                <p className="text-sm font-medium text-indigo-900">递归优化</p>
+                <p className="text-[10px] text-indigo-600/80">循环生成专家输出直到满意为止。</p>
              </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -40,27 +40,27 @@ const ThinkingSection = ({ config, setConfig, model }: ThinkingSectionProps) => 
        </div>
 
       <LevelSelect 
-        label="Manager: Planning Strategy" 
-        value={config.planningLevel} 
+        label="管理者：规划策略"
+        value={config.planningLevel}
         validLevels={validLevels}
         onChange={(v) => setConfig({ ...config, planningLevel: v })}
-        desc="Controls the depth of initial query analysis and expert delegation."
+        desc="控制初始查询分析和专家委派的深度。"
       />
       
       <LevelSelect 
-        label="Experts: Execution Depth" 
-        value={config.expertLevel} 
+        label="专家：执行深度"
+        value={config.expertLevel}
         validLevels={validLevels}
         onChange={(v) => setConfig({ ...config, expertLevel: v })}
-        desc="Determines how deeply each expert persona thinks about their specific task."
+        desc="决定每个专家角色对其特定任务的思考深度。"
       />
       
       <LevelSelect 
-        label="Manager: Final Synthesis" 
-        value={config.synthesisLevel} 
+        label="管理者：最终综合"
+        value={config.synthesisLevel}
         validLevels={validLevels}
         onChange={(v) => setConfig({ ...config, synthesisLevel: v })}
-        desc="Controls the reasoning effort for aggregating results into the final answer."
+        desc="控制将结果汇总为最终答案的推理力度。"
       />
     </div>
   );

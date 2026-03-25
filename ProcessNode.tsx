@@ -44,7 +44,7 @@ const ProcessNode = ({
             <h3 className={`text-sm font-semibold ${isActive ? 'text-blue-900' : (isCompleted ? 'text-slate-800' : 'text-slate-500')}`}>
               {title}
             </h3>
-            {isActive && <p className="text-xs text-blue-600">Processing...</p>}
+            {isActive && <p className="text-xs text-blue-600">处理中...</p>}
           </div>
         </div>
         {children && (

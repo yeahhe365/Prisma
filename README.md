@@ -118,25 +118,54 @@ npm run dev
 ## 📁 项目结构概览
 
 ```bash
-prisma/
+Prisma/
 ├── components/
-│   ├── settings/       # 配置面板 (API, Thinking Levels)
-│   ├── ChatArea.tsx    # 消息流渲染
-│   ├── ProcessFlow.tsx # 核心：推理流程可视化组件
-│   ├── ExpertCard.tsx  # 核心：专家状态卡片
-│   └── ...
+│   ├── settings/        # 配置面板 (API, Thinking Levels, Model, Github)
+│   │   ├── ApiSection.tsx
+│   │   ├── GithubSection.tsx
+│   │   ├── LevelSelect.tsx
+│   │   ├── ModelSection.tsx
+│   │   └── ThinkingSection.tsx
+│   ├── ChatArea.tsx     # 消息流渲染
+│   ├── ChatMessage.tsx  # 单条消息组件
+│   ├── ErrorBoundary.tsx # 错误边界
+│   ├── Header.tsx       # 顶部导航栏
+│   ├── InputSection.tsx # 输入区域
+│   ├── Logo.tsx         # Logo 组件
+│   ├── MarkdownRenderer.tsx # Markdown 渲染
+│   ├── OutputSection.tsx # 推理输出展示
+│   ├── ProcessFlow.tsx  # 核心：推理流程可视化组件
+│   └── Sidebar.tsx      # 侧边栏（会话列表）
 ├── hooks/
-│   ├── useDeepThink.ts # 核心：多智能体编排逻辑 (Manager -> Expert -> Synthesis)
-│   ├── useAppLogic.ts  # 全局状态管理
-│   └── ...
+│   ├── useDeepThink.ts  # 核心：多智能体编排逻辑 (Manager -> Expert -> Synthesis)
+│   ├── useDeepThinkState.ts # 深度思考状态管理
+│   ├── useAppLogic.ts   # 全局状态管理
+│   └── useChatSessions.ts # 聊天会话持久化
 ├── services/
-│   ├── deepThink/      # AI 提示词与业务逻辑
-│   │   ├── manager.ts  # 规划与审查
-│   │   ├── expert.ts   # 专家生成流
-│   │   └── synthesis.ts# 最终综合流
-│   └── utils/          # 重试与错误处理
-├── api.ts              # SDK 初始化与拦截器
-└── config.ts           # 模型参数与预算定义
+│   ├── deepThink/       # AI 提示词与业务逻辑
+│   │   ├── manager.ts   # 规划与审查
+│   │   ├── expert.ts    # 专家生成流
+│   │   ├── synthesis.ts # 最终综合流
+│   │   ├── contentBuilder.ts # 内容构建器
+│   │   ├── openaiClient.ts   # OpenAI 兼容客户端
+│   │   └── prompts.ts  # 提示词模板
+│   ├── storage.ts       # 本地存储服务
+│   └── utils/
+│       └── retry.ts     # 重试与错误处理
+├── api.ts               # SDK 初始化与拦截器
+├── config.ts            # 模型参数与预算定义
+├── types.ts             # TypeScript 类型定义
+├── utils.ts             # 工具函数
+├── App.tsx              # 应用主组件
+├── index.tsx            # 应用入口
+├── index.html           # HTML 模板
+├── index.css            # 全局样式
+├── SettingsModal.tsx    # 设置弹窗
+├── ExpertCard.tsx       # 专家状态卡片
+├── ProcessNode.tsx      # 流程节点组件
+├── metadata.json        # 应用元数据
+├── vite.config.ts       # Vite 构建配置
+└── tsconfig.json        # TypeScript 配置
 ```
 
 ---
