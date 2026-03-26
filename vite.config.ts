@@ -3,6 +3,7 @@ import path from 'path';
 import { Readable } from 'stream';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import type { Connect } from 'vite';
 
 // Allowed API hostnames to prevent SSRF
@@ -142,6 +143,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
         react(),
+        tailwindcss(),
         {
           name: 'custom-api-proxy',
           configureServer(server) {

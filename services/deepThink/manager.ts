@@ -76,7 +76,7 @@ export const executeManagerAnalysis = async (
     }
   } else {
     try {
-      const contentPayload = buildOpenAIContent(textPrompt, attachments) as string | Array<Record<string, string>>;
+      let contentPayload = buildOpenAIContent(textPrompt, attachments) as string | Array<Record<string, string>>;
 
       const jsonInstruction = `\n\nReturn a JSON response with this structure:\n{\n  "thought_process": "...",\n  "experts": [\n    { "role": "...", "description": "...", "temperature": number, "prompt": "..." }\n  ]\n}`;
       
