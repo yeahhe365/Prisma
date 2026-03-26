@@ -10,12 +10,41 @@ export const cleanJsonString = (str: string) => {
     return markdownMatch[1].trim();
   }
 
-  // 2. Try to find the first '{' and the last '}'
+  // 2. Find the first '{' and match its corresponding closing '}' using bracket counting
   const firstOpen = str.indexOf('{');
-  const lastClose = str.lastIndexOf('}');
-  
-  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
-    return str.substring(firstOpen, lastClose + 1);
+  if (firstOpen === -1) return "{}";
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = firstOpen; i < str.length; i++) {
+    const ch = str[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+
+    if (ch === '\\' && inString) {
+      escape = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        return str.substring(firstOpen, i + 1);
+      }
+    }
   }
 
   // 3. Fallback: return original if it looks like JSON, otherwise empty object
