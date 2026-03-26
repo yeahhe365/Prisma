@@ -102,33 +102,54 @@ export const useAppLogic = () => {
     }
   }, [currentSessionId, getSession]);
 
-  // Handle AI Completion
+  // Refs for stable access inside effects
+  const finalOutputRef = useRef(finalOutput);
+  finalOutputRef.current = finalOutput;
+  const managerAnalysisRef = useRef(managerAnalysis);
+  managerAnalysisRef.current = managerAnalysis;
+  const expertsRef = useRef(experts);
+  expertsRef.current = experts;
+  const synthesisThoughtsRef = useRef(synthesisThoughts);
+  synthesisThoughtsRef.current = synthesisThoughts;
+  const processStartTimeRef = useRef(processStartTime);
+  processStartTimeRef.current = processStartTime;
+  const processEndTimeRef = useRef(processEndTime);
+  processEndTimeRef.current = processEndTime;
+  const selectedModelRef = useRef(selectedModel);
+  selectedModelRef.current = selectedModel;
+  const currentSessionIdRef = useRef(currentSessionId);
+  currentSessionIdRef.current = currentSessionId;
+
+  // Handle AI Completion — triggered only by appState
   useEffect(() => {
-    if (appState === 'completed') {
-      const finalizedMessage: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'model',
-        content: finalOutput,
-        analysis: managerAnalysis,
-        experts: experts,
-        synthesisThoughts: synthesisThoughts,
-        isThinking: false,
-        totalDuration: (processStartTime && processEndTime) ? (processEndTime - processStartTime) : undefined
-      };
-      
-      const newMessages = [...messages, finalizedMessage];
-      setMessages(newMessages);
+    if (appState !== 'completed') return;
 
-      if (currentSessionId) {
-        updateSessionMessages(currentSessionId, newMessages);
-      } else {
-        createSession(newMessages, selectedModel);
-      }
+    const finalizedMessage: ChatMessage = {
+      id: `ai-${Date.now()}`,
+      role: 'model',
+      content: finalOutputRef.current,
+      analysis: managerAnalysisRef.current,
+      experts: expertsRef.current,
+      synthesisThoughts: synthesisThoughtsRef.current,
+      isThinking: false,
+      totalDuration: (processStartTimeRef.current && processEndTimeRef.current)
+        ? (processEndTimeRef.current - processStartTimeRef.current)
+        : undefined
+    };
 
-      resetDeepThink();
-      setFocusTrigger(prev => prev + 1);
+    const newMessages = [...messagesRef.current, finalizedMessage];
+    setMessages(newMessages);
+
+    const sid = currentSessionIdRef.current;
+    if (sid) {
+      updateSessionMessages(sid, newMessages);
+    } else {
+      createSession(newMessages, selectedModelRef.current);
     }
-  }, [appState, finalOutput, managerAnalysis, experts, synthesisThoughts, resetDeepThink, processStartTime, processEndTime, currentSessionId, messages, selectedModel, createSession, updateSessionMessages]);
+
+    resetDeepThink();
+    setFocusTrigger(prev => prev + 1);
+  }, [appState, resetDeepThink, createSession, updateSessionMessages]);
 
   // Update a per-model thinking setting
   const handleSetThinkingLevel = useCallback((key: 'planningLevel' | 'expertLevel' | 'synthesisLevel', value: ThinkingLevel) => {
