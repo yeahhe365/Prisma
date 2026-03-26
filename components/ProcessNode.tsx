@@ -29,7 +29,7 @@ const ProcessNode = ({
       ${glow ? 'shadow-[0_0_20px_rgba(59,130,246,0.15)]' : ''}
     `}>
       <div 
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50"
+        className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50"
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
@@ -55,7 +55,7 @@ const ProcessNode = ({
       </div>
       
       {isExpanded && children && (
-        <div className="border-t border-slate-100 bg-slate-50/50 p-4 animate-in slide-in-from-top-2 duration-300">
+        <div className="border-t border-slate-100 bg-slate-50/50 p-5 animate-in slide-in-from-top-2 duration-300">
           {children}
         </div>
       )}

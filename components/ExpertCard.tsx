@@ -60,14 +60,14 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
 
   return (
     <div className={`
-      relative flex flex-col min-h-[200px] max-h-[400px] rounded-xl border transition-all duration-300 shadow-sm overflow-hidden
+      relative flex flex-col min-h-[220px] max-h-[420px] rounded-xl border transition-all duration-300 shadow-sm overflow-hidden
       ${isWorking ? 'border-blue-400 bg-white shadow-[0_0_15px_rgba(59,130,246,0.1)] animate-pulse-subtle' : ''}
       ${isDone ? 'border-emerald-400 bg-white' : ''}
       ${isPending ? 'border-slate-200 bg-slate-50/50' : ''}
       ${isError ? 'border-red-400 bg-red-50' : ''}
     `}>
       {/* Header */}
-      <div className={`p-3 border-b flex items-start gap-3 ${isDone ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
+      <div className={`p-4 border-b flex items-start gap-3 ${isDone ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
         <div className={`mt-0.5 p-1.5 rounded-lg ${isWorking ? 'bg-blue-100 text-blue-600' : (isError ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-600')}`}>
           <Bot size={18} />
         </div>
@@ -125,7 +125,7 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
       )}
       
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-white">
+      <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-white">
         {isPending ? (
            <div className="h-full flex flex-col items-center justify-center text-slate-300">
              <Bot size={32} className="mb-2 opacity-50" />

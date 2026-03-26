@@ -67,12 +67,12 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
   const expertsStatus = anyExpertWorking ? 'active' : (allExpertsDone ? 'completed' : 'idle');
 
   return (
-    <div className="relative space-y-4 pt-8 w-full">
+    <div className="relative space-y-5 pt-8 w-full">
       
       {/* Global Timer Overlay */}
       <GlobalTimer start={processStartTime} end={processEndTime} appState={appState} />
 
-      <div className="relative space-y-2">
+      <div className="relative space-y-3">
         {/* Connector Line */}
         <div className={`absolute left-8 top-2 bottom-2 w-0.5 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'} ${isAnalysisDone || anyExpertWorking ? 'connector-flowing' : 'bg-slate-100'}`} />
 
@@ -118,7 +118,7 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
             onToggle={() => setIsExpanded(!isExpanded)}
             glow={expertsStatus === 'active'}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-3">
               {experts.map((expert) => (
                 <ExpertCard key={expert.id} expert={expert} />
               ))}

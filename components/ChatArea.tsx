@@ -97,7 +97,7 @@ const ChatArea = ({
                   )}
 
                   {/* Active Thinking Process */}
-                  <div className="mb-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+                  <div className="mb-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-xl p-5 shadow-sm">
                     <ProcessFlow 
                       appState={appState} 
                       managerAnalysis={managerAnalysis} 
