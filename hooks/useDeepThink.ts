@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { getAI, getAIProvider, findCustomModel } from '../api';
 import { getThinkingBudget } from '../config';
 import { AppConfig, ModelOption, ExpertResult, ChatMessage, MessageAttachment, AIClient } from '../types';
@@ -9,19 +9,22 @@ import { streamSynthesisResponse } from '../services/deepThink/synthesis';
 import { RequestQueue } from '../services/utils/retry';
 import { useDeepThinkState } from './useDeepThinkState';
 
-// Limit concurrent expert API calls to avoid 429 rate limits
-let expertQueue = new RequestQueue(3);
+function useExpertQueue() {
+  const queueRef = useRef(new RequestQueue(3));
+  const concurrencyRef = useRef(3);
 
-// Update queue concurrency when config changes
-let lastConcurrency = 3;
-const updateQueueConcurrency = (concurrency: number) => {
-  if (concurrency !== lastConcurrency) {
-    lastConcurrency = concurrency;
-    expertQueue = new RequestQueue(concurrency);
-  }
-};
+  const updateConcurrency = useCallback((concurrency: number) => {
+    if (concurrency !== concurrencyRef.current) {
+      concurrencyRef.current = concurrency;
+      queueRef.current = new RequestQueue(concurrency);
+    }
+  }, []);
+
+  return { queueRef, updateConcurrency };
+}
 
 export const useDeepThink = () => {
+  const { queueRef, updateConcurrency: updateQueueConcurrency } = useExpertQueue();
   const {
     appState, setAppState,
     managerAnalysis, setManagerAnalysis,
@@ -195,7 +198,7 @@ export const useDeepThink = () => {
       setAppState('experts_working');
 
       const round1Tasks = round1Experts.map((exp, idx) => 
-        expertQueue.add(() => runExpertLifecycle(exp, idx + 1, ai, model, recentHistory, currentAttachments,
+        queueRef.current.add(() => runExpertLifecycle(exp, idx + 1, ai, model, recentHistory, currentAttachments,
            expertBudget, config.expertLevel, signal))
       );
 
@@ -237,7 +240,7 @@ export const useDeepThink = () => {
                setAppState('experts_working');
 
                const nextRoundTasks = nextRoundExperts.map((exp, idx) => 
-                  expertQueue.add(() => runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
+                  queueRef.current.add(() => runExpertLifecycle(exp, startIndex + idx, ai, model, recentHistory, currentAttachments,
                      expertBudget, config.expertLevel, signal))
                );
 
