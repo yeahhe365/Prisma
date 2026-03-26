@@ -86,7 +86,7 @@ export const getAIProvider = (model: string): ApiProvider => {
 
 export const getAI = (config?: AIProviderConfig): any => {
   const provider = config?.provider || 'google';
-  const apiKey = config?.apiKey || import.meta.env?.VITE_API_KEY || process.env.API_KEY;
+  const apiKey = config?.apiKey || import.meta.env?.VITE_API_KEY;
   const baseUrl = config?.baseUrl || null;
   const customFetch = createCustomFetch(baseUrl);
 

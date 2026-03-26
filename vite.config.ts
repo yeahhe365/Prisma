@@ -5,7 +5,18 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import type { Connect } from 'vite';
 
-// Custom middleware to handle dynamic proxy for /custom-api
+// Allowed API hostnames to prevent SSRF
+const ALLOWED_HOSTS = [
+  'generativelanguage.googleapis.com',
+  'api.openai.com',
+  'api.deepseek.com',
+  'api.anthropic.com',
+  'api.groq.com',
+  'api.mistral.ai',
+  'open.bigmodel.cn',
+  'dashscope.aliyuncs.com',
+];
+
 function customApiProxyMiddleware(): Connect.NextHandleFunction {
   return async (req, res, next) => {
     if (!req.url?.startsWith('/custom-api')) {
@@ -23,7 +34,23 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
     }
 
     try {
-      // 1. Clean up target base URL (remove trailing slash)
+      const url = new URL(targetUrl);
+
+      if (!ALLOWED_HOSTS.includes(url.hostname)) {
+        console.error(`[Custom Proxy] Blocked request to disallowed host: ${url.hostname}`);
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Target host not allowed' }));
+        return;
+      }
+
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+        console.error(`[Custom Proxy] Blocked request with unsupported protocol: ${url.protocol}`);
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Unsupported protocol' }));
+        return;
+      }
+
+      // Clean up target base URL (remove trailing slash)
       let targetBase = targetUrl.trim();
       if (targetBase.endsWith('/')) {
         targetBase = targetBase.slice(0, -1);
@@ -37,10 +64,9 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
         targetPath = '/' + targetPath;
       }
 
-      // 4. Construct full URL
+      // Construct full URL
       const fullUrl = `${targetBase}${targetPath}`;
-      const url = new URL(fullUrl);
-      
+
       console.log(`[Custom Proxy] ${req.method} ${req.url} -> ${fullUrl}`);
 
       // Collect request body
@@ -62,8 +88,8 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
       }
       
       // Explicitly set Host to the target host (crucial for some APIs like OpenAI/Vercel)
-      forwardHeaders['host'] = url.host;
-      forwardHeaders['accept-encoding'] = 'identity'; // Disable compression to simplify relay
+      forwardHeaders['host'] = url.hostname;
+      forwardHeaders['accept-encoding'] = 'identity';
 
       const fetchOptions: RequestInit = {
         method: req.method,
@@ -88,10 +114,11 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
         res.end();
       }
       
-    } catch (error: any) {
-      console.error('[Custom Proxy] Error:', error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Custom Proxy] Error:', message);
       res.statusCode = 502;
-      res.end(JSON.stringify({ error: 'Proxy error', message: error.message }));
+      res.end(JSON.stringify({ error: 'Proxy error', message }));
     }
   };
 }
@@ -122,10 +149,6 @@ export default defineConfig(({ mode }) => {
           },
         },
       ],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
