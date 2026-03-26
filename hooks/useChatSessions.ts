@@ -24,7 +24,7 @@ export const useChatSessions = () => {
   }, [sessions]);
 
   const createSession = useCallback((initialMessages: ChatMessage[], model: ModelOption) => {
-    const newId = Date.now().toString();
+    const newId = crypto.randomUUID();
     const title = initialMessages[0].content.slice(0, 40) + (initialMessages[0].content.length > 40 ? '...' : '');
 
     const newSession: ChatSession = {
