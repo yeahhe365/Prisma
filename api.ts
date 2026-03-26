@@ -12,8 +12,9 @@ type AIProviderConfig = {
 
 // --- Provider Detection ---
 
-export const isGoogleProvider = (ai: any): boolean => {
-  return ai?.models?.generateContent !== undefined;
+export const isGoogleProvider = (ai: AIClient | unknown): ai is GoogleGenAIClient => {
+  return typeof ai === 'object' && ai !== null && 'models' in ai &&
+    typeof (ai as GoogleGenAIClient).models?.generateContent === 'function';
 };
 
 // --- Custom Fetch (per-instance, not global) ---
@@ -84,7 +85,7 @@ export const getAIProvider = (model: string): ApiProvider => {
 
 // --- API Client Factory ---
 
-export const getAI = (config?: AIProviderConfig): any => {
+export const getAI = (config?: AIProviderConfig): AIClient => {
   const provider = config?.provider || 'google';
   const apiKey = config?.apiKey || import.meta.env?.VITE_API_KEY;
   const baseUrl = config?.baseUrl || null;
@@ -92,19 +93,19 @@ export const getAI = (config?: AIProviderConfig): any => {
 
   // Handle OpenAI-compatible providers
   if (provider === 'openai') {
-    const options: any = {
+    const options: ConstructorParameters<typeof OpenAI>[0] = {
       apiKey: apiKey,
       dangerouslyAllowBrowser: true,
       fetch: customFetch,
       baseURL: baseUrl || 'https://api.openai.com/v1',
     };
 
-    return new OpenAI(options);
+    return new OpenAI(options) as unknown as OpenAIClient;
   }
 
   // Handle Google — use httpOptions.baseUrl for custom endpoint support
   else {
-    const options: any = {
+    const options: ConstructorParameters<typeof GoogleGenAI>[0] = {
       apiKey: apiKey,
       httpOptions: { fetch: customFetch },
     };
@@ -116,9 +117,9 @@ export const getAI = (config?: AIProviderConfig): any => {
       if (versionMatch) {
         cleanUrl = cleanUrl.slice(0, -versionMatch[0].length);
       }
-      options.httpOptions.baseUrl = cleanUrl;
+      options.httpOptions!.baseUrl = cleanUrl;
     }
 
-    return new GoogleGenAI(options);
+    return new GoogleGenAI(options) as unknown as GoogleGenAIClient;
   }
 };

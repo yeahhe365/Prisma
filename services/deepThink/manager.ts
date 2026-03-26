@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import { ModelOption, AnalysisResult, ExpertResult, ReviewResult, MessageAttachment } from '../../types';
+import { AIClient, ModelOption, AnalysisResult, ExpertResult, ReviewResult, MessageAttachment } from '../../types';
 import { cleanJsonString } from '../../utils';
 import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
 import { withRetry } from '../utils/retry';
@@ -9,7 +9,7 @@ import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
 import { isGoogleProvider } from '../../api';
 
 export const executeManagerAnalysis = async (
-  ai: any,
+  ai: AIClient,
   model: ModelOption,
   query: string,
   context: string,
@@ -59,7 +59,7 @@ export const executeManagerAnalysis = async (
         }
       }));
 
-      const rawText = (analysisResp as any).text || '{}';
+      const rawText = (analysisResp as { text?: string }).text || '{}';
       const cleanText = cleanJsonString(rawText);
 
       const analysisJson = JSON.parse(cleanText) as AnalysisResult;
@@ -76,7 +76,7 @@ export const executeManagerAnalysis = async (
     }
   } else {
     try {
-      let contentPayload: any = buildOpenAIContent(textPrompt, attachments);
+      const contentPayload = buildOpenAIContent(textPrompt, attachments) as string | Array<Record<string, string>>;
 
       const jsonInstruction = `\n\nReturn a JSON response with this structure:\n{\n  "thought_process": "...",\n  "experts": [\n    { "role": "...", "description": "...", "temperature": number, "prompt": "..." }\n  ]\n}`;
       
@@ -115,7 +115,7 @@ export const executeManagerAnalysis = async (
 };
 
 export const executeManagerReview = async (
-  ai: any,
+  ai: AIClient,
   model: ModelOption,
   query: string,
   currentExperts: ExpertResult[],

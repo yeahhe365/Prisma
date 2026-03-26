@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { getAI, getAIProvider, findCustomModel } from '../api';
 import { getThinkingBudget } from '../config';
-import { AppConfig, ModelOption, ExpertResult, ChatMessage, MessageAttachment } from '../types';
+import { AppConfig, ModelOption, ExpertResult, ChatMessage, MessageAttachment, AIClient } from '../types';
 
 import { executeManagerAnalysis, executeManagerReview } from '../services/deepThink/manager';
 import { streamExpertResponse } from '../services/deepThink/expert';
@@ -44,7 +44,7 @@ export const useDeepThink = () => {
   const runExpertLifecycle = async (
     expert: ExpertResult,
     globalIndex: number,
-    ai: any,
+    ai: AIClient,
     model: ModelOption,
     context: string,
     attachments: MessageAttachment[],
@@ -82,10 +82,10 @@ export const useDeepThink = () => {
       updateExpertAt(globalIndex, { status: 'completed', endTime: Date.now() });
       return expertsDataRef.current[globalIndex];
 
-    } catch (error: any) {
+    } catch (error: unknown) {
        console.error(`Expert ${expert.role} error:`, error);
        if (!signal.aborted) {
-           const errorMessage = error?.message || (typeof error === 'string' ? error : "An unexpected error occurred.");
+           const errorMessage = error instanceof Error ? error.message : (typeof error === 'string' ? error : "An unexpected error occurred.");
            updateExpertAt(globalIndex, { 
              status: 'error', 
              content: `**Error:** ${errorMessage}\n\nPlease check your API Key and connection settings in Configuration.`, 
@@ -271,10 +271,11 @@ export const useDeepThink = () => {
               setSynthesisThoughts(fullFinalThoughts);
           }
         );
-      } catch (synthesisError: any) {
+      } catch (synthesisError: unknown) {
         console.error("Synthesis error:", synthesisError);
         if (!fullFinalText) {
-          setFinalOutput(`## Error in Synthesis\n\n${synthesisError.message || "Failed to aggregate expert responses."}\n\nPlease check your API keys and try again.`);
+          const msg = synthesisError instanceof Error ? synthesisError.message : "Failed to aggregate expert responses.";
+          setFinalOutput(`## Error in Synthesis\n\n${msg}\n\nPlease check your API keys and try again.`);
         }
       }
 
@@ -283,7 +284,7 @@ export const useDeepThink = () => {
         setProcessEndTime(Date.now());
       }
 
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (!signal.aborted) {
         console.error("Global DeepThink Error:", e);
         setAppState('idle');

@@ -1,5 +1,9 @@
 import { MessageAttachment } from '../../types';
 
+interface TextPart { text: string }
+interface InlineDataPart { inlineData: { mimeType: string; data: string } }
+interface ImageUrlPart { type: 'image_url'; image_url: { url: string } }
+
 /**
  * Build Google GenAI SDK contents object with inline data for attachments.
  * Note: For PDFs and other file types, Google recommends using the File API (uploadAsync)
@@ -7,7 +11,7 @@ import { MessageAttachment } from '../../types';
  * which works for small files but may fail for large ones.
  */
 export const buildGoogleContents = (text: string, attachments: MessageAttachment[]) => {
-  const parts: any[] = [{ text }];
+  const parts: Array<TextPart | InlineDataPart> = [{ text }];
 
   if (attachments.length > 0) {
     attachments.forEach(att => {
@@ -20,7 +24,7 @@ export const buildGoogleContents = (text: string, attachments: MessageAttachment
     });
   }
 
-  return { role: 'user', parts };
+  return { role: 'user' as const, parts };
 };
 
 /**
@@ -28,14 +32,14 @@ export const buildGoogleContents = (text: string, attachments: MessageAttachment
  * Note: OpenAI API only supports image_url for vision. Non-image attachments
  * (PDF, video, audio, document) are not supported and will be silently dropped.
  */
-export const buildOpenAIContent = (text: string, attachments: MessageAttachment[]) => {
+export const buildOpenAIContent = (text: string, attachments: MessageAttachment[]): string | Array<TextPart | ImageUrlPart> => {
   const imageAttachments = attachments.filter(a => a.type === 'image');
 
   if (imageAttachments.length === 0) {
     return text;
   }
 
-  const payload: any[] = [{ type: 'text', text }];
+  const payload: Array<TextPart | ImageUrlPart> = [{ type: 'text', text }];
   imageAttachments.forEach(att => {
     payload.push({
       type: 'image_url',

@@ -1,4 +1,4 @@
-import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
+import { AIClient, ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getSynthesisPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
 import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
@@ -6,7 +6,7 @@ import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
 import { isGoogleProvider } from '../../api';
 
 export const streamSynthesisResponse = async (
-  ai: any,
+  ai: AIClient,
   model: ModelOption,
   query: string,
   historyContext: string,
@@ -35,7 +35,7 @@ export const streamSynthesisResponse = async (
     });
 
     try {
-      for await (const chunk of (synthesisStream as any)) {
+      for await (const chunk of synthesisStream) {
         if (signal.aborted) break;
 
         let chunkText = "";
@@ -57,7 +57,7 @@ export const streamSynthesisResponse = async (
       throw streamError;
     }
   } else {
-    let contentPayload: any = buildOpenAIContent(prompt, attachments);
+    const contentPayload = buildOpenAIContent(prompt, attachments) as string | Array<Record<string, string>>;
 
     const stream = generateOpenAIStream(ai, {
       model,
@@ -72,7 +72,7 @@ export const streamSynthesisResponse = async (
     });
 
     try {
-      for await (const chunk of (stream as any)) {
+      for await (const chunk of stream) {
         if (signal.aborted) break;
 
         onChunk(chunk.text, chunk.thought || '');

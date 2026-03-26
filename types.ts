@@ -4,18 +4,41 @@ export type AIClient = GoogleGenAIClient | OpenAIClient;
 export interface GoogleGenAIClient {
   provider: 'google';
   models: {
-    generateContent: (...args: any[]) => Promise<any>;
-    generateContentStream: (...args: any[]) => Promise<any>;
+    generateContent(params: Record<string, unknown>): Promise<GoogleGenAIResponse>;
+    generateContentStream(params: Record<string, unknown>): Promise<AsyncIterable<GoogleGenAIStreamChunk>>;
   };
+}
+
+export interface GoogleGenAIResponse {
+  text: string;
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+}
+
+export interface GoogleGenAIStreamChunk {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
 }
 
 export interface OpenAIClient {
   provider: 'openai';
   chat: {
     completions: {
-      create: (...args: any[]) => Promise<any>;
+      create(params: Record<string, unknown>): Promise<OpenAIChatCompletion>;
     };
   };
+}
+
+export interface OpenAIChatCompletion {
+  choices: Array<{
+    message: {
+      content: string | null;
+      reasoning_content?: string;
+    };
+    delta?: {
+      content?: string | null;
+      reasoning_content?: string;
+    };
+  }>;
+  [key: string]: unknown;
 }
 
 export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'custom' | string;

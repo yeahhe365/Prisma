@@ -4,7 +4,15 @@
  * Respects AbortSignal — if the signal fires during a retry delay, throws immediately.
  */
 
-const getRetryAfterMs = (error: any): number | null => {
+interface ApiErrorLike {
+  status?: number;
+  name?: string;
+  headers?: { get?(name: string): string | null | undefined };
+  response?: { status?: number; headers?: { get?(name: string): string | null | undefined } };
+  message?: string;
+}
+
+const getRetryAfterMs = (error: ApiErrorLike): number | null => {
   // Check Retry-After header from OpenAI SDK errors
   const retryAfter = error?.headers?.get?.('retry-after') || error?.response?.headers?.get?.('retry-after');
   if (retryAfter) {
@@ -34,18 +42,19 @@ export async function withRetry<T>(
   initialDelay: number = 2000,
   signal?: AbortSignal
 ): Promise<T> {
-  let lastError: any;
-  
+  let lastError: unknown;
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
+      const err = error as ApiErrorLike;
 
       // Don't retry on abort
-      if (signal?.aborted || error?.name === 'AbortError') throw error;
+      if (signal?.aborted || err?.name === 'AbortError') throw error;
 
-      const status = error?.status || error?.response?.status;
+      const status = err?.status || err?.response?.status;
       
       const isRateLimit = status === 429;
       const isServerError = status >= 500 && status < 600;
@@ -58,7 +67,7 @@ export async function withRetry<T>(
       }
 
       // Respect Retry-After header if present
-      const retryAfterMs = getRetryAfterMs(error);
+      const retryAfterMs = getRetryAfterMs(err);
       
       // Exponential backoff with jitter
       const jitter = Math.random() * 1000;

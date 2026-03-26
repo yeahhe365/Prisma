@@ -1,4 +1,4 @@
-import { ModelOption, ExpertResult, MessageAttachment } from '../../types';
+import { AIClient, ModelOption, ExpertResult, MessageAttachment } from '../../types';
 import { getExpertSystemInstruction, getExpertUserPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
 import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
@@ -6,7 +6,7 @@ import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
 import { isGoogleProvider } from '../../api';
 
 export const streamExpertResponse = async (
-  ai: any,
+  ai: AIClient,
   model: ModelOption,
   expert: ExpertResult,
   context: string,
@@ -35,7 +35,7 @@ export const streamExpertResponse = async (
     });
 
     try {
-      for await (const chunk of (streamResult as any)) {
+      for await (const chunk of streamResult) {
         if (signal.aborted) break;
 
         let chunkText = "";
@@ -57,7 +57,7 @@ export const streamExpertResponse = async (
       throw streamError;
     }
   } else {
-    let contentPayload: any = buildOpenAIContent(getExpertUserPrompt(expert.prompt, context), attachments);
+    const contentPayload = buildOpenAIContent(getExpertUserPrompt(expert.prompt, context), attachments) as string | Array<Record<string, string>>;
 
     const stream = generateOpenAIStream(ai, {
       model,
@@ -72,7 +72,7 @@ export const streamExpertResponse = async (
     });
 
     try {
-      for await (const chunk of (stream as any)) {
+      for await (const chunk of stream) {
         if (signal.aborted) break;
 
         onChunk(chunk.text, chunk.thought || '');
