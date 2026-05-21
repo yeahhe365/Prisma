@@ -16,7 +16,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.2",
     "lucide-react": "^0.562.0",
-    "openai": "^6.15.0",
+    "openai": "^6.38.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
