@@ -1,4 +1,3 @@
-
 import { ExpertResult } from '../../types';
 
 export const MANAGER_SYSTEM_PROMPT = `You are the "Dynamic Planning Engine". Your goal is to analyze a user query (considering the conversation context) and decompose it into a set of specialized expert personas (2 to 4) who can collaboratively solve specific aspects of the problem.
@@ -41,7 +40,11 @@ export const getExpertUserPrompt = (expertPrompt: string, context: string) => {
   return `Context:\n${context}\n\nTask:\n${expertPrompt}`;
 };
 
-export const getSynthesisPrompt = (recentHistory: string, query: string, expertResults: ExpertResult[]) => {
+export const getSynthesisPrompt = (
+  recentHistory: string,
+  query: string,
+  expertResults: ExpertResult[],
+) => {
   return `
 You are the "Synthesis Engine". 
 
@@ -51,7 +54,7 @@ ${recentHistory}
 Original User Query: "${query}"
 
 Here are the analyses from your expert panel (potentially across multiple rounds of refinement):
-${expertResults.map(e => `--- [Round ${e.round || 1}] Expert: ${e.role} (Temp: ${e.temperature}) ---\n${e.content || "(No output)"}\n`).join('\n')}
+${expertResults.map((e) => `--- [Round ${e.round || 1}] Expert: ${e.role} (Temp: ${e.temperature}) ---\n${e.content || '(No output)'}\n`).join('\n')}
 
 Your Task:
 1. Reflect on the experts' inputs. Identify conflicts, consensus, and evolution of thought across rounds.

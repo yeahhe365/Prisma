@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback } from 'react';
 import { AppState, AnalysisResult, ExpertResult } from '../types';
 
@@ -8,7 +7,7 @@ export const useDeepThinkState = () => {
   const [experts, setExperts] = useState<ExpertResult[]>([]);
   const [finalOutput, setFinalOutput] = useState('');
   const [synthesisThoughts, setSynthesisThoughts] = useState('');
-  
+
   // Timing state
   const [processStartTime, setProcessStartTime] = useState<number | null>(null);
   const [processEndTime, setProcessEndTime] = useState<number | null>(null);
@@ -38,12 +37,15 @@ export const useDeepThinkState = () => {
     setProcessEndTime(Date.now());
   }, []);
 
-  const updateExpertAt = useCallback((index: number, update: Partial<ExpertResult> | ((prev: ExpertResult) => ExpertResult)) => {
-    const current = expertsDataRef.current[index];
-    const next = typeof update === 'function' ? update(current) : { ...current, ...update };
-    expertsDataRef.current[index] = next;
-    setExperts([...expertsDataRef.current]);
-  }, []);
+  const updateExpertAt = useCallback(
+    (index: number, update: Partial<ExpertResult> | ((prev: ExpertResult) => ExpertResult)) => {
+      const current = expertsDataRef.current[index];
+      const next = typeof update === 'function' ? update(current) : { ...current, ...update };
+      expertsDataRef.current[index] = next;
+      setExperts([...expertsDataRef.current]);
+    },
+    [],
+  );
 
   const setInitialExperts = useCallback((initialList: ExpertResult[]) => {
     expertsDataRef.current = initialList;
@@ -56,18 +58,26 @@ export const useDeepThinkState = () => {
   }, []);
 
   return {
-    appState, setAppState,
-    managerAnalysis, setManagerAnalysis,
-    experts, setExperts, expertsDataRef,
-    finalOutput, setFinalOutput,
-    synthesisThoughts, setSynthesisThoughts,
-    processStartTime, setProcessStartTime,
-    processEndTime, setProcessEndTime,
+    appState,
+    setAppState,
+    managerAnalysis,
+    setManagerAnalysis,
+    experts,
+    setExperts,
+    expertsDataRef,
+    finalOutput,
+    setFinalOutput,
+    synthesisThoughts,
+    setSynthesisThoughts,
+    processStartTime,
+    setProcessStartTime,
+    processEndTime,
+    setProcessEndTime,
     abortControllerRef,
     resetDeepThink,
     stopDeepThink,
     updateExpertAt,
     setInitialExperts,
-    appendExperts
+    appendExperts,
   };
 };

@@ -1,6 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
-import OpenAI from "openai";
-import { ApiProvider, CustomModel, AIClient } from './types';
+import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
+import { ApiProvider, CustomModel, AIClient, GoogleGenAIClient, OpenAIClient } from './types';
 
 // --- Configuration & Types ---
 
@@ -10,11 +10,20 @@ type AIProviderConfig = {
   baseUrl?: string;
 };
 
+type ApiEnv = {
+  VITE_API_KEY?: string;
+  GEMINI_API_KEY?: string;
+};
+
 // --- Provider Detection ---
 
 export const isGoogleProvider = (ai: AIClient | unknown): ai is GoogleGenAIClient => {
-  return typeof ai === 'object' && ai !== null && 'models' in ai &&
-    typeof (ai as GoogleGenAIClient).models?.generateContent === 'function';
+  return (
+    typeof ai === 'object' &&
+    ai !== null &&
+    'models' in ai &&
+    typeof (ai as GoogleGenAIClient).models?.generateContent === 'function'
+  );
 };
 
 // --- Custom Fetch (per-instance, not global) ---
@@ -54,7 +63,9 @@ const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
             return nativeFetch(url.toString(), init);
           }
         }
-      } catch { /* ignore URL parse errors */ }
+      } catch {
+        /* ignore URL parse errors */
+      }
     }
 
     return nativeFetch(input, init);
@@ -63,8 +74,18 @@ const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
 
 // --- Helper Functions ---
 
-export const findCustomModel = (modelName: string, customModels?: CustomModel[]): CustomModel | undefined => {
-  return customModels?.find(m => m.name === modelName);
+export const findCustomModel = (
+  modelName: string,
+  customModels?: CustomModel[],
+): CustomModel | undefined => {
+  return customModels?.find((m) => m.name === modelName);
+};
+
+export const resolveApiKey = (
+  explicitApiKey?: string,
+  env: ApiEnv = import.meta.env,
+): string | undefined => {
+  return explicitApiKey || env.VITE_API_KEY || env.GEMINI_API_KEY;
 };
 
 /**
@@ -73,12 +94,20 @@ export const findCustomModel = (modelName: string, customModels?: CustomModel[])
  */
 export const getAIProvider = (model: string): ApiProvider => {
   const openaiPrefixes = [
-    'gpt-', 'o1-', 'o3-', 'o4-',
-    'deepseek-', 'claude-',
-    'grok-', 'mistral-', 'mixtral-',
-    'qwen-', 'yi-', 'glm-',
+    'gpt-',
+    'o1-',
+    'o3-',
+    'o4-',
+    'deepseek-',
+    'claude-',
+    'grok-',
+    'mistral-',
+    'mixtral-',
+    'qwen-',
+    'yi-',
+    'glm-',
   ];
-  if (openaiPrefixes.some(p => model.startsWith(p))) return 'openai';
+  if (openaiPrefixes.some((p) => model.startsWith(p))) return 'openai';
   if (model === 'custom') return 'openai';
   return 'google';
 };
@@ -87,7 +116,7 @@ export const getAIProvider = (model: string): ApiProvider => {
 
 export const getAI = (config?: AIProviderConfig): AIClient => {
   const provider = config?.provider || 'google';
-  const apiKey = config?.apiKey || import.meta.env?.VITE_API_KEY;
+  const apiKey = resolveApiKey(config?.apiKey);
   const baseUrl = config?.baseUrl || null;
   const customFetch = createCustomFetch(baseUrl);
 
@@ -105,9 +134,13 @@ export const getAI = (config?: AIProviderConfig): AIClient => {
 
   // Handle Google — use httpOptions.baseUrl for custom endpoint support
   else {
-    const options: ConstructorParameters<typeof GoogleGenAI>[0] = {
+    const options: ConstructorParameters<typeof GoogleGenAI>[0] & {
+      fetch?: typeof globalThis.fetch;
+      httpOptions: { baseUrl?: string };
+    } = {
       apiKey: apiKey,
-      httpOptions: { fetch: customFetch },
+      fetch: customFetch,
+      httpOptions: {},
     };
 
     // Strip trailing API version prefix (e.g. /v1beta) since the SDK adds it automatically

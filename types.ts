@@ -1,3 +1,4 @@
+import type OpenAI from 'openai';
 
 export type AIClient = GoogleGenAIClient | OpenAIClient;
 
@@ -5,7 +6,9 @@ export interface GoogleGenAIClient {
   provider: 'google';
   models: {
     generateContent(params: Record<string, unknown>): Promise<GoogleGenAIResponse>;
-    generateContentStream(params: Record<string, unknown>): Promise<AsyncIterable<GoogleGenAIStreamChunk>>;
+    generateContentStream(
+      params: Record<string, unknown>,
+    ): Promise<AsyncIterable<GoogleGenAIStreamChunk>>;
   };
 }
 
@@ -18,32 +21,22 @@ export interface GoogleGenAIStreamChunk {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
 }
 
-export interface OpenAIClient {
-  provider: 'openai';
-  chat: {
-    completions: {
-      create(params: Record<string, unknown>): Promise<OpenAIChatCompletion>;
-    };
-  };
-}
+export type OpenAIClient = Pick<OpenAI, 'chat'>;
 
-export interface OpenAIChatCompletion {
-  choices: Array<{
-    message: {
-      content: string | null;
-      reasoning_content?: string;
-    };
-    delta?: {
-      content?: string | null;
-      reasoning_content?: string;
-    };
-  }>;
-  [key: string]: unknown;
-}
+export type OpenAIChatCompletion = OpenAI.Chat.ChatCompletion;
 
-export type ModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'custom' | string;
+export type PresetModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'custom';
+export type CustomModelName = string & { readonly __customModelNameBrand?: never };
+export type ModelOption = PresetModelOption | CustomModelName;
 export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
 export type ApiProvider = 'google' | 'openai';
+
+export type ModelCatalogItem = {
+  value: ModelOption;
+  label: string;
+  desc: string;
+  provider: ApiProvider;
+};
 
 export type ModelPreferences = {
   planningLevel?: ThinkingLevel;
@@ -73,8 +66,8 @@ export type ExpertConfig = {
 export type ExpertResult = ExpertConfig & {
   status: 'pending' | 'thinking' | 'completed' | 'error';
   content?: string;
-  thoughts?: string; 
-  thoughtProcess?: string; 
+  thoughts?: string;
+  thoughtProcess?: string;
   startTime?: number;
   endTime?: number;
   round?: number; // Track which iteration this expert belongs to
@@ -92,17 +85,19 @@ export type ReviewResult = {
   refined_experts?: Omit<ExpertConfig, 'id'>[];
 };
 
-export type AppState = 'idle' | 'analyzing' | 'experts_working' | 'reviewing' | 'synthesizing' | 'completed';
+export type AppState =
+  | 'idle'
+  | 'analyzing'
+  | 'experts_working'
+  | 'reviewing'
+  | 'synthesizing'
+  | 'completed';
 
 export type AppConfig = {
   planningLevel: ThinkingLevel;
   expertLevel: ThinkingLevel;
   synthesisLevel: ThinkingLevel;
-  customApiKey?: string;
-  customBaseUrl?: string;
-  enableCustomApi?: boolean;
   enableRecursiveLoop?: boolean;
-  apiProvider?: ApiProvider;
   customModels?: CustomModel[];
   presetOverrides?: CustomModel[];
   expertConcurrency?: number;

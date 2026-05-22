@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run --coverage",
+    "test:run": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" .",
-    "test": "vitest run"
+    "format": "prettier --write \"*.{ts,tsx,js,json,css,md,html}\" \".prettierrc\" \"components/**/*.{ts,tsx}\" \"hooks/**/*.ts\" \"services/**/*.ts\" \"tests/**/*.{ts,tsx}\" \"docs/**/*.md\""
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
@@ -27,13 +30,18 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.14.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/coverage-v8": "^4.1.7",
     "eslint": "^9.20.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^29.0.2",
     "prettier": "^3.5.3",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.24.0",

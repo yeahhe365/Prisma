@@ -8,16 +8,25 @@ interface ThinkingSectionProps {
   config: AppConfig;
   globalConfig: AppConfig;
   model: ModelOption;
-  onSetThinkingLevel: (key: 'planningLevel' | 'expertLevel' | 'synthesisLevel', value: ThinkingLevel) => void;
+  onSetThinkingLevel: (
+    key: 'planningLevel' | 'expertLevel' | 'synthesisLevel',
+    value: ThinkingLevel,
+  ) => void;
   onSetRecursiveLoop: (value: boolean) => void;
 }
 
-const ThinkingSection = ({ config, globalConfig, model, onSetThinkingLevel, onSetRecursiveLoop }: ThinkingSectionProps) => {
+const ThinkingSection = ({
+  config,
+  globalConfig,
+  model,
+  onSetThinkingLevel,
+  onSetRecursiveLoop,
+}: ThinkingSectionProps) => {
   const validLevels = getValidThinkingLevels(model);
 
   // Find display name for the current model
   const allModels = getAllModels(globalConfig);
-  const modelInfo = allModels.find(m => m.value === model);
+  const modelInfo = allModels.find((m) => m.value === model);
   const modelLabel = modelInfo?.label || model;
 
   return (
@@ -28,43 +37,43 @@ const ThinkingSection = ({ config, globalConfig, model, onSetThinkingLevel, onSe
           {modelLabel}
         </span>
       </div>
-       
-       <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-             <RefreshCw size={16} className="text-indigo-600" />
-             <div>
-                <p className="text-sm font-medium text-indigo-900">递归优化</p>
-                <p className="text-[10px] text-indigo-600/80">循环生成专家输出直到满意为止。</p>
-             </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={config.enableRecursiveLoop ?? false} 
-              onChange={(e) => onSetRecursiveLoop(e.target.checked)} 
-              className="sr-only peer" 
-            />
-            <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-          </label>
-       </div>
 
-      <LevelSelect 
+      <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <RefreshCw size={16} className="text-indigo-600" />
+          <div>
+            <p className="text-sm font-medium text-indigo-900">递归优化</p>
+            <p className="text-[10px] text-indigo-600/80">循环生成专家输出直到满意为止。</p>
+          </div>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={config.enableRecursiveLoop ?? false}
+            onChange={(e) => onSetRecursiveLoop(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+      </div>
+
+      <LevelSelect
         label="管理者：规划策略"
         value={config.planningLevel}
         validLevels={validLevels}
         onChange={(v) => onSetThinkingLevel('planningLevel', v)}
         desc="控制初始查询分析和专家委派的深度。"
       />
-      
-      <LevelSelect 
+
+      <LevelSelect
         label="专家：执行深度"
         value={config.expertLevel}
         validLevels={validLevels}
         onChange={(v) => onSetThinkingLevel('expertLevel', v)}
         desc="决定每个专家角色对其特定任务的思考深度。"
       />
-      
-      <LevelSelect 
+
+      <LevelSelect
         label="管理者：最终综合"
         value={config.synthesisLevel}
         validLevels={validLevels}

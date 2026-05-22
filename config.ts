@@ -1,43 +1,55 @@
-import { ModelOption, ThinkingLevel, AppConfig, ApiProvider, ModelPreferences } from './types';
+import { ModelOption, ThinkingLevel, AppConfig, ApiProvider, ModelPreferences, ModelCatalogItem } from './types';
 
-export const MODELS: { value: ModelOption; label: string; desc: string; provider: ApiProvider }[] = [
+export const DEFAULT_MODEL: ModelOption = 'gemini-3-flash-preview';
+
+export const MODELS: ModelCatalogItem[] = [
   {
     value: 'gemini-3-flash-preview',
     label: 'Gemini 3 Flash',
     desc: '低延迟，高吞吐，动态思考。',
-    provider: 'google'
+    provider: 'google',
   },
   {
     value: 'gemini-3.1-pro-preview',
     label: 'Gemini 3.1 Pro',
     desc: '深度推理，复杂任务，更高智能。',
-    provider: 'google'
+    provider: 'google',
   },
   {
     value: 'custom',
     label: '自定义模型',
     desc: '通过配置自定义基础 URL，使用任何 OpenAI 兼容 API（LM Studio、Ollama、LocalAI 等）。',
-    provider: 'openai'
+    provider: 'openai',
   },
 ];
 
 export const STORAGE_KEYS = {
   SETTINGS: 'prisma-settings',
   MODEL: 'prisma-selected-model',
-  SESSION_ID: 'prisma-active-session-id'
+  SESSION_ID: 'prisma-active-session-id',
+};
+
+export const getInitialSelectedModel = (cachedModel: string | null): ModelOption => {
+  return (cachedModel as ModelOption) || DEFAULT_MODEL;
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
   planningLevel: 'high',
   expertLevel: 'high',
   synthesisLevel: 'high',
-  customApiKey: '',
-  customBaseUrl: '',
-  enableCustomApi: false,
-  apiProvider: 'openai',
   customModels: [
-    { id: 'custom-glm-5-turbo', name: 'glm-5-turbo', displayName: 'GLM-5 Turbo', provider: 'openai' },
-    { id: 'custom-glm-5-turbo-nothinking', name: 'glm-5-turbo-nothinking', displayName: 'GLM-5 Turbo Nothinking', provider: 'openai' },
+    {
+      id: 'custom-glm-5-turbo',
+      name: 'glm-5-turbo',
+      displayName: 'GLM-5 Turbo',
+      provider: 'openai',
+    },
+    {
+      id: 'custom-glm-5-turbo-nothinking',
+      name: 'glm-5-turbo-nothinking',
+      displayName: 'GLM-5 Turbo Nothinking',
+      provider: 'openai',
+    },
   ],
   presetOverrides: [],
   expertConcurrency: 3,
@@ -79,7 +91,7 @@ export const getEffectiveConfig = (model: ModelOption, config: AppConfig): AppCo
 export const setModelPreference = (
   config: AppConfig,
   model: string,
-  update: Partial<ModelPreferences>
+  update: Partial<ModelPreferences>,
 ): AppConfig => {
   const existing = config.modelPreferences?.[model] || {};
   const newPrefs: ModelPreferences = { ...existing, ...update };
@@ -88,12 +100,16 @@ export const setModelPreference = (
     if (newPrefs[key] === undefined) delete newPrefs[key];
   }
 
+  const modelPreferences = { ...config.modelPreferences };
+  if (Object.keys(newPrefs).length > 0) {
+    modelPreferences[model] = newPrefs;
+  } else {
+    delete modelPreferences[model];
+  }
+
   return {
     ...config,
-    modelPreferences: {
-      ...config.modelPreferences,
-      [model]: Object.keys(newPrefs).length > 0 ? newPrefs : undefined,
-    },
+    modelPreferences,
   };
 };
 
@@ -105,13 +121,17 @@ export const getThinkingBudget = (level: ThinkingLevel, model: ModelOption): num
   const isGeminiPro = model === 'gemini-3.1-pro-preview';
 
   switch (level) {
-    case 'minimal': return 0;
-    case 'low': return 2048;
-    case 'medium': return 8192;
+    case 'minimal':
+      return 0;
+    case 'low':
+      return 2048;
+    case 'medium':
+      return 8192;
     case 'high':
       if (isGeminiPro) return 32768;
       return 16384;
-    default: return 0;
+    default:
+      return 0;
   }
 };
 
@@ -123,27 +143,34 @@ export const getThinkingBudget = (level: ThinkingLevel, model: ModelOption): num
  */
 export const getReasoningEffort = (level: ThinkingLevel): string | undefined => {
   switch (level) {
-    case 'minimal': return 'low';
-    case 'low': return 'low';
-    case 'medium': return 'medium';
-    case 'high': return 'high';
-    default: return undefined;
+    case 'minimal':
+      return 'low';
+    case 'low':
+      return 'low';
+    case 'medium':
+      return 'medium';
+    case 'high':
+      return 'high';
+    default:
+      return undefined;
   }
 };
 
 export const getProvider = (model: ModelOption): ApiProvider => {
-  const modelInfo = MODELS.find(m => m.value === model);
+  const modelInfo = MODELS.find((m) => m.value === model);
   return modelInfo?.provider || 'google';
 };
 
-export const getAllModels = (config: AppConfig): { value: ModelOption; label: string; desc: string; provider: ApiProvider }[] => {
-  const presetModels = MODELS.filter(m => m.value !== 'custom');
+export const getAllModels = (
+  config: AppConfig,
+): ModelCatalogItem[] => {
+  const presetModels = MODELS.filter((m) => m.value !== 'custom');
 
-  const customModels = (config.customModels || []).map(m => ({
+  const customModels = (config.customModels || []).map((m) => ({
     value: m.name as ModelOption,
     label: m.displayName || m.name,
     desc: `自定义 ${m.provider} 模型`,
-    provider: m.provider
+    provider: m.provider,
   }));
 
   return [...presetModels, ...customModels];

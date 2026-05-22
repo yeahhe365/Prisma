@@ -14,7 +14,7 @@ export const useDarkMode = () => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
-  const toggle = () => setIsDark(prev => !prev);
+  const toggle = () => setIsDark((prev) => !prev);
 
   return { isDark, toggle };
 };

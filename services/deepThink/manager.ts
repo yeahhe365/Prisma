@@ -1,5 +1,14 @@
-import { Type } from "@google/genai";
-import { AIClient, ModelOption, AnalysisResult, ExpertResult, ReviewResult, MessageAttachment } from '../../types';
+import { Type } from '@google/genai';
+import type OpenAI from 'openai';
+import {
+  AIClient,
+  ModelOption,
+  AnalysisResult,
+  ExpertResult,
+  ReviewResult,
+  MessageAttachment,
+  ThinkingLevel,
+} from '../../types';
 import { cleanJsonString } from '../../utils';
 import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
 import { withRetry } from '../utils/retry';
@@ -15,7 +24,7 @@ export const executeManagerAnalysis = async (
   context: string,
   attachments: MessageAttachment[],
   budget: number,
-  thinkingLevel: string
+  thinkingLevel: ThinkingLevel,
 ): Promise<AnalysisResult> => {
   const isGoogle = isGoogleProvider(ai);
   const textPrompt = `Context:\n${context}\n\nCurrent Query: "${query}"`;
@@ -24,7 +33,10 @@ export const executeManagerAnalysis = async (
     const managerSchema = {
       type: Type.OBJECT,
       properties: {
-        thought_process: { type: Type.STRING, description: "Brief explanation of why these supplementary experts were chosen." },
+        thought_process: {
+          type: Type.STRING,
+          description: 'Brief explanation of why these supplementary experts were chosen.',
+        },
         experts: {
           type: Type.ARRAY,
           items: {
@@ -33,57 +45,63 @@ export const executeManagerAnalysis = async (
               role: { type: Type.STRING },
               description: { type: Type.STRING },
               temperature: { type: Type.NUMBER },
-              prompt: { type: Type.STRING }
+              prompt: { type: Type.STRING },
             },
-            required: ["role", "description", "temperature", "prompt"]
-          }
-        }
+            required: ['role', 'description', 'temperature', 'prompt'],
+          },
+        },
       },
-      required: ["thought_process", "experts"]
+      required: ['thought_process', 'experts'],
     };
 
     const contents = buildGoogleContents(textPrompt, attachments);
 
     try {
-      const analysisResp = await withRetry(() => ai.models.generateContent({
-        model: model,
-        contents: contents,
-        config: {
-          systemInstruction: MANAGER_SYSTEM_PROMPT,
-          responseMimeType: "application/json",
-          responseSchema: managerSchema,
-          thinkingConfig: {
-           includeThoughts: true,
-           thinkingBudget: budget
-        }
-        }
-      }));
+      const analysisResp = await withRetry(() =>
+        ai.models.generateContent({
+          model: model,
+          contents: contents,
+          config: {
+            systemInstruction: MANAGER_SYSTEM_PROMPT,
+            responseMimeType: 'application/json',
+            responseSchema: managerSchema,
+            thinkingConfig: {
+              includeThoughts: true,
+              thinkingBudget: budget,
+            },
+          },
+        }),
+      );
 
       const rawText = (analysisResp as { text?: string }).text || '{}';
       const cleanText = cleanJsonString(rawText);
 
       const analysisJson = JSON.parse(cleanText) as AnalysisResult;
       if (!analysisJson.experts || !Array.isArray(analysisJson.experts)) {
-        throw new Error("Invalid schema structure");
+        throw new Error('Invalid schema structure');
       }
       return analysisJson;
     } catch (e) {
-      console.error("Manager Analysis Error:", e);
+      console.error('Manager Analysis Error:', e);
       return {
-        thought_process: "Direct processing fallback due to analysis error.",
-        experts: []
+        thought_process: 'Direct processing fallback due to analysis error.',
+        experts: [],
       };
     }
   } else {
     try {
-      let contentPayload = buildOpenAIContent(textPrompt, attachments) as string | Array<Record<string, string>>;
+      const { content } = buildOpenAIContent(textPrompt, attachments);
+      let contentPayload = content as string | OpenAI.Chat.ChatCompletionContentPart[];
 
       const jsonInstruction = `\n\nReturn a JSON response with this structure:\n{\n  "thought_process": "...",\n  "experts": [\n    { "role": "...", "description": "...", "temperature": number, "prompt": "..." }\n  ]\n}`;
-      
+
       if (Array.isArray(contentPayload)) {
-         contentPayload[0].text += jsonInstruction;
+        const firstPart = contentPayload[0];
+        if ('text' in firstPart) {
+          firstPart.text += jsonInstruction;
+        }
       } else {
-         contentPayload += jsonInstruction;
+        contentPayload += jsonInstruction;
       }
 
       const response = await generateOpenAIContent(ai, {
@@ -95,20 +113,20 @@ export const executeManagerAnalysis = async (
         thinkingConfig: {
           includeThoughts: true,
           thinkingBudget: budget,
-          thinkingLevel
-        }
+          thinkingLevel,
+        },
       });
 
       const analysisJson = JSON.parse(cleanJsonString(response.text)) as AnalysisResult;
       if (!analysisJson.experts || !Array.isArray(analysisJson.experts)) {
-        throw new Error("Invalid schema structure");
+        throw new Error('Invalid schema structure');
       }
       return analysisJson;
     } catch (e) {
-      console.error("Manager Analysis Error:", e);
+      console.error('Manager Analysis Error:', e);
       return {
-        thought_process: "Direct processing fallback due to analysis error.",
-        experts: []
+        thought_process: 'Direct processing fallback due to analysis error.',
+        experts: [],
       };
     }
   }
@@ -120,61 +138,73 @@ export const executeManagerReview = async (
   query: string,
   currentExperts: ExpertResult[],
   budget: number,
-  thinkingLevel: string
+  thinkingLevel: ThinkingLevel,
 ): Promise<ReviewResult> => {
   const isGoogle = isGoogleProvider(ai);
-  const expertOutputs = currentExperts.map(e =>
-    `--- [Round ${e.round}] Expert: ${e.role} ---\nOutput: ${e.content?.slice(0, 2000)}...`
-  ).join('\n\n');
+  const expertOutputs = currentExperts
+    .map(
+      (e) =>
+        `--- [Round ${e.round}] Expert: ${e.role} ---\nOutput: ${e.content?.slice(0, 2000)}...`,
+    )
+    .join('\n\n');
 
   const content = `User Query: "${query}"\n\nCurrent Expert Outputs:\n${expertOutputs}`;
+  type GenerateContentResponse = { text?: string };
 
   if (isGoogle) {
     const reviewSchema = {
       type: Type.OBJECT,
       properties: {
-        satisfied: { type: Type.BOOLEAN, description: "True if the experts have fully answered the query with high quality." },
-        critique: { type: Type.STRING, description: "If not satisfied, explain why and what is missing." },
-        next_round_strategy: { type: Type.STRING, description: "Plan for the next iteration." },
+        satisfied: {
+          type: Type.BOOLEAN,
+          description: 'True if the experts have fully answered the query with high quality.',
+        },
+        critique: {
+          type: Type.STRING,
+          description: 'If not satisfied, explain why and what is missing.',
+        },
+        next_round_strategy: { type: Type.STRING, description: 'Plan for the next iteration.' },
         refined_experts: {
           type: Type.ARRAY,
-          description: "The list of experts for the next round. Can be the same roles or new ones.",
+          description: 'The list of experts for the next round. Can be the same roles or new ones.',
           items: {
             type: Type.OBJECT,
             properties: {
               role: { type: Type.STRING },
               description: { type: Type.STRING },
               temperature: { type: Type.NUMBER },
-              prompt: { type: Type.STRING }
+              prompt: { type: Type.STRING },
             },
-            required: ["role", "description", "temperature", "prompt"]
-          }
-        }
+            required: ['role', 'description', 'temperature', 'prompt'],
+          },
+        },
       },
-      required: ["satisfied", "critique"]
+      required: ['satisfied', 'critique'],
     };
 
     try {
-      const resp = await withRetry(() => ai.models.generateContent({
-        model: model,
-        contents: content,
-        config: {
-          systemInstruction: MANAGER_REVIEW_SYSTEM_PROMPT,
-          responseMimeType: "application/json",
-          responseSchema: reviewSchema,
-          thinkingConfig: {
-           includeThoughts: true,
-           thinkingBudget: budget
-        }
-        }
-      }));
+      const resp = await withRetry(() =>
+        ai.models.generateContent({
+          model: model,
+          contents: content,
+          config: {
+            systemInstruction: MANAGER_REVIEW_SYSTEM_PROMPT,
+            responseMimeType: 'application/json',
+            responseSchema: reviewSchema,
+            thinkingConfig: {
+              includeThoughts: true,
+              thinkingBudget: budget,
+            },
+          },
+        }),
+      );
 
-      const rawText = (resp as any).text || '{}';
+      const rawText = (resp as GenerateContentResponse).text || '{}';
       const cleanText = cleanJsonString(rawText);
       return JSON.parse(cleanText) as ReviewResult;
     } catch (e) {
-      console.error("Review Error:", e);
-      return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
+      console.error('Review Error:', e);
+      return { satisfied: true, critique: 'Processing Error, proceeding to synthesis.' };
     }
   } else {
     try {
@@ -187,14 +217,14 @@ export const executeManagerReview = async (
         thinkingConfig: {
           includeThoughts: true,
           thinkingBudget: budget,
-          thinkingLevel
-        }
+          thinkingLevel,
+        },
       });
 
       return JSON.parse(cleanJsonString(response.text)) as ReviewResult;
     } catch (e) {
-      console.error("Review Error:", e);
-      return { satisfied: true, critique: "Processing Error, proceeding to synthesis." };
+      console.error('Review Error:', e);
+      return { satisfied: true, critique: 'Processing Error, proceeding to synthesis.' };
     }
   }
 };

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Settings, ChevronDown, Menu, Sun, Moon } from 'lucide-react';
 import { getAllModels } from '../config';
@@ -16,7 +15,16 @@ interface HeaderProps {
   onToggleDark: () => void;
 }
 
-const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSidebar, onNewChat, config, isDark, onToggleDark }: HeaderProps) => {
+const Header = ({
+  selectedModel,
+  setSelectedModel,
+  onOpenSettings,
+  onToggleSidebar,
+  onNewChat,
+  config,
+  isDark,
+  onToggleDark,
+}: HeaderProps) => {
   const availableModels = getAllModels(config);
 
   return (
@@ -50,11 +58,16 @@ const Header = ({ selectedModel, setSelectedModel, onOpenSettings, onToggleSideb
               onChange={(e) => setSelectedModel(e.target.value as ModelOption)}
               className="relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5 outline-none appearance-none cursor-pointer pl-3 pr-8 shadow-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              {availableModels.map(m => (
-                <option key={`${m.provider}-${m.value}`} value={m.value}>{m.label}</option>
+              {availableModels.map((m) => (
+                <option key={`${m.provider}-${m.value}`} value={m.value}>
+                  {m.label}
+                </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-3 text-slate-400 dark:text-slate-500 pointer-events-none group-hover:text-slate-600 transition-colors" size={14} />
+            <ChevronDown
+              className="absolute right-3 top-3 text-slate-400 dark:text-slate-500 pointer-events-none group-hover:text-slate-600 transition-colors"
+              size={14}
+            />
           </div>
 
           <button

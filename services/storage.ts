@@ -32,6 +32,8 @@ export async function getAllSessions<T>(): Promise<T[]> {
     const request = store.getAll();
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error);
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => db.close();
   });
 }
 
@@ -43,6 +45,8 @@ export async function getSession<T>(id: string): Promise<T | undefined> {
     const request = store.get(id);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => db.close();
   });
 }
 
@@ -52,8 +56,14 @@ export async function putSession<T extends { id: string }>(session: T): Promise<
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     store.put(session);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
   });
 }
 
@@ -63,8 +73,14 @@ export async function deleteSession(id: string): Promise<void> {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     store.delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
   });
 }
 
@@ -91,7 +107,8 @@ export async function migrateFromLocalStorage(): Promise<void> {
   const MIGRATION_KEY = 'prisma-sessions-migrated';
   if (localStorage.getItem(MIGRATION_KEY)) return;
 
-  const legacyData = localStorage.getItem('prisma-sessions') || localStorage.getItem('deepthink-sessions');
+  const legacyData =
+    localStorage.getItem('prisma-sessions') || localStorage.getItem('deepthink-sessions');
   if (!legacyData) {
     localStorage.setItem(MIGRATION_KEY, 'true');
     return;
@@ -103,7 +120,6 @@ export async function migrateFromLocalStorage(): Promise<void> {
       for (const session of sessions) {
         await putSession(session);
       }
-      console.log(`[Storage] Migrated ${sessions.length} sessions from localStorage to IndexedDB`);
     }
     localStorage.removeItem('prisma-sessions');
     localStorage.removeItem('deepthink-sessions');

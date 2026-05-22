@@ -1,8 +1,47 @@
 import { MessageAttachment } from '../../types';
 
-interface TextPart { text: string }
-interface InlineDataPart { inlineData: { mimeType: string; data: string } }
-interface ImageUrlPart { type: 'image_url'; image_url: { url: string } }
+interface TextPart {
+  text: string;
+}
+interface InlineDataPart {
+  inlineData: { mimeType: string; data: string };
+}
+export interface OpenAITextPart {
+  type: 'text';
+  text: string;
+}
+export interface OpenAIImageUrlPart {
+  type: 'image_url';
+  image_url: { url: string };
+}
+
+type OpenAIContentPart = OpenAITextPart | OpenAIImageUrlPart;
+type OpenAIUnsupportedAttachment = Extract<MessageAttachment['type'], 'pdf' | 'video' | 'audio'>;
+
+const OPENAI_UNSUPPORTED_ATTACHMENT_TYPES = new Set<OpenAIUnsupportedAttachment>([
+  'pdf',
+  'video',
+  'audio',
+]);
+
+const decodeBase64Text = (data: string): string => {
+  try {
+    const binary = atob(data);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return '';
+  }
+};
+
+const buildAttachmentTextBlock = (attachment: MessageAttachment): string | null => {
+  if (attachment.type !== 'document') return null;
+
+  const decodedText = decodeBase64Text(attachment.data).trim();
+  if (!decodedText) return null;
+
+  return `Attachment: ${attachment.name || 'document'}\n${decodedText}`;
+};
 
 /**
  * Build Google GenAI SDK contents object with inline data for attachments.
@@ -14,7 +53,7 @@ export const buildGoogleContents = (text: string, attachments: MessageAttachment
   const parts: Array<TextPart | InlineDataPart> = [{ text }];
 
   if (attachments.length > 0) {
-    attachments.forEach(att => {
+    attachments.forEach((att) => {
       parts.push({
         inlineData: {
           mimeType: att.mimeType,
@@ -27,20 +66,46 @@ export const buildGoogleContents = (text: string, attachments: MessageAttachment
   return { role: 'user' as const, parts };
 };
 
-/**
- * Build OpenAI-compatible content payload (string or multimodal array).
- * Note: OpenAI API only supports image_url for vision. Non-image attachments
- * (PDF, video, audio, document) are not supported and will be silently dropped.
- */
-export const buildOpenAIContent = (text: string, attachments: MessageAttachment[]): string | Array<TextPart | ImageUrlPart> => {
-  const imageAttachments = attachments.filter(a => a.type === 'image');
+export const getUnsupportedOpenAIAttachments = (
+  attachments: MessageAttachment[],
+): MessageAttachment[] => {
+  return attachments.filter((attachment): attachment is MessageAttachment =>
+    OPENAI_UNSUPPORTED_ATTACHMENT_TYPES.has(attachment.type as OpenAIUnsupportedAttachment),
+  );
+};
 
-  if (imageAttachments.length === 0) {
-    return text;
+/**
+ * Build OpenAI-compatible content payload.
+ * Text/code attachments are converted into additional text parts.
+ * PDF/video/audio attachments are returned separately so the UI can block them.
+ */
+export const buildOpenAIContent = (
+  text: string,
+  attachments: MessageAttachment[],
+): {
+  content: string | OpenAIContentPart[];
+  unsupportedAttachments: MessageAttachment[];
+} => {
+  const imageAttachments = attachments.filter((a) => a.type === 'image');
+  const textAttachments = attachments
+    .map(buildAttachmentTextBlock)
+    .filter((value): value is string => Boolean(value));
+  const unsupportedAttachments = getUnsupportedOpenAIAttachments(attachments);
+
+  if (imageAttachments.length === 0 && textAttachments.length === 0) {
+    return { content: text, unsupportedAttachments };
   }
 
-  const payload: Array<TextPart | ImageUrlPart> = [{ type: 'text', text }];
-  imageAttachments.forEach(att => {
+  const payload: OpenAIContentPart[] = [{ type: 'text', text }];
+
+  textAttachments.forEach((attachmentText) => {
+    payload.push({
+      type: 'text',
+      text: attachmentText,
+    });
+  });
+
+  imageAttachments.forEach((att) => {
     payload.push({
       type: 'image_url',
       image_url: {
@@ -49,5 +114,5 @@ export const buildOpenAIContent = (text: string, attachments: MessageAttachment[
     });
   });
 
-  return payload;
+  return { content: payload, unsupportedAttachments };
 };

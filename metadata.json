@@ -1,8 +1,5 @@
-
 {
   "description": "Prisma - Deep multi-agent reasoning application.",
-  "requestFramePermissions": [
-    "microphone"
-  ],
+  "requestFramePermissions": ["microphone"],
   "name": "Prisma"
 }

@@ -19,7 +19,7 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
 
   return (
     <div className={`flex flex-wrap gap-4 ${isUser ? 'mb-3' : 'mb-4'}`}>
-      {attachments.map(att => (
+      {attachments.map((att) =>
         att.type === 'image' ? (
           <img
             key={att.id}
@@ -28,10 +28,15 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
             className={`h-48 w-48 object-cover rounded-lg border shadow-sm cursor-pointer hover:opacity-90 transition-opacity ${
               isUser ? 'border-blue-200' : 'border-slate-200'
             }`}
-            onClick={() => window.open(att.url || `data:${att.mimeType};base64,${att.data}`, '_blank')}
+            onClick={() =>
+              window.open(att.url || `data:${att.mimeType};base64,${att.data}`, '_blank')
+            }
           />
         ) : att.type === 'video' ? (
-          <div key={att.id} className="relative w-full max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-black group/video">
+          <div
+            key={att.id}
+            className="relative w-full max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-black group/video"
+          >
             <video
               src={att.url || `data:${att.mimeType};base64,${att.data}`}
               controls
@@ -39,9 +44,12 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
             />
           </div>
         ) : att.type === 'audio' ? (
-          <div key={att.id} className={`w-full max-w-sm flex flex-col gap-2 p-3 rounded-xl ${
-            isUser ? 'bg-white/70 border border-blue-100' : 'bg-blue-50 border border-blue-100'
-          }`}>
+          <div
+            key={att.id}
+            className={`w-full max-w-sm flex flex-col gap-2 p-3 rounded-xl ${
+              isUser ? 'bg-white/70 border border-blue-100' : 'bg-blue-50 border border-blue-100'
+            }`}
+          >
             <audio
               src={att.url || `data:${att.mimeType};base64,${att.data}`}
               controls
@@ -58,9 +66,11 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
             }`}
             onClick={() => handleDownloadFile(att)}
           >
-            <div className={`p-2 rounded-lg group-hover/file:scale-110 transition-transform ${
-              att.type === 'pdf' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-            }`}>
+            <div
+              className={`p-2 rounded-lg group-hover/file:scale-110 transition-transform ${
+                att.type === 'pdf' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+              }`}
+            >
               {att.type === 'pdf' ? <FileText size={24} /> : <FileCode size={24} />}
             </div>
             <div className="flex-1 min-w-0">
@@ -75,8 +85,8 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
             </div>
             <Download size={16} className="text-slate-400 group-hover/file:text-slate-600 ml-2" />
           </div>
-        )
-      ))}
+        ),
+      )}
     </div>
   );
 };

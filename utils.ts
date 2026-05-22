@@ -2,7 +2,7 @@
  * Cleans a JSON string that might be wrapped in Markdown code blocks or contain explanatory text.
  */
 export const cleanJsonString = (str: string) => {
-  if (!str) return "{}";
+  if (!str) return '{}';
 
   // 1. Try to find markdown JSON block
   const markdownMatch = str.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -12,7 +12,7 @@ export const cleanJsonString = (str: string) => {
 
   // 2. Find the first '{' and match its corresponding closing '}' using bracket counting
   const firstOpen = str.indexOf('{');
-  if (firstOpen === -1) return "{}";
+  if (firstOpen === -1) return '{}';
 
   let depth = 0;
   let inString = false;
@@ -48,7 +48,7 @@ export const cleanJsonString = (str: string) => {
   }
 
   // 3. Fallback: return original if it looks like JSON, otherwise empty object
-  return str.trim().startsWith('{') ? str : "{}";
+  return str.trim().startsWith('{') ? str : '{}';
 };
 
 export const fileToBase64 = (file: File): Promise<string> => {
@@ -64,6 +64,6 @@ export const fileToBase64 = (file: File): Promise<string> => {
         reject(new Error('Failed to convert file to base64'));
       }
     };
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 };

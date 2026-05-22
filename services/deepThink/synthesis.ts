@@ -1,4 +1,5 @@
-import { AIClient, ModelOption, ExpertResult, MessageAttachment } from '../../types';
+import type OpenAI from 'openai';
+import { AIClient, ModelOption, ExpertResult, MessageAttachment, ThinkingLevel } from '../../types';
 import { getSynthesisPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
 import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
@@ -13,9 +14,9 @@ export const streamSynthesisResponse = async (
   expertResults: ExpertResult[],
   attachments: MessageAttachment[],
   budget: number,
-  thinkingLevel: string,
+  thinkingLevel: ThinkingLevel,
   signal: AbortSignal,
-  onChunk: (text: string, thought: string) => void
+  onChunk: (text: string, thought: string) => void,
 ): Promise<void> => {
   const prompt = getSynthesisPrompt(historyContext, query, expertResults);
   const isGoogle = isGoogleProvider(ai);
@@ -29,22 +30,22 @@ export const streamSynthesisResponse = async (
       config: {
         thinkingConfig: {
           thinkingBudget: budget,
-          includeThoughts: true
-        }
-      }
+          includeThoughts: true,
+        },
+      },
     });
 
     try {
       for await (const chunk of synthesisStream) {
         if (signal.aborted) break;
 
-        let chunkText = "";
-        let chunkThought = "";
+        let chunkText = '';
+        let chunkThought = '';
 
         if (chunk.candidates?.[0]?.content?.parts) {
           for (const part of chunk.candidates[0].content.parts) {
             if (part.thought) {
-              chunkThought += (part.text || "");
+              chunkThought += part.text || '';
             } else if (part.text) {
               chunkText += part.text;
             }
@@ -53,11 +54,12 @@ export const streamSynthesisResponse = async (
         }
       }
     } catch (streamError) {
-      console.error("Synthesis stream interrupted:", streamError);
+      console.error('Synthesis stream interrupted:', streamError);
       throw streamError;
     }
   } else {
-    const contentPayload = buildOpenAIContent(prompt, attachments) as string | Array<Record<string, string>>;
+    const { content } = buildOpenAIContent(prompt, attachments);
+    const contentPayload = content as string | OpenAI.Chat.ChatCompletionContentPart[];
 
     const stream = generateOpenAIStream(ai, {
       model,
@@ -67,8 +69,8 @@ export const streamSynthesisResponse = async (
       thinkingConfig: {
         thinkingBudget: budget,
         thinkingLevel,
-        includeThoughts: true
-      }
+        includeThoughts: true,
+      },
     });
 
     try {
@@ -78,7 +80,7 @@ export const streamSynthesisResponse = async (
         onChunk(chunk.text, chunk.thought || '');
       }
     } catch (streamError) {
-      console.error("Synthesis stream interrupted:", streamError);
+      console.error('Synthesis stream interrupted:', streamError);
       throw streamError;
     }
   }

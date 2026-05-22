@@ -1,23 +1,43 @@
-
 import React, { useRef, useLayoutEffect, useState, useEffect } from 'react';
 import { ArrowUp, Square, Paperclip, X, FileText, Video, Music, FileCode } from 'lucide-react';
 import { AppState, MessageAttachment } from '../types';
 import { fileToBase64 } from '../utils';
 
-interface InputSectionProps {
+interface ChatInputProps {
   query: string;
   setQuery: (q: string) => void;
-  onRun: (attachments: MessageAttachment[]) => void;
+  onRun: (attachments: MessageAttachment[]) => boolean;
   onStop: () => void;
   appState: AppState;
   focusTrigger?: number;
+  inputError?: string | null;
+  onClearInputError?: () => void;
 }
 
-const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }: InputSectionProps) => {
+const ChatInput = ({
+  query,
+  setQuery,
+  onRun,
+  onStop,
+  appState,
+  focusTrigger,
+  inputError,
+  onClearInputError,
+}: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentsRef = useRef<MessageAttachment[]>([]);
   const [isComposing, setIsComposing] = useState(false);
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
+  attachmentsRef.current = attachments;
+
+  const revokeAttachmentUrls = (items: MessageAttachment[]) => {
+    items.forEach((attachment) => {
+      if (attachment.url) {
+        URL.revokeObjectURL(attachment.url);
+      }
+    });
+  };
 
   const adjustHeight = () => {
     if (textareaRef.current) {
@@ -25,7 +45,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
       const scrollHeight = textareaRef.current.scrollHeight;
       const maxHeight = 200;
       textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-      
+
       if (scrollHeight > maxHeight) {
         textareaRef.current.style.overflowY = 'auto';
       } else {
@@ -40,6 +60,12 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
     }
   }, [appState, focusTrigger]);
 
+  useEffect(() => {
+    return () => {
+      revokeAttachmentUrls(attachmentsRef.current);
+    };
+  }, []);
+
   useLayoutEffect(() => {
     adjustHeight();
   }, [query]);
@@ -49,12 +75,15 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
     const isPdf = file.type === 'application/pdf';
     const isVideo = file.type.startsWith('video/');
     const isAudio = file.type.startsWith('audio/');
-    const isText = file.type.startsWith('text/') || 
-                   ['application/json', 'application/javascript', 'application/x-javascript'].includes(file.type) ||
-                   file.name.match(/\.(js|ts|tsx|py|c|cpp|rs|md|csv|json|html|css|go|java|rb|php)$/i);
-    
+    const isText =
+      file.type.startsWith('text/') ||
+      ['application/json', 'application/javascript', 'application/x-javascript'].includes(
+        file.type,
+      ) ||
+      file.name.match(/\.(js|ts|tsx|py|c|cpp|rs|md|csv|json|html|css|go|java|rb|php)$/i);
+
     if (!isImage && !isPdf && !isVideo && !isAudio && !isText) return;
-    
+
     try {
       const base64 = await fileToBase64(file);
       let type: MessageAttachment['type'] = 'document';
@@ -62,18 +91,18 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
       else if (isPdf) type = 'pdf';
       else if (isVideo) type = 'video';
       else if (isAudio) type = 'audio';
-      
+
       const newAttachment: MessageAttachment = {
         id: Math.random().toString(36).substring(7),
         type,
         name: file.name,
         mimeType: file.type || 'application/octet-stream',
         data: base64,
-        url: (isImage || isVideo || isAudio) ? URL.createObjectURL(file) : undefined
+        url: isImage || isVideo || isAudio ? URL.createObjectURL(file) : undefined,
       };
-      setAttachments(prev => [...prev, newAttachment]);
+      setAttachments((prev) => [...prev, newAttachment]);
     } catch (e) {
-      console.error("Failed to process file", e);
+      console.error('Failed to process file', e);
     }
   };
 
@@ -84,6 +113,7 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
         const file = items[i].getAsFile();
         if (file) {
           e.preventDefault();
+          onClearInputError?.();
           processFile(file);
         }
       }
@@ -92,18 +122,24 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      onClearInputError?.();
       Array.from(e.target.files).forEach(processFile);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeAttachment = (id: string) => {
-    setAttachments(prev => prev.filter(a => a.id !== id));
+    onClearInputError?.();
+    setAttachments((prev) => {
+      const removed = prev.filter((a) => a.id === id);
+      revokeAttachmentUrls(removed);
+      return prev.filter((a) => a.id !== id);
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      if (isComposing || (e.nativeEvent as any).isComposing) {
+      if (isComposing || e.nativeEvent.isComposing) {
         return;
       }
       e.preventDefault();
@@ -115,36 +151,49 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
 
   const handleSubmit = () => {
     if (!query.trim() && attachments.length === 0) return;
-    onRun(attachments);
-    setAttachments([]);
+    const didSubmit = onRun(attachments);
+    if (didSubmit) {
+      revokeAttachmentUrls(attachments);
+      setAttachments([]);
+    }
   };
 
   const isRunning = appState !== 'idle';
 
   return (
     <div className="w-full">
+      {inputError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm"
+        >
+          {inputError}
+        </div>
+      )}
+
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="flex gap-3 mb-3 overflow-x-auto px-1 py-1 custom-scrollbar">
-          {attachments.map(att => (
+          {attachments.map((att) => (
             <div key={att.id} className="relative group shrink-0">
               {att.type === 'image' ? (
-                <img 
-                  src={att.url} 
-                  alt="attachment" 
+                <img
+                  src={att.url}
+                  alt="attachment"
                   className="h-16 w-16 object-cover rounded-lg border border-slate-200 shadow-sm"
                 />
               ) : att.type === 'video' ? (
                 <div className="h-16 w-24 bg-slate-900 rounded-lg flex flex-col items-center justify-center p-2 gap-1 shadow-sm overflow-hidden relative">
-                   <Video size={20} className="text-white/50" />
-                   <span className="text-[8px] font-medium text-white/70 truncate w-full text-center px-1">
+                  <Video size={20} className="text-white/50" />
+                  <span className="text-[8px] font-medium text-white/70 truncate w-full text-center px-1">
                     {att.name || 'video.mp4'}
                   </span>
                 </div>
               ) : att.type === 'audio' ? (
                 <div className="h-16 w-24 bg-blue-50 border border-blue-100 rounded-lg flex flex-col items-center justify-center p-2 gap-1 shadow-sm">
-                   <Music size={20} className="text-blue-500" />
-                   <span className="text-[8px] font-medium text-slate-600 truncate w-full text-center px-1">
+                  <Music size={20} className="text-blue-500" />
+                  <span className="text-[8px] font-medium text-slate-600 truncate w-full text-center px-1">
                     {att.name || 'audio.mp3'}
                   </span>
                 </div>
@@ -176,12 +225,11 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
 
       {/* Input Container */}
       <div className="w-full flex items-end p-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-[26px] shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 dark:focus-within:bg-slate-800/90 transition-colors duration-200">
-        
-        <input 
-          type="file" 
+        <input
+          type="file"
           ref={fileInputRef}
-          className="hidden" 
-          accept="image/*,application/pdf,video/*,audio/*,text/*,.js,.ts,.tsx,.py,.json,.csv,.c,.cpp,.rs,.md" 
+          className="hidden"
+          accept="image/*,application/pdf,video/*,audio/*,text/*,.js,.ts,.tsx,.py,.json,.csv,.c,.cpp,.rs,.md"
           multiple
           onChange={handleFileSelect}
         />
@@ -198,7 +246,10 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
         <textarea
           ref={textareaRef}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            onClearInputError?.();
+            setQuery(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onCompositionStart={() => setIsComposing(true)}
@@ -233,4 +284,4 @@ const InputSection = ({ query, setQuery, onRun, onStop, appState, focusTrigger }
   );
 };
 
-export default InputSection;
+export default ChatInput;

@@ -1,4 +1,4 @@
-#  Prisma
+# Prisma
 
 <p align="center">
   <a href="./README.md">中文</a> | <a href="./README.en.md">English</a>
@@ -7,7 +7,7 @@
 <div align="center">
 
   <p>
-    <strong>基于 Gemini 3 的可视化深度多智能体推理引擎</strong>
+    <strong>面向 Gemini 与 OpenAI 兼容模型的可视化深度多智能体推理引擎</strong>
   </p>
 
   <p>
@@ -35,7 +35,7 @@
 
 ## 📖 项目简介
 
-**Prisma** 是一款探索 **Google Gemini 3.0** 推理极限的实验性应用。它不仅仅是一个聊天机器人，更是一个**可视化的思维实验室**。
+**Prisma** 是一款探索多模型推理极限的实验性应用。它不仅仅是一个聊天机器人，更是一个**可视化的思维实验室**。
 
 它引入了 **"深度多智能体推理 (Deep Multi-Agent Reasoning)"** 架构，将复杂的用户问题动态分解为子任务，分派给专门的 AI 专家角色并行处理。用户可以实时观看 AI 如何通过 **Manager（规划） -> Experts（执行） -> Synthesis（综合）** 的工作流来解决复杂问题。
 
@@ -43,78 +43,104 @@
 
 无需部署，直接体验 Prisma 的强大推理能力：
 
-| 平台 | 入口 | 说明 |
-| :--- | :--- | :--- |
+| 平台                 | 入口                                                                                                    | 说明                                                                     |
+| :------------------- | :------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------- |
 | **Google AI Studio** | [🚀 **立即运行**](https://ai.studio/apps/drive/1JWPILJ3NT10NR4eOeGiqBi6OZuRaEszO?fullscreenApplet=true) | **推荐**。直接登录 Google 账号即可免费使用，无需配置 API Key，开箱即用。 |
-| **Web 演示版** | [🌐 **访问网页**](https://prisma-8yz.pages.dev/) | 纯前端版本，**需要填写您自己的 Google API Key** 才能运行。 |
+| **Web 演示版**       | [🌐 **访问网页**](https://prisma-8yz.pages.dev/)                                                        | 纯前端版本，**需要填写您自己的 Google API Key** 才能运行。               |
 
 ---
 
 ## ✨ 核心特性
 
 ### 🧠 深度多智能体架构 (Deep Reasoning)
-*   **动态规划 (Manager Agent)**：根据用户的问题，智能分析并决定需要哪些领域的“专家”介入。
-*   **并行专家池 (Expert Pool)**：系统会自动生成专门的 AI 角色（如“逻辑学家”、“代码架构师”、“历史研究员”），它们并行工作，互不干扰。
-*   **递归优化 (Recursive Refinement)**：
-    *   **自省循环**：Manager 会审查专家的输出。如果发现逻辑漏洞或信息缺失，会自动驳回并启动下一轮修正（支持最多 3 轮迭代）。
-    *   **最终综合**：将分散的专家意见汇聚成一篇逻辑严密、内容详实的最终回复。
+
+- **动态规划 (Manager Agent)**：根据用户的问题，智能分析并决定需要哪些领域的“专家”介入。
+- **并行专家池 (Expert Pool)**：系统会自动生成专门的 AI 角色（如“逻辑学家”、“代码架构师”、“历史研究员”），它们并行工作，互不干扰。
+- **递归优化 (Recursive Refinement)**：
+  - **自省循环**：Manager 会审查专家的输出。如果发现逻辑漏洞或信息缺失，会自动驳回并启动下一轮修正。**当前实现最多进行 2 轮专家执行（初始轮 + 1 轮复审修正）**。
+  - **最终综合**：将分散的专家意见汇聚成一篇逻辑严密、内容详实的最终回复。
 
 ### 👁️ 全链路可视化
-*   **思维流 (Process Flow)**：通过动态节点图展示当前的推理状态（Analyzing -> Working -> Reviewing -> Synthesizing）。
-*   **透明化思考**：你可以点开每一个“专家卡片”，查看其私有的 **Internal Monologue (内部独白)** 和 **Draft Output (草稿)**。
-*   **实时计时器**：精确追踪每个环节的耗时，了解 AI 的时间分配。
+
+- **思维流 (Process Flow)**：通过动态节点图展示当前的推理状态（Analyzing -> Working -> Reviewing -> Synthesizing）。
+- **透明化思考**：你可以点开每一个“专家卡片”，查看其私有的 **Internal Monologue (内部独白)** 和 **Draft Output (草稿)**。
+- **实时计时器**：精确追踪每个环节的耗时，了解 AI 的时间分配。
 
 ### ⚙️ 精细化控制
-*   **思考预算 (Thinking Budget)**：
-    *   支持为 **规划**、**执行**、**综合** 三个阶段分别设置思考深度（Minimal, Low, Medium, High）。
-    *   这决定了模型在生成 Token 时分配给 "Thinking" 字段的配额。
-*   **模型切换**：无缝切换 `Gemini 3 Flash` (速度优先) 和 `Gemini 3 Pro` (深度优先)。
+
+- **思考预算 (Thinking Budget)**：
+  - 支持为 **规划**、**执行**、**综合** 三个阶段分别设置思考深度（Minimal, Low, Medium, High）。
+  - 这决定了模型在生成 Token 时分配给 "Thinking" 字段的配额。
+- **模型切换**：内置 `Gemini 3 Flash` 与 `Gemini 3.1 Pro`，也支持接入 OpenAI 兼容自定义模型。
 
 ### 🛠️ 现代化工程体验
-*   **自定义 API 网关**：支持配置 Custom Base URL，方便国内用户通过反向代理连接。
-*   **Markdown & LaTeX**：完美渲染复杂的数学公式、代码块和图表。
-*   **本地优先**：所有会话历史存储在浏览器 LocalStorage 中，保护隐私。
+
+- **自定义 API 网关**：支持配置 Custom Base URL，方便国内用户通过反向代理连接。
+- **Markdown & LaTeX**：完美渲染复杂的数学公式、代码块和图表。
+- **本地优先**：聊天会话存储在浏览器 **IndexedDB** 中，轻量偏好设置存储在 `localStorage` 中，保护隐私。
+
+### 📎 附件能力说明
+
+- **Google 模型**：图片、PDF、音视频、文本/代码附件会以内联数据方式发送；对较大的文件，仍可能受上游接口限制。
+- **OpenAI 兼容模型**：支持图片和文本/代码附件；**PDF、音频、视频附件会在发送前被拦截**，避免静默丢失。
 
 ---
 
 ## ⚙️ 快速开始
 
 ### 1. 克隆项目
+
 ```bash
 git clone https://github.com/yeahhe365/Prisma.git
 cd Prisma
 ```
 
 ### 2. 安装依赖
+
 ```bash
 npm install
 ```
 
 ### 3. 配置环境
+
 在项目根目录创建 `.env.local` 文件并填入你的 API Key：
+
 ```env
-GEMINI_API_KEY=your_api_key_here
+VITE_API_KEY=your_api_key_here
 ```
 
+兼容旧配置名：`GEMINI_API_KEY` 仍可继续使用。
+
 ### 4. 启动开发服务器
+
 ```bash
 npm run dev
 ```
+
 访问 `http://localhost:3000` 即可开始推理。
+
+### 5. 运行校验
+
+```bash
+npm test
+npx tsc --noEmit
+npm run lint
+npm run build
+```
 
 ---
 
 ## 🛠️ 技术栈
 
-| 模块 | 技术选型 | 说明 |
-| :--- | :--- | :--- |
-| **核心框架** | React 19 | 使用最新的 React Hooks 和并发特性 |
-| **构建工具** | Vite 6 | 极速冷启动与热更新 |
-| **AI SDK** | `@google/genai` (v1.34+) | Google 官方最新 SDK，支持 Thinking Config |
-| **样式** | Tailwind CSS | 原子化 CSS，配合排版插件 |
-| **数学渲染** | KaTeX + Remark Math | 高性能 LaTeX 公式渲染 |
-| **代码高亮** | React Syntax Highlighter | VSCode 风格的代码块高亮 |
-| **图标库** | Lucide React | 统一且美观的 SVG 图标集 |
+| 模块         | 技术选型                   | 说明                               |
+| :----------- | :------------------------- | :--------------------------------- |
+| **核心框架** | React 19                   | 使用最新的 React Hooks 和并发特性  |
+| **构建工具** | Vite 6                     | 极速冷启动与热更新                 |
+| **AI SDK**   | `@google/genai` + `openai` | 同时支持 Gemini 与 OpenAI 兼容接口 |
+| **样式**     | Tailwind CSS               | 原子化 CSS，配合排版插件           |
+| **数学渲染** | KaTeX + Remark Math        | 高性能 LaTeX 公式渲染              |
+| **代码高亮** | React Syntax Highlighter   | VSCode 风格的代码块高亮            |
+| **图标库**   | Lucide React               | 统一且美观的 SVG 图标集            |
 
 ---
 
@@ -123,24 +149,29 @@ npm run dev
 ```bash
 Prisma/
 ├── components/
-│   ├── settings/        # 配置面板 (API, Thinking Levels, Model, Github)
-│   │   ├── ApiSection.tsx
+│   ├── settings/        # 配置面板 (Model, Thinking Levels, Github)
+│   │   ├── AddModelForm.tsx
 │   │   ├── GithubSection.tsx
 │   │   ├── LevelSelect.tsx
+│   │   ├── ModelListItem.tsx
 │   │   ├── ModelSection.tsx
+│   │   ├── modelSettings.ts
+│   │   ├── SettingsModal.tsx
 │   │   └── ThinkingSection.tsx
+│   ├── AttachmentRenderer.tsx # 附件渲染
 │   ├── ChatArea.tsx     # 消息流渲染
+│   ├── ChatInput.tsx    # 输入区域
 │   ├── ChatMessage.tsx  # 单条消息组件
 │   ├── ErrorBoundary.tsx # 错误边界
 │   ├── Header.tsx       # 顶部导航栏
-│   ├── InputSection.tsx # 输入区域
+│   ├── LazyMarkdownRenderer.tsx # 懒加载 Markdown 渲染器
 │   ├── Logo.tsx         # Logo 组件
 │   ├── MarkdownRenderer.tsx # Markdown 渲染
-│   ├── OutputSection.tsx # 推理输出展示
 │   ├── ProcessFlow.tsx  # 核心：推理流程可视化组件
+│   ├── ProcessNode.tsx  # 流程节点组件
 │   └── Sidebar.tsx      # 侧边栏（会话列表）
 ├── hooks/
-│   ├── useDeepThink.ts  # 核心：多智能体编排逻辑 (Manager -> Expert -> Synthesis)
+│   ├── useDeepThink.ts  # 深度思考运行时与 React 状态桥接
 │   ├── useDeepThinkState.ts # 深度思考状态管理
 │   ├── useAppLogic.ts   # 全局状态管理
 │   └── useChatSessions.ts # 聊天会话持久化
@@ -149,6 +180,7 @@ Prisma/
 │   │   ├── manager.ts   # 规划与审查
 │   │   ├── expert.ts    # 专家生成流
 │   │   ├── synthesis.ts # 最终综合流
+│   │   ├── orchestrator.ts # 核心：多智能体编排逻辑
 │   │   ├── contentBuilder.ts # 内容构建器
 │   │   ├── openaiClient.ts   # OpenAI 兼容客户端
 │   │   └── prompts.ts  # 提示词模板
@@ -163,10 +195,9 @@ Prisma/
 ├── index.tsx            # 应用入口
 ├── index.html           # HTML 模板
 ├── index.css            # 全局样式
-├── SettingsModal.tsx    # 设置弹窗
-├── ExpertCard.tsx       # 专家状态卡片
-├── ProcessNode.tsx      # 流程节点组件
 ├── metadata.json        # 应用元数据
+├── tests/               # Vitest 与 Testing Library 测试
+├── docs/                # 设计与修复计划文档
 ├── vite.config.ts       # Vite 构建配置
 └── tsconfig.json        # TypeScript 配置
 ```
@@ -198,4 +229,3 @@ MIT License
 ## 友链
 
 - [Linux.do](https://linux.do/)：也称 L 站，是一个活跃的中文技术社区，围绕 AI、软件开发、资源分享与前沿资讯展开讨论；社区愿景是“新的理想型社区”，社区文化是“真诚、友善、团结、专业，共建你我引以为荣之社区”。
-

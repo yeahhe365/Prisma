@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Users, Zap, Brain, Loader2, CheckCircle2, Clock } from 'lucide-react';
 import { AppState, AnalysisResult, ExpertResult } from '../types';
 import ProcessNode from './ProcessNode';
 import ExpertCard from './ExpertCard';
+import { getExpertsStatus, getManagerStatus, getSynthesisStatus } from './processFlowStatus';
 
 interface ProcessFlowProps {
   appState: AppState;
@@ -14,11 +14,19 @@ interface ProcessFlowProps {
   processEndTime?: number | null;
 }
 
-const GlobalTimer = ({ start, end, appState }: { start: number | null | undefined, end: number | null | undefined, appState: AppState }) => {
+const GlobalTimer = ({
+  start,
+  end,
+  appState,
+}: {
+  start: number | null | undefined;
+  end: number | null | undefined;
+  appState: AppState;
+}) => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     const isRunning = appState !== 'idle' && appState !== 'completed' && start;
 
     if (isRunning) {
@@ -45,41 +53,37 @@ const GlobalTimer = ({ start, end, appState }: { start: number | null | undefine
   );
 };
 
-const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = true, processStartTime, processEndTime }: ProcessFlowProps) => {
+const ProcessFlow = ({
+  appState,
+  managerAnalysis,
+  experts,
+  defaultExpanded = true,
+  processStartTime,
+  processEndTime,
+}: ProcessFlowProps) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  // Status computation helpers
-  const isAnalysisDone = !!managerAnalysis;
-  const isSynthesisActive = appState === 'synthesizing';
-  const isComplete = appState === 'completed';
-
-  // Experts are active if ANY expert is currently thinking or pending
-  // We use this logic instead of just `appState` because now experts run IN PARALLEL with analysis
+  const hasManagerAnalysis = !!managerAnalysis;
   const hasExperts = experts.length > 0;
-  const anyExpertWorking = experts.some(e => e.status === 'thinking' || e.status === 'pending');
-  const allExpertsDone = experts.length > 0 && experts.every(e => e.status === 'completed' || e.status === 'error');
-  
-  // Logic for Node Active States
-  // 1. Manager: Active if analyzing, OR if we don't have analysis yet but experts have started (edge case), Completed if analysis exists.
-  const managerStatus = (appState === 'analyzing' && !managerAnalysis) ? 'active' : (isAnalysisDone ? 'completed' : 'idle');
-  
-  // 2. Experts: Active if any is working, Completed if all are done, Idle otherwise
-  const expertsStatus = anyExpertWorking ? 'active' : (allExpertsDone ? 'completed' : 'idle');
+  const managerStatus = getManagerStatus(appState, hasManagerAnalysis);
+  const expertsStatus = getExpertsStatus(experts);
+  const synthesisStatus = getSynthesisStatus(appState);
 
   return (
     <div className="relative space-y-5 pt-8 w-full">
-      
       {/* Global Timer Overlay */}
       <GlobalTimer start={processStartTime} end={processEndTime} appState={appState} />
 
       <div className="relative space-y-3">
         {/* Connector Line */}
-        <div className={`absolute left-8 top-2 bottom-2 w-0.5 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'} ${isAnalysisDone || anyExpertWorking ? 'connector-flowing' : 'bg-slate-100'}`} />
+        <div
+          className={`absolute left-8 top-2 bottom-2 w-0.5 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'} ${hasManagerAnalysis || expertsStatus === 'active' ? 'connector-flowing' : 'bg-slate-100'}`}
+        />
 
         {/* Node 1: Manager Analysis */}
-        <ProcessNode 
-          icon={Users} 
-          title="规划策略" 
+        <ProcessNode
+          icon={Users}
+          title="规划策略"
           status={managerStatus}
           isExpanded={isExpanded}
           onToggle={() => setIsExpanded(!isExpanded)}
@@ -93,7 +97,10 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {managerAnalysis.experts?.map((exp, i) => (
-                    <span key={i} className="text-[10px] bg-slate-50 text-slate-600 px-2 py-1 rounded border border-slate-200 font-medium uppercase tracking-wide">
+                    <span
+                      key={i}
+                      className="text-[10px] bg-slate-50 text-slate-600 px-2 py-1 rounded border border-slate-200 font-medium uppercase tracking-wide"
+                    >
                       {exp.role}
                     </span>
                   ))}
@@ -101,8 +108,8 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
               </>
             ) : (
               <div className="flex items-center gap-3 text-slate-500 text-sm">
-                 <Loader2 size={14} className="animate-spin text-blue-500" />
-                 <span>分析请求中...</span>
+                <Loader2 size={14} className="animate-spin text-blue-500" />
+                <span>分析请求中...</span>
               </div>
             )}
           </div>
@@ -110,9 +117,9 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
 
         {/* Node 2: Expert Pool */}
         {hasExperts && (
-          <ProcessNode 
-            icon={Zap} 
-            title="专家执行" 
+          <ProcessNode
+            icon={Zap}
+            title="专家执行"
             status={expertsStatus}
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
@@ -127,17 +134,17 @@ const ProcessFlow = ({ appState, managerAnalysis, experts, defaultExpanded = tru
         )}
 
         {/* Node 3: Synthesis */}
-        {(isSynthesisActive || isComplete) && (
-          <ProcessNode 
-            icon={Brain} 
-            title="最终综合" 
-            status={isSynthesisActive ? 'active' : (isComplete ? 'completed' : 'idle')}
+        {synthesisStatus !== 'idle' && (
+          <ProcessNode
+            icon={Brain}
+            title="最终综合"
+            status={synthesisStatus}
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded(!isExpanded)}
-            glow={isSynthesisActive}
+            glow={synthesisStatus === 'active'}
           >
             <div className="text-sm text-slate-600 pl-2">
-              {isSynthesisActive ? (
+              {synthesisStatus === 'active' ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin text-purple-600" size={14} />
                   <span>综合最终答案中...</span>

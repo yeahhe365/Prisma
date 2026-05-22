@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -87,26 +87,53 @@ html {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes slideInFromTop {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes zoomIn95 {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes pulseSubtle {
-  0%, 100% { box-shadow: 0 0 10px rgba(59,130,246,0.08); }
-  50% { box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
@@ -114,8 +141,12 @@ html {
 }
 
 @keyframes flowLine {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 20px; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 20px;
+  }
 }
 
 .connector-flowing {
@@ -128,35 +159,4 @@ html {
   );
   background-size: 2px 20px;
   animation: flowLine 1s linear infinite;
-}
-
-@keyframes flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.gradient-border {
-  position: relative;
-  border-radius: 0.5rem;
-  background: #ffffff;
-}
-
-.gradient-border::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  z-index: -1;
-  border-radius: 0.6rem;
-  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
-  background-size: 200% 200%;
-  animation: flow 4s ease infinite;
-  opacity: 0.4;
-}
-
-.node-connector {
-  position: absolute;
-  width: 2px;
-  background-color: #e2e8f0;
-  z-index: 0;
 }

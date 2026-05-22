@@ -1,5 +1,5 @@
-import OpenAI from "openai";
-import { ModelOption } from '../../types';
+import OpenAI from 'openai';
+import { ModelOption, OpenAIClient, ThinkingLevel } from '../../types';
 import { withRetry } from '../utils/retry';
 import { getReasoningEffort } from '../../config';
 
@@ -11,13 +11,13 @@ export interface OpenAIStreamChunk {
 export interface OpenAIConfig {
   model: ModelOption;
   systemInstruction?: string;
-  content: string | Array<Record<string, string>>;
+  content: string | OpenAI.Chat.ChatCompletionContentPart[];
   temperature?: number;
   responseFormat?: 'text' | 'json_object';
   thinkingConfig?: {
     includeThoughts: boolean;
     thinkingBudget: number;
-    thinkingLevel?: string;
+    thinkingLevel?: ThinkingLevel;
   };
 }
 
@@ -43,37 +43,53 @@ const parseThinkingTokens = (text: string): { thought: string; text: string } =>
   return { thought: thought.trim(), text: cleanText.trim() };
 };
 
+const getOpenAIReasoningEffort = (
+  model: ModelOption,
+  thinkingLevel?: ThinkingLevel,
+): OpenAI.Chat.ChatCompletionReasoningEffort | undefined => {
+  if (!thinkingLevel || !supportsReasoningEffort(model)) return undefined;
+  return getReasoningEffort(thinkingLevel) as OpenAI.Chat.ChatCompletionReasoningEffort | undefined;
+};
+
 export const generateContent = async (
-  ai: OpenAI,
-  config: OpenAIConfig
+  ai: OpenAIClient,
+  config: OpenAIConfig,
 ): Promise<{ text: string; thought?: string }> => {
   const messages: Array<OpenAI.Chat.ChatCompletionMessageParam> = [];
 
   if (config.systemInstruction) {
     messages.push({
       role: 'system',
-      content: config.systemInstruction
+      content: config.systemInstruction,
     });
   }
 
   messages.push({
     role: 'user',
-    content: config.content as string | OpenAI.Chat.ChatCompletionContentPart[]
+    content: config.content,
   });
 
-  const requestOptions: OpenAI.Chat.CompletionCreateParamsNonStreaming = {
+  const requestOptions: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
     model: config.model,
     messages,
     temperature: config.temperature,
   };
 
   if (config.responseFormat === 'json_object') {
-    (requestOptions as Record<string, unknown>).response_format = { type: 'json_object' };
+    (
+      requestOptions as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming & {
+        response_format?: { type: 'json_object' };
+      }
+    ).response_format = { type: 'json_object' };
   }
 
   // Pass reasoning_effort for models that support it (o1/o3/o4 series)
-  if (supportsReasoningEffort(config.model) && config.thinkingConfig?.thinkingLevel) {
-    (requestOptions as Record<string, unknown>).reasoning_effort = config.thinkingConfig.thinkingLevel;
+  const reasoningEffort = getOpenAIReasoningEffort(
+    config.model,
+    config.thinkingConfig?.thinkingLevel,
+  );
+  if (reasoningEffort) {
+    requestOptions.reasoning_effort = reasoningEffort;
   }
 
   try {
@@ -83,7 +99,12 @@ export const generateContent = async (
 
     if (config.thinkingConfig?.includeThoughts) {
       // Check for reasoning_content field (DeepSeek-R1, GLM-thinking, etc.)
-      const reasoningContent = (message as OpenAI.Chat.ChatCompletionMessage & { reasoning_content?: string }).reasoning_content || '';
+      const reasoningContent =
+        (
+          message as
+            | (OpenAI.Chat.ChatCompletionMessage & { reasoning_content?: string })
+            | undefined
+        )?.reasoning_content || '';
       if (reasoningContent) {
         return { text: content, thought: reasoningContent };
       }
@@ -99,24 +120,24 @@ export const generateContent = async (
 };
 
 export async function* generateContentStream(
-  ai: OpenAI,
-  config: OpenAIConfig
+  ai: OpenAIClient,
+  config: OpenAIConfig,
 ): AsyncGenerator<OpenAIStreamChunk, void, unknown> {
   const messages: Array<OpenAI.Chat.ChatCompletionMessageParam> = [];
 
   if (config.systemInstruction) {
     messages.push({
       role: 'system',
-      content: config.systemInstruction
+      content: config.systemInstruction,
     });
   }
 
   messages.push({
     role: 'user',
-    content: config.content as string | OpenAI.Chat.ChatCompletionContentPart[]
+    content: config.content,
   });
 
-  const requestOptions: OpenAI.Chat.CompletionCreateParamsStreaming = {
+  const requestOptions: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
     model: config.model,
     messages,
     temperature: config.temperature,
@@ -124,18 +145,23 @@ export async function* generateContentStream(
   };
 
   // Pass reasoning_effort for models that support it
-  if (supportsReasoningEffort(config.model) && config.thinkingConfig?.thinkingLevel) {
-    (requestOptions as Record<string, unknown>).reasoning_effort = config.thinkingConfig.thinkingLevel;
+  const reasoningEffort = getOpenAIReasoningEffort(
+    config.model,
+    config.thinkingConfig?.thinkingLevel,
+  );
+  if (reasoningEffort) {
+    requestOptions.reasoning_effort = reasoningEffort;
   }
 
   const stream = await withRetry(() => ai.chat.completions.create(requestOptions));
 
-  let accumulatedText = '';
   let inThinking = false;
   let currentThought = '';
 
   for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta;
+    const delta = chunk.choices[0]?.delta as
+      | { content?: string | null; reasoning_content?: string }
+      | undefined;
 
     // Handle reasoning_content (DeepSeek-R1, GLM-thinking, etc.)
     if (config.thinkingConfig?.includeThoughts && delta?.reasoning_content) {
@@ -144,8 +170,6 @@ export async function* generateContentStream(
 
     const content = delta?.content || '';
     if (!content) continue;
-
-    accumulatedText += content;
 
     if (config.thinkingConfig?.includeThoughts) {
       if (content.includes('<thinking>')) {

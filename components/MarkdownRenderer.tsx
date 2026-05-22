@@ -2,20 +2,68 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomOneDarkReasonable } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash';
+import css from 'react-syntax-highlighter/dist/esm/languages/hljs/css';
+import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript';
+import json from 'react-syntax-highlighter/dist/esm/languages/hljs/json';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/hljs/markdown';
+import plaintext from 'react-syntax-highlighter/dist/esm/languages/hljs/plaintext';
+import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
+import sql from 'react-syntax-highlighter/dist/esm/languages/hljs/sql';
+import typescript from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript';
+import xml from 'react-syntax-highlighter/dist/esm/languages/hljs/xml';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml';
 import { Copy, Check, Terminal, ChevronDown, ChevronUp } from 'lucide-react';
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
 
-const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
-  const [copied, setCopied] = useState(false);
+type CodeBlockProps = React.ComponentPropsWithoutRef<'code'> & {
+  node?: unknown;
+};
+
+[
+  ['bash', bash],
+  ['sh', bash],
+  ['shell', bash],
+  ['zsh', bash],
+  ['css', css],
+  ['javascript', javascript],
+  ['js', javascript],
+  ['json', json],
+  ['markdown', markdown],
+  ['md', markdown],
+  ['plaintext', plaintext],
+  ['text', plaintext],
+  ['python', python],
+  ['py', python],
+  ['sql', sql],
+  ['typescript', typescript],
+  ['ts', typescript],
+  ['tsx', typescript],
+  ['jsx', javascript],
+  ['xml', xml],
+  ['html', xml],
+  ['yaml', yaml],
+  ['yml', yaml],
+].forEach(([name, language]) => {
+  SyntaxHighlighter.registerLanguage(name, language);
+});
+
+const CodeBlock = ({ node: _node, className, children, ...props }: CodeBlockProps) => {
   const [expanded, setExpanded] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
+  const isInline = !className;
 
   // Inline code (e.g. `const x = 1`)
-  if (inline) {
+  if (isInline) {
     return (
-      <code className={`${className} bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-sm font-mono border border-slate-200`} {...props}>
+      <code
+        className={`${className} bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-sm font-mono border border-slate-200`}
+        {...props}
+      >
         {children}
       </code>
     );
@@ -27,9 +75,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
   const MAX_HEIGHT = 400;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(codeString);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copy(codeString);
   };
 
   return (
@@ -60,15 +106,18 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
           </button>
         </div>
       </div>
-      
+
       {/* Syntax Highlighter */}
-      <div className="overflow-x-auto" style={!expanded && isLong ? { maxHeight: MAX_HEIGHT, overflowY: 'auto' } : {}}>
+      <div
+        className="overflow-x-auto"
+        style={!expanded && isLong ? { maxHeight: MAX_HEIGHT, overflowY: 'auto' } : {}}
+      >
         {!expanded && isLong && (
           <div className="sticky top-0 z-10 h-6 bg-gradient-to-b from-[#1e1e1e] to-transparent pointer-events-none" />
         )}
         <SyntaxHighlighter
           language={language}
-          style={vscDarkPlus}
+          style={atomOneDarkReasonable}
           showLineNumbers={lineCount > 3}
           customStyle={{
             margin: 0,
@@ -85,7 +134,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
             userSelect: 'none',
           }}
           codeTagProps={{
-            style: { fontFamily: 'JetBrains Mono, monospace' }
+            style: { fontFamily: 'JetBrains Mono, monospace' },
           }}
           wrapLines={true}
           {...props}
@@ -97,24 +146,26 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
   );
 };
 
-const MarkdownRenderer = ({ content, className }: { content: string, className?: string }) => {
+const MarkdownRenderer = ({ content, className }: { content: string; className?: string }) => {
   /**
    * Pre-process content to handle common LaTeX delimiters from Gemini
    * and optimize Markdown compatibility.
    */
   const preprocessMarkdown = (text: string) => {
-    if (!text) return "";
-    
-    return text
-      // Replace \[ ... \] with $$ ... $$
-      .replace(/\\\[/g, '$$$$')
-      .replace(/\\\]/g, '$$$$')
-      // Replace \( ... \) with $ ... $
-      .replace(/\\\(/g, '$$')
-      .replace(/\\\)/g, '$$')
-      // Fix potential spacing issues between bold marks and math delimiters
-      .replace(/\*\*(\$)/g, '** $1')
-      .replace(/(\$)\*\*/g, '$1 **');
+    if (!text) return '';
+
+    return (
+      text
+        // Replace \[ ... \] with $$ ... $$
+        .replace(/\\\[/g, '$$$$')
+        .replace(/\\\]/g, '$$$$')
+        // Replace \( ... \) with $ ... $
+        .replace(/\\\(/g, '$$')
+        .replace(/\\\)/g, '$$')
+        // Fix potential spacing issues between bold marks and math delimiters
+        .replace(/\*\*(\$)/g, '** $1')
+        .replace(/(\$)\*\*/g, '$1 **')
+    );
   };
 
   return (
@@ -123,7 +174,7 @@ const MarkdownRenderer = ({ content, className }: { content: string, className?:
         remarkPlugins={[remarkMath]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
-          code: CodeBlock
+          code: CodeBlock,
         }}
       >
         {preprocessMarkdown(content)}

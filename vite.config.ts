@@ -1,7 +1,7 @@
-
 import path from 'path';
 import { Readable } from 'stream';
-import { defineConfig, loadEnv } from 'vite';
+import type { ReadableStream as NodeReadableStream } from 'stream/web';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import type { Connect } from 'vite';
@@ -17,6 +17,8 @@ const ALLOWED_HOSTS = [
   'open.bigmodel.cn',
   'dashscope.aliyuncs.com',
 ];
+
+const ENABLE_PROXY_DEBUG = process.env.PRISMA_PROXY_DEBUG === 'true';
 
 function customApiProxyMiddleware(): Connect.NextHandleFunction {
   return async (req, res, next) => {
@@ -59,7 +61,7 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
 
       // 2. Extract relative path (remove /custom-api prefix)
       let targetPath = req.url.replace(/^\/custom-api/, '');
-      
+
       // 3. Ensure targetPath starts with /
       if (!targetPath.startsWith('/')) {
         targetPath = '/' + targetPath;
@@ -68,7 +70,9 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
       // Construct full URL
       const fullUrl = `${targetBase}${targetPath}`;
 
-      console.log(`[Custom Proxy] ${req.method} ${req.url} -> ${fullUrl}`);
+      if (ENABLE_PROXY_DEBUG) {
+        console.debug(`[Custom Proxy] ${req.method} ${req.url} -> ${fullUrl}`);
+      }
 
       // Collect request body
       const chunks: Buffer[] = [];
@@ -80,14 +84,21 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
       // Forward headers
       const forwardHeaders: Record<string, string> = {};
       // Filter out headers that confuse the upstream server or are hop-by-hop
-      const skipHeaders = ['host', 'connection', 'x-target-url', 'transfer-encoding', 'origin', 'referer'];
-      
+      const skipHeaders = [
+        'host',
+        'connection',
+        'x-target-url',
+        'transfer-encoding',
+        'origin',
+        'referer',
+      ];
+
       for (const [key, value] of Object.entries(req.headers)) {
         if (!skipHeaders.includes(key.toLowerCase()) && value) {
           forwardHeaders[key] = Array.isArray(value) ? value[0] : value;
         }
       }
-      
+
       // Explicitly set Host to the target host (crucial for some APIs like OpenAI/Vercel)
       forwardHeaders['host'] = url.hostname;
       forwardHeaders['accept-encoding'] = 'identity';
@@ -103,18 +114,21 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
       // Forward response status and headers
       res.statusCode = response.status;
       response.headers.forEach((value, key) => {
-        if (!['transfer-encoding', 'connection', 'content-encoding', 'content-length'].includes(key.toLowerCase())) {
+        if (
+          !['transfer-encoding', 'connection', 'content-encoding', 'content-length'].includes(
+            key.toLowerCase(),
+          )
+        ) {
           res.setHeader(key, value);
         }
       });
 
       // Stream the response body using Node.js pipeline for proper backpressure
       if (response.body) {
-        Readable.fromWeb(response.body as any).pipe(res);
+        Readable.fromWeb(response.body as unknown as NodeReadableStream).pipe(res);
       } else {
         res.end();
       }
-      
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('[Custom Proxy] Error:', message);
@@ -124,37 +138,69 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
   };
 }
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
-        proxy: {
-          // Fallback proxies for specific known routes if not using custom-api
-          '/openai/v1': {
-            target: 'https://api.openai.com',
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/openai\/v1/, '/v1'),
-          },
-        }
+export default defineConfig(() => {
+  return {
+    server: {
+      port: 3000,
+      host: '0.0.0.0',
+      proxy: {
+        // Fallback proxies for specific known routes if not using custom-api
+        '/openai/v1': {
+          target: 'https://api.openai.com',
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/openai\/v1/, '/v1'),
+        },
       },
-      plugins: [
-        react(),
-        tailwindcss(),
-        {
-          name: 'custom-api-proxy',
-          configureServer(server) {
-            server.middlewares.use(customApiProxyMiddleware());
+    },
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'custom-api-proxy',
+        configureServer(server) {
+          server.middlewares.use(customApiProxyMiddleware());
+        },
+      },
+    ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('/openai/') || id.includes('/@google/genai/')) {
+              return 'ai-clients';
+            }
+
+            if (id.includes('/react-syntax-highlighter/')) {
+              return 'syntax-highlighter';
+            }
+
+            if (
+              id.includes('/react-markdown/') ||
+              id.includes('/rehype-katex/') ||
+              id.includes('/katex/') ||
+              id.includes('/remark-') ||
+              id.includes('/mdast-') ||
+              id.includes('/micromark') ||
+              id.includes('/unist-') ||
+              id.includes('/hast-') ||
+              id.includes('/vfile') ||
+              id.includes('/property-information/') ||
+              id.includes('/space-separated-tokens/') ||
+              id.includes('/comma-separated-tokens/')
+            ) {
+              return 'markdown-core';
+            }
+
+            return undefined;
           },
         },
-      ],
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
+      },
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '.'),
+      },
+    },
+  };
 });

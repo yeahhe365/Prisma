@@ -1,16 +1,31 @@
-
 import React from 'react';
 import { ChatMessage, AppState, AnalysisResult, ExpertResult } from '../types';
-import ChatMessageItem from './ChatMessage';
+import ChatMessageView from './ChatMessage';
 import ProcessFlow from './ProcessFlow';
 import Logo from './Logo';
 import { Code, BookOpen, Lightbulb, BarChart3 } from 'lucide-react';
 
 const SUGGESTIONS = [
-  { icon: Lightbulb, text: '用简单的方式解释量子计算', color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  { icon: Code, text: '编写一个排序算法并分析时间复杂度', color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  { icon: BookOpen, text: '总结系统思维的核心思想', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-  { icon: BarChart3, text: '比较不同的机器学习方法', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  {
+    icon: Lightbulb,
+    text: '用简单的方式解释量子计算',
+    color: 'text-amber-600 bg-amber-50 border-amber-200',
+  },
+  {
+    icon: Code,
+    text: '编写一个排序算法并分析时间复杂度',
+    color: 'text-blue-600 bg-blue-50 border-blue-200',
+  },
+  {
+    icon: BookOpen,
+    text: '总结系统思维的核心思想',
+    color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+  },
+  {
+    icon: BarChart3,
+    text: '比较不同的机器学习方法',
+    color: 'text-purple-600 bg-purple-50 border-purple-200',
+  },
 ];
 
 interface ChatAreaProps {
@@ -32,7 +47,7 @@ const ChatArea = ({
   finalOutput,
   processStartTime,
   processEndTime,
-  onSuggestionClick
+  onSuggestionClick,
 }: ChatAreaProps) => {
   const isIdle = messages.length === 0 && appState === 'idle';
 
@@ -47,7 +62,9 @@ const ChatArea = ({
 
           <div className="relative z-10 flex flex-col items-center animate-fade-in">
             <Logo className="w-24 h-24 mb-6 drop-shadow-xl animate-pulse-slow" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Prisma</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Prisma
+            </p>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2 mb-8">
               多智能体深度推理，专家协同协作。
             </p>
@@ -68,12 +85,8 @@ const ChatArea = ({
       ) : (
         <div className="pb-28">
           {/* History */}
-          {messages.map((msg, idx) => (
-            <ChatMessageItem 
-              key={msg.id} 
-              message={msg} 
-              isLast={idx === messages.length - 1} 
-            />
+          {messages.map((msg) => (
+            <ChatMessageView key={msg.id} message={msg} />
           ))}
 
           {/* Active Generation (Ghost Message) */}
@@ -84,7 +97,9 @@ const ChatArea = ({
                   <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-2">Prisma</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-2">
+                    Prisma
+                  </div>
 
                   {/* Loading Skeleton */}
                   {!finalOutput && (
@@ -98,10 +113,10 @@ const ChatArea = ({
 
                   {/* Active Thinking Process */}
                   <div className="mb-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-xl p-5 shadow-sm">
-                    <ProcessFlow 
-                      appState={appState} 
-                      managerAnalysis={managerAnalysis} 
-                      experts={experts} 
+                    <ProcessFlow
+                      appState={appState}
+                      managerAnalysis={managerAnalysis}
+                      experts={experts}
                       processStartTime={processStartTime}
                       processEndTime={processEndTime}
                     />
@@ -110,13 +125,13 @@ const ChatArea = ({
                   {/* Streaming Output */}
                   {finalOutput && (
                     <div className="prose prose-slate dark:prose-invert max-w-none">
-                      <ChatMessageItem 
+                      <ChatMessageView
                         message={{
-                          id: 'streaming', 
-                          role: 'model', 
-                          content: finalOutput, 
-                          isThinking: false
-                        }} 
+                          id: 'streaming',
+                          role: 'model',
+                          content: finalOutput,
+                          isThinking: false,
+                        }}
                       />
                     </div>
                   )}

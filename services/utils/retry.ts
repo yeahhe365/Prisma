@@ -14,7 +14,8 @@ interface ApiErrorLike {
 
 const getRetryAfterMs = (error: ApiErrorLike): number | null => {
   // Check Retry-After header from OpenAI SDK errors
-  const retryAfter = error?.headers?.get?.('retry-after') || error?.response?.headers?.get?.('retry-after');
+  const retryAfter =
+    error?.headers?.get?.('retry-after') || error?.response?.headers?.get?.('retry-after');
   if (retryAfter) {
     const seconds = parseFloat(retryAfter);
     if (!isNaN(seconds)) return seconds * 1000;
@@ -29,10 +30,14 @@ const sleep = (ms: number, signal?: AbortSignal): Promise<void> => {
   if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
   return new Promise((resolve, reject) => {
     const timer = setTimeout(resolve, ms);
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timer);
-      reject(new DOMException('Aborted', 'AbortError'));
-    }, { once: true });
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true },
+    );
   });
 };
 
@@ -40,7 +45,7 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 5,
   initialDelay: number = 2000,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<T> {
   let lastError: unknown;
 
@@ -55,7 +60,7 @@ export async function withRetry<T>(
       if (signal?.aborted || err?.name === 'AbortError') throw error;
 
       const status = err?.status || err?.response?.status;
-      
+
       const isRateLimit = status === 429;
       const isServerError = status >= 500 && status < 600;
       const isNetworkError = !status;
@@ -68,21 +73,21 @@ export async function withRetry<T>(
 
       // Respect Retry-After header if present
       const retryAfterMs = getRetryAfterMs(err);
-      
+
       // Exponential backoff with jitter
       const jitter = Math.random() * 1000;
-      const delay = retryAfterMs || (initialDelay * Math.pow(2, attempt - 1) + jitter);
-      
+      const delay = retryAfterMs || initialDelay * Math.pow(2, attempt - 1) + jitter;
+
       console.warn(
         `[Prisma] API call failed (Attempt ${attempt}/${maxRetries}). ` +
-        `Status: ${status || 'Network Error'}. Retrying in ${Math.round(delay)}ms...`
+          `Status: ${status || 'Network Error'}. Retrying in ${Math.round(delay)}ms...`,
       );
-      
+
       await sleep(delay, signal);
     }
   }
 
-  throw lastError || new Error("Maximum retries reached without success");
+  throw lastError || new Error('Maximum retries reached without success');
 }
 
 /**
