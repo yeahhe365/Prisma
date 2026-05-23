@@ -61,7 +61,7 @@ const CodeBlock = ({ node: _node, className, children, ...props }: CodeBlockProp
   if (isInline) {
     return (
       <code
-        className={`${className} bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-sm font-mono border border-slate-200`}
+        className={`${className} rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-info)] px-1 py-0.5 font-mono text-sm text-[var(--theme-text-link)]`}
         {...props}
       >
         {children}
@@ -79,19 +79,19 @@ const CodeBlock = ({ node: _node, className, children, ...props }: CodeBlockProp
   };
 
   return (
-    <div className="relative group my-4 rounded-lg overflow-hidden border border-slate-200 bg-[#1e1e1e] shadow-sm">
+    <div className="group relative my-4 overflow-hidden rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-code-block)] shadow-sm">
       {/* Code Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-[#252526] border-b border-[#333] text-xs text-slate-400">
+      <div className="flex items-center justify-between border-b border-[var(--theme-border-secondary)] bg-[var(--theme-bg-code-block-header)] px-3 py-2 text-xs text-[var(--theme-text-tertiary)]">
         <div className="flex items-center gap-2">
           <Terminal size={14} />
-          <span className="font-mono text-slate-300">{language || 'text'}</span>
-          <span className="text-[10px] text-slate-500">{lineCount} lines</span>
+          <span className="font-mono text-[var(--theme-text-secondary)]">{language || 'text'}</span>
+          <span className="text-[10px] text-[var(--theme-text-tertiary)]">{lineCount} lines</span>
         </div>
         <div className="flex items-center gap-2">
           {isLong && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 hover:text-white transition-colors"
+              className="flex items-center gap-1 transition-colors hover:text-[var(--theme-text-primary)]"
             >
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               <span>{expanded ? 'Collapse' : 'Expand'}</span>
@@ -99,9 +99,9 @@ const CodeBlock = ({ node: _node, className, children, ...props }: CodeBlockProp
           )}
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 transition-colors hover:text-[var(--theme-text-primary)]"
           >
-            {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+            {copied ? <Check size={14} className="text-[var(--theme-text-success)]" /> : <Copy size={14} />}
             <span>{copied ? 'Copied!' : 'Copy'}</span>
           </button>
         </div>
@@ -113,7 +113,7 @@ const CodeBlock = ({ node: _node, className, children, ...props }: CodeBlockProp
         style={!expanded && isLong ? { maxHeight: MAX_HEIGHT, overflowY: 'auto' } : {}}
       >
         {!expanded && isLong && (
-          <div className="sticky top-0 z-10 h-6 bg-gradient-to-b from-[#1e1e1e] to-transparent pointer-events-none" />
+          <div className="pointer-events-none sticky top-0 z-10 h-6 bg-gradient-to-b from-[var(--theme-bg-code-block)] to-transparent" />
         )}
         <SyntaxHighlighter
           language={language}

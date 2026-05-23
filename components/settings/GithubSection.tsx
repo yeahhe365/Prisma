@@ -18,29 +18,29 @@ const GithubSection = ({ isOpen }: { isOpen: boolean }) => {
   }, [isOpen]);
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+    <div className="space-y-4 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] p-4">
       <a
         href="https://github.com/yeahhe365/Prisma"
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex items-center justify-between gap-6 rounded-lg border border-slate-200 bg-white p-3.5 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 max-sm:flex-col max-sm:items-stretch"
+        className="group flex items-center justify-between gap-6 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-3.5 transition-colors hover:bg-[var(--theme-bg-tertiary)]/50 max-sm:flex-col max-sm:items-stretch"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white transition-transform group-hover:scale-105 dark:bg-slate-100 dark:text-slate-900">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-bg-accent)] text-[var(--theme-text-accent)] transition-transform group-hover:scale-105">
             <Github size={18} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <p className="truncate text-sm font-semibold text-[var(--theme-text-primary)]">
               yeahhe365 / Prisma
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">GitHub 开源项目</p>
+            <p className="text-xs text-[var(--theme-text-tertiary)]">GitHub 开源项目</p>
           </div>
         </div>
 
         {stars !== null && (
-          <div className="flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-950 max-sm:w-fit">
+          <div className="flex shrink-0 items-center gap-1 rounded-md border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] px-2 py-1 shadow-sm max-sm:w-fit">
             <Star size={14} className="text-amber-500 fill-amber-500" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+            <span className="text-xs font-bold text-[var(--theme-text-secondary)]">
               {stars.toLocaleString()}
             </span>
           </div>

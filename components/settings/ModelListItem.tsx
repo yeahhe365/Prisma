@@ -24,18 +24,23 @@ const ModelListItem = ({
   onUpdate,
   onUpdateDisplayName,
 }: ModelListItemProps) => {
+  const inputClass =
+    'block w-full rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 text-sm text-[var(--theme-text-primary)] outline-none placeholder:text-[var(--theme-text-tertiary)] transition-colors focus:border-[var(--theme-border-focus)] focus:ring-2 focus:ring-[var(--theme-border-focus)]/20';
+  const labelClass =
+    'flex items-center gap-1 text-[11px] font-bold uppercase tracking-tight text-[var(--theme-text-tertiary)]';
+
   return (
     <div
-      className={`bg-white rounded-lg border transition-colors ${
-        isOverridden ? 'border-blue-200' : 'border-slate-200'
-      } hover:border-slate-300`}
+      className={`rounded-lg border bg-[var(--theme-bg-input)] transition-colors ${
+        isOverridden ? 'border-[var(--theme-border-focus)]' : 'border-[var(--theme-border-secondary)]'
+      } hover:border-[var(--theme-border-focus)]`}
     >
       <div className="flex items-center justify-between p-3 cursor-pointer" onClick={onToggle}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-800 truncate">{item.displayName}</span>
+            <span className="truncate text-sm font-medium text-[var(--theme-text-primary)]">{item.displayName}</span>
             {item.isPreset && (
-              <span className="shrink-0 text-[9px] font-medium uppercase tracking-wider text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">
+              <span className="shrink-0 rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--theme-text-secondary)]">
                 预设
               </span>
             )}
@@ -45,15 +50,15 @@ const ModelListItem = ({
               </span>
             )}
           </div>
-          <div className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+          <div className="mt-0.5 truncate font-mono text-[10px] text-[var(--theme-text-tertiary)]">
             ID: {item.modelId} • {item.provider}
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-2">
           {isExpanded ? (
-            <ChevronUp size={16} className="text-slate-400" />
+            <ChevronUp size={16} className="text-[var(--theme-text-tertiary)]" />
           ) : (
-            <ChevronDown size={16} className="text-slate-400" />
+            <ChevronDown size={16} className="text-[var(--theme-text-tertiary)]" />
           )}
           {!item.isPreset && (
             <button
@@ -61,7 +66,7 @@ const ModelListItem = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="rounded-lg p-1.5 text-[var(--theme-text-tertiary)] transition-colors hover:bg-[var(--theme-bg-danger)]/10 hover:text-[var(--theme-text-danger)]"
               title="移除模型"
             >
               <Trash2 size={16} />
@@ -73,7 +78,7 @@ const ModelListItem = ({
                 e.stopPropagation();
                 onReset();
               }}
-              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+              className="rounded-lg p-1.5 text-[var(--theme-text-tertiary)] transition-colors hover:bg-[var(--theme-bg-warning)] hover:text-[var(--theme-text-warning)]"
               title="重置为默认配置"
             >
               <RotateCcw size={16} />
@@ -86,7 +91,7 @@ const ModelListItem = ({
         <div className="px-3 pb-3 pt-0 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
           {!item.isPreset && (
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+              <label className={labelClass}>
                 <Tag size={10} />
                 显示名称
               </label>
@@ -94,20 +99,20 @@ const ModelListItem = ({
                 type="text"
                 value={item.displayName}
                 onChange={(e) => onUpdateDisplayName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none"
+                className={inputClass}
               />
             </div>
           )}
 
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+            <label className={labelClass}>
               <Bot size={10} />
               API 类型
             </label>
             <select
               value={item.provider}
               onChange={(e) => onUpdate({ provider: e.target.value as ApiProvider })}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none"
+              className={inputClass}
             >
               {PROVIDER_OPTIONS.map((provider) => (
                 <option key={provider.value} value={provider.value}>
@@ -118,7 +123,7 @@ const ModelListItem = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+            <label className={labelClass}>
               <Key size={10} />
               API 密钥
             </label>
@@ -127,12 +132,12 @@ const ModelListItem = ({
               placeholder="sk-..."
               value={item.apiKey || ''}
               onChange={(e) => onUpdate({ apiKey: e.target.value || undefined })}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none placeholder:text-slate-400"
+              className={inputClass}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-1">
+            <label className={labelClass}>
               <Globe size={10} />
               基础 URL
             </label>
@@ -141,7 +146,7 @@ const ModelListItem = ({
               placeholder="https://api.example.com/v1"
               value={item.baseUrl || ''}
               onChange={(e) => onUpdate({ baseUrl: e.target.value || undefined })}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none placeholder:text-slate-400"
+              className={inputClass}
             />
           </div>
         </div>

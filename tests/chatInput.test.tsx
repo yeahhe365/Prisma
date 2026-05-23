@@ -69,6 +69,29 @@ describe('ChatInput', () => {
     expect(form.lastElementChild).toBe(toolbar);
   });
 
+  it('uses AMC-style composer tokens and icon button sizing', () => {
+    render(
+      <ChatInput
+        query=""
+        setQuery={vi.fn()}
+        onRun={vi.fn(() => false)}
+        onStop={vi.fn()}
+        appState="idle"
+      />,
+    );
+
+    const form = screen.getByRole('form', { name: '消息输入区域' });
+    const attachmentButton = screen.getByTitle('添加附件（图片、视频、PDF、音频、代码）');
+    const sendButton = screen.getByRole('button', { name: '发送消息' });
+
+    expect(form.className).toContain('border-[var(--theme-border-secondary)]');
+    expect(form.className).toContain('bg-[var(--theme-bg-input)]');
+    expect(form.className).toContain('focus-within:border-[var(--theme-border-focus)]');
+    expect(attachmentButton.className).toContain('text-[var(--theme-icon-attach)]');
+    expect(sendButton.className).toContain('h-11');
+    expect(sendButton.className).toContain('bg-[var(--theme-bg-accent)]');
+  });
+
   it('announces input errors through an alert region and clears them on typing', async () => {
     const user = userEvent.setup();
     const clearInputError = vi.fn();

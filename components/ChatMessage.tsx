@@ -25,7 +25,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
 
   return (
     <div
-      className={`group w-full text-slate-800 dark:text-slate-200 ${isUser ? 'bg-blue-50/50 dark:bg-blue-950/30' : 'bg-transparent'}`}
+      className={`group w-full text-[var(--theme-text-primary)] ${isUser ? 'bg-[var(--theme-bg-secondary)]/60' : 'bg-transparent'}`}
     >
       <div className="max-w-3xl mx-auto px-4 py-6 flex gap-4 md:gap-6">
         {/* Avatar */}
@@ -33,14 +33,14 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center border ${
               isUser
-                ? 'bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800'
-                : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-slate-700 shadow-sm'
+                ? 'border-[var(--theme-border-secondary)] bg-[var(--theme-bg-user-message)]'
+                : 'border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] shadow-sm'
             }`}
           >
             {isUser ? (
-              <User size={16} className="text-blue-600" />
+              <User size={16} className="text-[var(--theme-icon-user)]" />
             ) : (
-              <Sparkles size={16} className="text-blue-600" />
+              <Sparkles size={16} className="text-[var(--theme-icon-model)]" />
             )}
           </div>
         </div>
@@ -48,7 +48,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
         {/* Content */}
         <div className="relative flex-1 overflow-hidden">
           <div className="flex items-center justify-between mb-1">
-            <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+            <div className="text-sm font-semibold text-[var(--theme-text-primary)]">
               {isUser ? '你' : 'Prisma'}
             </div>
             {!isUser && message.content && (
@@ -57,8 +57,8 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
                 className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1.5
                   ${
                     copied
-                      ? 'text-emerald-600 bg-emerald-50'
-                      : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'
+                      ? 'bg-[var(--theme-bg-success)] text-[var(--theme-text-success)]'
+                      : 'text-[var(--theme-text-tertiary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'
                   }`}
                 title="复制消息"
               >
@@ -76,12 +76,12 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
 
           {/* User message bubble */}
           {isUser ? (
-            <div className="bg-blue-100/70 dark:bg-blue-900/50 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="rounded-2xl rounded-tr-sm border border-transparent bg-[var(--theme-bg-user-message)] px-4 py-3 text-[var(--theme-bg-user-message-text)]">
               {/* Attachments */}
               {message.attachments && message.attachments.length > 0 && (
                 <AttachmentRenderer attachments={message.attachments} variant="user" />
               )}
-              <div className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words leading-relaxed">
+              <div className="whitespace-pre-wrap break-words leading-relaxed">
                 {message.content}
               </div>
               {message.content && (
@@ -89,7 +89,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
                   <button
                     onClick={handleCopy}
                     className={`p-1 rounded transition-all flex items-center gap-1 text-[10px]
-                      ${copied ? 'text-emerald-600' : 'text-blue-400 hover:text-blue-600'}`}
+                      ${copied ? 'text-[var(--theme-text-success)]' : 'text-[var(--theme-text-tertiary)] hover:text-[var(--theme-text-primary)]'}`}
                   >
                     {copied ? (
                       <>
@@ -109,7 +109,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
                 <div className="mb-4">
                   <button
                     onClick={() => setShowThinking(!showThinking)}
-                    className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 transition-colors w-full md:w-auto"
+                    className="flex w-full items-center gap-2 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] px-3 py-2 text-xs font-medium text-[var(--theme-text-secondary)] transition-colors hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] md:w-auto"
                   >
                     <span>
                       {message.isThinking
@@ -122,7 +122,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
                   </button>
 
                   {showThinking && (
-                    <div className="mt-3 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <div className="mt-3 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
                       <ProcessFlow
                         appState={message.isThinking ? 'experts_working' : 'completed'}
                         managerAnalysis={message.analysis || null}
@@ -140,10 +140,10 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
               )}
 
               {/* Text Content */}
-              <div className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-7 prose-pre:bg-slate-900 prose-pre:text-slate-50">
+              <div className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-7 prose-pre:bg-[var(--theme-bg-code-block)] prose-pre:text-[var(--theme-text-primary)]">
                 {message.content ? (
                   message.isThinking ? (
-                    <pre className="whitespace-pre-wrap break-words text-slate-700 text-sm">
+                    <pre className="whitespace-pre-wrap break-words text-sm text-[var(--theme-text-secondary)]">
                       {message.content}
                     </pre>
                   ) : (
@@ -151,23 +151,23 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
                   )
                 ) : (
                   message.isThinking && (
-                    <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse" />
+                    <span className="inline-block h-4 w-2 animate-pulse bg-[var(--theme-border-focus)]" />
                   )
                 )}
               </div>
 
               {/* Internal Monologue (Synthesis Thoughts) - Optional Footer */}
               {message.synthesisThoughts && (
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="mt-4 border-t border-[var(--theme-border-primary)] pt-4">
                   <details className="group/thoughts">
-                    <summary className="cursor-pointer list-none text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1">
+                    <summary className="flex cursor-pointer list-none items-center gap-1 text-xs text-[var(--theme-text-tertiary)] hover:text-[var(--theme-text-primary)]">
                       <ChevronRight
                         size={12}
                         className="group-open/thoughts:rotate-90 transition-transform"
                       />
                       显示内部独白
                     </summary>
-                    <div className="mt-2 text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-3 rounded border border-slate-100 dark:border-slate-700 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                    <div className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] p-3 font-mono text-xs text-[var(--theme-text-secondary)]">
                       {message.synthesisThoughts}
                     </div>
                   </details>

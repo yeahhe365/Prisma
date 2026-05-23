@@ -15,6 +15,9 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [modelNameError, setModelNameError] = useState('');
+  const inputClass =
+    'block w-full rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2.5 text-sm text-[var(--theme-text-primary)] outline-none placeholder:text-[var(--theme-text-tertiary)] transition-colors focus:border-[var(--theme-border-focus)] focus:ring-2 focus:ring-[var(--theme-border-focus)]/20';
+  const labelClass = 'flex items-center gap-2 text-sm font-medium text-[var(--theme-text-secondary)]';
 
   const handleAddModel = () => {
     const trimmedName = modelName.trim();
@@ -42,13 +45,13 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
   };
 
   return (
-    <div className="border-t border-slate-200 pt-4">
-      <div className="text-xs font-medium text-slate-500 mb-3">添加新模型</div>
+    <div className="border-t border-[var(--theme-border-primary)] pt-4">
+      <div className="mb-3 text-xs font-medium text-[var(--theme-text-secondary)]">添加新模型</div>
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <Bot size={14} className="text-slate-400" />
+            <label className={labelClass}>
+              <Bot size={14} className="text-[var(--theme-text-tertiary)]" />
               Model ID（必填）
             </label>
             <input
@@ -61,18 +64,18 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
                 setModelName(e.target.value);
                 if (modelNameError) setModelNameError('');
               }}
-              className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+              className={inputClass}
             />
             {modelNameError && (
-              <p id="new-model-name-error" role="alert" className="text-xs text-red-600">
+              <p id="new-model-name-error" role="alert" className="text-xs text-[var(--theme-text-danger)]">
                 {modelNameError}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <Tag size={14} className="text-slate-400" />
+            <label className={labelClass}>
+              <Tag size={14} className="text-[var(--theme-text-tertiary)]" />
               Display Name（选填）
             </label>
             <input
@@ -81,17 +84,17 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddModel()}
-              className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+              className={inputClass}
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">API 类型</label>
+          <label className="text-sm font-medium text-[var(--theme-text-secondary)]">API 类型</label>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as ApiProvider)}
-            className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none"
+            className={inputClass}
           >
             {PROVIDER_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -102,8 +105,8 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <Key size={14} className="text-slate-400" />
+          <label className={labelClass}>
+            <Key size={14} className="text-[var(--theme-text-tertiary)]" />
             API Key（选填）
           </label>
           <input
@@ -111,13 +114,13 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
             placeholder="sk-..."
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+            className={inputClass}
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <Globe size={14} className="text-slate-400" />
+          <label className={labelClass}>
+            <Globe size={14} className="text-[var(--theme-text-tertiary)]" />
             Base URL（选填）
           </label>
           <input
@@ -125,14 +128,14 @@ const AddModelForm = ({ existingModels, onAddModel }: AddModelFormProps) => {
             placeholder="https://api.example.com/v1"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none placeholder:text-slate-400"
+            className={inputClass}
           />
         </div>
 
         <button
           onClick={handleAddModel}
           disabled={!modelName.trim()}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--theme-bg-accent)] px-4 py-2 text-sm font-medium text-[var(--theme-text-accent)] shadow-sm transition-all hover:bg-[var(--theme-bg-accent-hover)] disabled:cursor-not-allowed disabled:bg-[var(--theme-bg-tertiary)] disabled:text-[var(--theme-text-tertiary)]"
         >
           <Plus size={16} />
           添加模型

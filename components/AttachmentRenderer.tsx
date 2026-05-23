@@ -25,9 +25,7 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
             key={att.id}
             src={att.url || `data:${att.mimeType};base64,${att.data}`}
             alt="attachment"
-            className={`h-48 w-48 object-cover rounded-lg border shadow-sm cursor-pointer hover:opacity-90 transition-opacity ${
-              isUser ? 'border-blue-200' : 'border-slate-200'
-            }`}
+            className="h-48 w-48 cursor-pointer rounded-lg border border-[var(--theme-border-secondary)] object-cover shadow-sm transition-opacity hover:opacity-90"
             onClick={() =>
               window.open(att.url || `data:${att.mimeType};base64,${att.data}`, '_blank')
             }
@@ -35,7 +33,7 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
         ) : att.type === 'video' ? (
           <div
             key={att.id}
-            className="relative w-full max-w-md rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-black group/video"
+            className="group/video relative w-full max-w-md overflow-hidden rounded-xl border border-[var(--theme-border-secondary)] bg-black shadow-lg"
           >
             <video
               src={att.url || `data:${att.mimeType};base64,${att.data}`}
@@ -46,9 +44,7 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
         ) : att.type === 'audio' ? (
           <div
             key={att.id}
-            className={`w-full max-w-sm flex flex-col gap-2 p-3 rounded-xl ${
-              isUser ? 'bg-white/70 border border-blue-100' : 'bg-blue-50 border border-blue-100'
-            }`}
+            className="flex w-full max-w-sm flex-col gap-2 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-3"
           >
             <audio
               src={att.url || `data:${att.mimeType};base64,${att.data}`}
@@ -59,31 +55,32 @@ const AttachmentRenderer = ({ attachments, variant = 'user' }: AttachmentRendere
         ) : (
           <div
             key={att.id}
-            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer group/file ${
-              isUser
-                ? 'bg-white/70 border border-blue-100'
-                : 'bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors'
-            }`}
+            className="group/file flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-3 transition-colors hover:bg-[var(--theme-bg-tertiary)]/50"
             onClick={() => handleDownloadFile(att)}
           >
             <div
               className={`p-2 rounded-lg group-hover/file:scale-110 transition-transform ${
-                att.type === 'pdf' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                att.type === 'pdf'
+                  ? 'bg-[var(--theme-bg-danger)]/10 text-[var(--theme-text-danger)]'
+                  : 'bg-[var(--theme-bg-info)] text-[var(--theme-text-link)]'
               }`}
             >
               {att.type === 'pdf' ? <FileText size={24} /> : <FileCode size={24} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">
+              <p className="max-w-[200px] truncate text-sm font-medium text-[var(--theme-text-primary)]">
                 {att.name || (att.type === 'pdf' ? 'document.pdf' : 'file.txt')}
               </p>
               {!isUser && (
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--theme-text-tertiary)]">
                   {att.type === 'pdf' ? 'PDF 文档' : '文本/代码文件'}
                 </p>
               )}
             </div>
-            <Download size={16} className="text-slate-400 group-hover/file:text-slate-600 ml-2" />
+            <Download
+              size={16}
+              className="ml-2 text-[var(--theme-text-tertiary)] group-hover/file:text-[var(--theme-text-primary)]"
+            />
           </div>
         ),
       )}

@@ -9,22 +9,22 @@ const SUGGESTIONS = [
   {
     icon: Lightbulb,
     text: '用简单的方式解释量子计算',
-    color: 'text-amber-600 bg-amber-50 border-amber-200',
+    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
   {
     icon: Code,
     text: '编写一个排序算法并分析时间复杂度',
-    color: 'text-blue-600 bg-blue-50 border-blue-200',
+    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
   {
     icon: BookOpen,
     text: '总结系统思维的核心思想',
-    color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
   {
     icon: BarChart3,
     text: '比较不同的机器学习方法',
-    color: 'text-purple-600 bg-purple-50 border-purple-200',
+    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
 ];
 
@@ -54,18 +54,13 @@ const ChatArea = ({
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
       {isIdle ? (
-        <div className="h-full flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
-          {/* Background decorations */}
-          <div className="absolute top-1/4 -left-32 w-64 h-64 bg-blue-100/30 dark:bg-blue-900/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-purple-100/30 dark:bg-purple-900/20 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-50/20 dark:bg-emerald-900/10 rounded-full blur-3xl" />
-
+        <div className="relative flex h-full flex-col items-center justify-center overflow-hidden px-4 text-center">
           <div className="relative z-10 flex flex-col items-center animate-fade-in">
-            <Logo className="w-24 h-24 mb-6 drop-shadow-xl animate-pulse-slow" />
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            <Logo className="mb-6 h-20 w-20 text-[var(--theme-text-primary)] opacity-90" />
+            <p className="text-2xl font-semibold tracking-normal text-[var(--theme-text-primary)]">
               Prisma
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2 mb-8">
+            <p className="mx-auto mb-8 mt-2 max-w-xs text-sm text-[var(--theme-text-tertiary)]">
               多智能体深度推理，专家协同协作。
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
@@ -73,10 +68,10 @@ const ChatArea = ({
                 <button
                   key={i}
                   onClick={() => onSuggestionClick?.(s.text)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border text-left text-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${s.color}`}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-[var(--theme-border-focus)] hover:bg-[var(--theme-bg-tertiary)] hover:shadow-md active:translate-y-0 ${s.color}`}
                 >
-                  <s.icon size={16} className="shrink-0 opacity-70" />
-                  <span className="text-slate-700 font-medium leading-snug">{s.text}</span>
+                  <s.icon size={16} className="shrink-0 text-[var(--theme-text-tertiary)]" />
+                  <span className="font-medium leading-snug text-[var(--theme-text-primary)]">{s.text}</span>
                 </button>
               ))}
             </div>
@@ -91,28 +86,28 @@ const ChatArea = ({
 
           {/* Active Generation (Ghost Message) */}
           {appState !== 'idle' && appState !== 'completed' && (
-            <div className="group w-full bg-transparent text-slate-800 dark:text-slate-200">
+            <div className="group w-full bg-transparent text-[var(--theme-text-primary)]">
               <div className="max-w-3xl mx-auto px-4 py-8 flex gap-6">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800 shadow-sm flex items-center justify-center">
-                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] shadow-sm">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--theme-border-focus)] border-t-transparent"></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-2">
+                  <div className="mb-2 text-sm font-semibold text-[var(--theme-text-primary)]">
                     Prisma
                   </div>
 
                   {/* Loading Skeleton */}
                   {!finalOutput && (
                     <div className="space-y-3 animate-pulse">
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                      <div className="h-4 w-3/4 rounded bg-[var(--theme-bg-tertiary)]"></div>
+                      <div className="h-4 w-full rounded bg-[var(--theme-bg-tertiary)]"></div>
+                      <div className="h-4 w-5/6 rounded bg-[var(--theme-bg-tertiary)]"></div>
+                      <div className="h-4 w-2/3 rounded bg-[var(--theme-bg-tertiary)]"></div>
                     </div>
                   )}
 
                   {/* Active Thinking Process */}
-                  <div className="mb-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-xl p-5 shadow-sm">
+                  <div className="mb-4 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-5 shadow-sm">
                     <ProcessFlow
                       appState={appState}
                       managerAnalysis={managerAnalysis}

@@ -26,20 +26,20 @@ class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center h-screen bg-slate-50 p-8 text-center">
+        <div className="flex h-screen flex-col items-center justify-center bg-[var(--theme-bg-secondary)] p-8 text-center text-[var(--theme-text-primary)]">
           <div className="text-6xl mb-4">😵</div>
-          <h1 className="text-xl font-semibold text-slate-800 mb-2">Something went wrong</h1>
-          <p className="text-sm text-slate-500 mb-6 max-w-md">
+          <h1 className="mb-2 text-xl font-semibold">Something went wrong</h1>
+          <p className="mb-6 max-w-md text-sm text-[var(--theme-text-secondary)]">
             An unexpected error occurred. Please refresh the page to continue.
           </p>
           {this.state.error && (
-            <pre className="text-xs text-left bg-slate-100 rounded-lg p-4 max-w-lg overflow-auto text-slate-600 mb-6">
+            <pre className="mb-6 max-w-lg overflow-auto rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-4 text-left text-xs text-[var(--theme-text-secondary)]">
               {this.state.error.message}
             </pre>
           )}
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="rounded-lg bg-[var(--theme-bg-accent)] px-4 py-2 text-sm font-medium text-[var(--theme-text-accent)] transition-colors hover:bg-[var(--theme-bg-accent-hover)]"
           >
             Refresh Page
           </button>

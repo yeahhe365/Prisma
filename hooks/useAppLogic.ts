@@ -26,7 +26,7 @@ export const useAppLogic = () => {
   } = useChatSessions();
 
   // UI State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);

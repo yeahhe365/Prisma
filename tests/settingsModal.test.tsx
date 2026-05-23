@@ -61,4 +61,18 @@ describe('SettingsModal', () => {
       'yeahhe365 / Prisma',
     );
   });
+
+  it('uses AMC-style theme surfaces and tab states', () => {
+    renderModal();
+
+    const dialog = screen.getByRole('dialog', { name: '设置' });
+    const modelTab = screen.getByRole('tab', { name: '模型管理' });
+    const tablist = screen.getByRole('tablist', { name: '设置分类' });
+
+    expect(dialog.className).toContain('bg-[var(--theme-bg-primary)]');
+    expect(dialog.className).toContain('border-[var(--theme-border-primary)]');
+    expect(tablist.parentElement?.className).toContain('bg-[var(--theme-bg-secondary)]');
+    expect(modelTab.className).toContain('bg-[var(--theme-bg-tertiary)]');
+    expect(modelTab.className).toContain('text-[var(--theme-text-primary)]');
+  });
 });

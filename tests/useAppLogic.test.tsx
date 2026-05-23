@@ -111,6 +111,20 @@ describe('useAppLogic', () => {
     });
   });
 
+  it('keeps the sidebar open by default on desktop and closed by default on mobile', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    const desktop = renderHook(() => useAppLogic());
+
+    expect(desktop.result.current.isSidebarOpen).toBe(true);
+
+    desktop.unmount();
+
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 640 });
+    const mobile = renderHook(() => useAppLogic());
+
+    expect(mobile.result.current.isSidebarOpen).toBe(false);
+  });
+
   it('blocks unsupported attachments for openai-compatible models', async () => {
     localStorage.setItem('prisma-selected-model', 'glm-5-turbo');
     localStorage.setItem('prisma-settings', JSON.stringify(baseConfig));

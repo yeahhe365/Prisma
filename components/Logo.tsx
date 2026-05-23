@@ -16,7 +16,6 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M300 180 L200 420 L400 420 Z"
-          className="text-slate-700"
         />
 
         {/* Connecting Struts */}
@@ -27,7 +26,6 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M300 50 L300 180"
-          className="text-slate-700"
         />
         <path
           fill="none"
@@ -36,7 +34,6 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M100 480 L200 420"
-          className="text-slate-700"
         />
         <path
           fill="none"
@@ -45,7 +42,6 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M500 480 L400 420"
-          className="text-slate-700"
         />
 
         {/* Outer Triangle */}
@@ -56,7 +52,6 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M300 50 L100 480 L500 480 Z"
-          className="text-slate-700"
         />
       </g>
 
@@ -69,7 +64,6 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
           y2="275"
           stroke="currentColor"
           strokeWidth="12"
-          className="text-slate-700"
         />
 
         {/* Blue Beam */}

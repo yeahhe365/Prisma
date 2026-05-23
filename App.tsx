@@ -47,7 +47,7 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-blue-900 dark:selection:text-blue-100">
+      <div className="flex h-screen flex-col bg-[var(--theme-bg-secondary)] font-sans text-[var(--theme-text-primary)]">
         <SettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
@@ -74,6 +74,8 @@ const App = () => {
           <Sidebar
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
+            onOpen={() => setIsSidebarOpen(true)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
             sessions={sessions}
             currentSessionId={currentSessionId}
             onSelectSession={handleSelectSession}
@@ -81,7 +83,7 @@ const App = () => {
             onDeleteSession={handleDeleteSession}
           />
 
-          <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-950 relative">
+          <main className="relative flex min-w-0 flex-1 flex-col bg-[var(--theme-bg-primary)]">
             <ChatArea
               messages={messages}
               appState={appState}
@@ -95,7 +97,7 @@ const App = () => {
               }}
             />
 
-            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none p-4 pb-6 flex justify-center bg-gradient-to-t from-white dark:from-slate-950 via-white/80 dark:via-slate-950/80 to-transparent">
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex justify-center bg-[linear-gradient(to_top,var(--theme-bg-primary)_0%,color-mix(in_srgb,var(--theme-bg-primary)_82%,transparent)_68%,transparent_100%)] p-4 pb-6">
               <div className="pointer-events-auto w-full max-w-4xl">
                 <ChatInput
                   query={query}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,6 +23,24 @@ const sessions: ChatSession[] = [
   },
 ];
 
+const renderSidebar = (
+  props: Partial<React.ComponentProps<typeof Sidebar>> = {},
+) => {
+  const defaultProps: React.ComponentProps<typeof Sidebar> = {
+    isOpen: true,
+    onClose: vi.fn(),
+    onOpen: vi.fn(),
+    onOpenSettings: vi.fn(),
+    sessions,
+    currentSessionId: null,
+    onSelectSession: vi.fn(),
+    onNewChat: vi.fn(),
+    onDeleteSession: vi.fn(),
+  };
+
+  return render(<Sidebar {...defaultProps} {...props} />);
+};
+
 describe('Sidebar', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -30,34 +48,15 @@ describe('Sidebar', () => {
   });
 
   it('shows an empty state when there are no sessions', () => {
-    render(
-      <Sidebar
-        isOpen
-        onClose={vi.fn()}
-        sessions={[]}
-        currentSessionId={null}
-        onSelectSession={vi.fn()}
-        onNewChat={vi.fn()}
-        onDeleteSession={vi.fn()}
-      />,
-    );
+    renderSidebar({ sessions: [] });
 
     expect(screen.getByText('暂无对话记录')).toBeTruthy();
   });
 
   it('filters sessions after the debounce window', async () => {
-    render(
-      <Sidebar
-        isOpen
-        onClose={vi.fn()}
-        sessions={sessions}
-        currentSessionId={null}
-        onSelectSession={vi.fn()}
-        onNewChat={vi.fn()}
-        onDeleteSession={vi.fn()}
-      />,
-    );
+    renderSidebar();
 
+    fireEvent.click(screen.getByRole('button', { name: '搜索对话' }));
     fireEvent.change(screen.getByPlaceholderText('搜索对话...'), {
       target: { value: 'database' },
     });
@@ -70,18 +69,9 @@ describe('Sidebar', () => {
   });
 
   it('shows an empty search state when there are no matches', async () => {
-    render(
-      <Sidebar
-        isOpen
-        onClose={vi.fn()}
-        sessions={sessions}
-        currentSessionId={null}
-        onSelectSession={vi.fn()}
-        onNewChat={vi.fn()}
-        onDeleteSession={vi.fn()}
-      />,
-    );
+    renderSidebar();
 
+    fireEvent.click(screen.getByRole('button', { name: '搜索对话' }));
     fireEvent.change(screen.getByPlaceholderText('搜索对话...'), {
       target: { value: 'missing' },
     });
@@ -97,17 +87,7 @@ describe('Sidebar', () => {
     const user = userEvent.setup();
     const onSelectSession = vi.fn();
 
-    render(
-      <Sidebar
-        isOpen
-        onClose={vi.fn()}
-        sessions={sessions}
-        currentSessionId={null}
-        onSelectSession={onSelectSession}
-        onNewChat={vi.fn()}
-        onDeleteSession={vi.fn()}
-      />,
-    );
+    renderSidebar({ onSelectSession });
 
     await user.click(screen.getByText('Frontend architecture'));
 
@@ -115,17 +95,7 @@ describe('Sidebar', () => {
   });
 
   it('renders session dates with a stable Chinese locale format', () => {
-    render(
-      <Sidebar
-        isOpen
-        onClose={vi.fn()}
-        sessions={[sessions[0]]}
-        currentSessionId={null}
-        onSelectSession={vi.fn()}
-        onNewChat={vi.fn()}
-        onDeleteSession={vi.fn()}
-      />,
-    );
+    renderSidebar({ sessions: [sessions[0]] });
 
     expect(screen.getByText('2026/4/1')).toBeTruthy();
   });
@@ -137,21 +107,111 @@ describe('Sidebar', () => {
     const onClose = vi.fn();
     const onNewChat = vi.fn();
 
-    render(
-      <Sidebar
-        isOpen
-        onClose={onClose}
-        sessions={sessions}
-        currentSessionId={null}
-        onSelectSession={vi.fn()}
-        onNewChat={onNewChat}
-        onDeleteSession={vi.fn()}
-      />,
-    );
+    renderSidebar({ onClose, onNewChat });
 
     await user.click(screen.getByText('新建对话'));
 
     expect(onNewChat).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('uses AMC-style sidebar surfaces and rounded action rows', () => {
+    const { container } = renderSidebar({ currentSessionId: '1' });
+
+    const sidebar = container.querySelector('[data-testid="history-sidebar"]');
+    const newChat = screen.getByText('新建对话').closest('button');
+    const searchButton = screen.getByRole('button', { name: '搜索对话' });
+    const activeSession = screen.getByText('Frontend architecture').closest('[data-session-row]');
+
+    expect(sidebar?.className).toContain('bg-[var(--theme-bg-secondary)]');
+    expect(sidebar?.className).toContain('border-[var(--theme-border-primary)]');
+    expect(newChat?.className).toContain('rounded-full');
+    expect(newChat?.className).toContain('bg-transparent');
+    expect(searchButton.className).toContain('rounded-full');
+    expect(searchButton.className).toContain('bg-transparent');
+    expect(activeSession?.className).toContain('bg-[var(--theme-bg-tertiary)]');
+  });
+
+  it('keeps an AMC-style mini rail visible when collapsed on desktop', () => {
+    const { container } = renderSidebar({ isOpen: false });
+
+    const sidebar = screen.getByTestId('history-sidebar');
+    const expandedPane = container.querySelector('[data-sidebar-expanded-pane]');
+    const miniRail = screen.getByTestId('history-sidebar-mini-rail');
+
+    expect(sidebar.className).toContain('md:w-[52.2px]');
+    expect(sidebar.className).toContain('md:translate-x-0');
+    expect(expandedPane?.getAttribute('aria-hidden')).toBe('true');
+    expect(expandedPane?.className).toContain('md:opacity-0');
+    expect(miniRail.className).toContain('md:flex');
+  });
+
+  it('opens the sidebar from the mini rail toggle button', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+
+    renderSidebar({ isOpen: false, onOpen });
+
+    await user.click(screen.getByRole('button', { name: '展开历史记录' }));
+
+    expect(onOpen).toHaveBeenCalled();
+  });
+
+  it('opens search from the mini rail and focuses the inline field', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+
+    renderSidebar({ isOpen: false, onOpen });
+
+    await user.click(screen.getByRole('button', { name: '搜索对话' }));
+
+    expect(onOpen).toHaveBeenCalled();
+    expect(screen.getByPlaceholderText('搜索对话...')).toBeTruthy();
+  });
+
+  it('keeps the settings button at the bottom of expanded and collapsed sidebars', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onOpenSettings = vi.fn();
+    const { rerender } = renderSidebar({ onOpenSettings });
+
+    await user.click(screen.getByTestId('sidebar-expanded-settings'));
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <Sidebar
+        isOpen={false}
+        onClose={vi.fn()}
+        onOpen={vi.fn()}
+        onOpenSettings={onOpenSettings}
+        sessions={sessions}
+        currentSessionId={null}
+        onSelectSession={vi.fn()}
+        onNewChat={vi.fn()}
+        onDeleteSession={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId('sidebar-mini-settings'));
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens a recent chats popover from the collapsed rail', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+
+    renderSidebar({ isOpen: false });
+
+    await user.click(screen.getByRole('button', { name: '最近对话' }));
+
+    const dialog = screen.getByRole('dialog', { name: '最近对话' });
+
+    expect(dialog).toBeTruthy();
+    expect(within(dialog).getByText('Database notes')).toBeTruthy();
+    expect(within(dialog).getByText('Frontend architecture')).toBeTruthy();
   });
 });

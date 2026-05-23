@@ -25,21 +25,21 @@ const ProcessNode = ({
 
   return (
     <div
-      className={`relative z-10 rounded-xl border transition-all duration-500 overflow-hidden shadow-sm
-      ${isActive ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200 bg-white'}
-      ${glow ? 'shadow-[0_0_20px_rgba(59,130,246,0.15)]' : ''}
+      className={`relative z-10 overflow-hidden rounded-xl border transition-all duration-500 shadow-sm
+      ${isActive ? 'border-[var(--theme-border-focus)] bg-[var(--theme-bg-info)]' : 'border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)]'}
+      ${glow ? 'shadow-[0_0_20px_rgba(64,65,79,0.12)] dark:shadow-[0_0_20px_rgba(59,130,246,0.16)]' : ''}
     `}
     >
       <div
-        className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50"
+        className="flex cursor-pointer items-center justify-between p-5 hover:bg-[var(--theme-bg-tertiary)]/45"
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
           <div
             className={`
-            w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300
-            ${isActive ? 'bg-blue-600 text-white animate-pulse' : ''}
-            ${isCompleted ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-400'}
+            flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-300
+            ${isActive ? 'animate-pulse bg-[var(--theme-bg-accent)] text-[var(--theme-text-accent)]' : ''}
+            ${isCompleted ? 'bg-[var(--theme-text-success)] text-[var(--theme-text-accent)]' : 'bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-tertiary)]'}
           `}
           >
             {isActive ? (
@@ -52,22 +52,22 @@ const ProcessNode = ({
           </div>
           <div>
             <h3
-              className={`text-sm font-semibold ${isActive ? 'text-blue-900' : isCompleted ? 'text-slate-800' : 'text-slate-500'}`}
+              className={`text-sm font-semibold ${isActive || isCompleted ? 'text-[var(--theme-text-primary)]' : 'text-[var(--theme-text-secondary)]'}`}
             >
               {title}
             </h3>
-            {isActive && <p className="text-xs text-blue-600">处理中...</p>}
+            {isActive && <p className="text-xs text-[var(--theme-text-link)]">处理中...</p>}
           </div>
         </div>
         {children && (
-          <div className="text-slate-400 hover:text-slate-700">
+          <div className="text-[var(--theme-text-tertiary)] hover:text-[var(--theme-text-primary)]">
             {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </div>
         )}
       </div>
 
       {isExpanded && children && (
-        <div className="border-t border-slate-100 bg-slate-50/50 p-5 animate-in slide-in-from-top-2 duration-300">
+        <div className="border-t border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)]/45 p-5 animate-in slide-in-from-top-2 duration-300">
           {children}
         </div>
       )}

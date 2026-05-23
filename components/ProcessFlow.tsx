@@ -46,8 +46,8 @@ const GlobalTimer = ({
 
   const seconds = (elapsed / 1000).toFixed(1);
   return (
-    <div className="absolute right-0 top-0 flex items-center gap-1.5 bg-slate-800 text-slate-100 text-xs font-mono py-1 px-2 rounded-lg shadow-sm">
-      <Clock size={12} className="text-blue-400" />
+    <div className="absolute right-0 top-0 flex items-center gap-1.5 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] px-2 py-1 font-mono text-xs text-[var(--theme-text-secondary)] shadow-sm">
+      <Clock size={12} className="text-[var(--theme-text-tertiary)]" />
       <span>{seconds}s</span>
     </div>
   );
@@ -77,7 +77,7 @@ const ProcessFlow = ({
       <div className="relative space-y-3">
         {/* Connector Line */}
         <div
-          className={`absolute left-8 top-2 bottom-2 w-0.5 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'} ${hasManagerAnalysis || expertsStatus === 'active' ? 'connector-flowing' : 'bg-slate-100'}`}
+          className={`absolute bottom-2 left-8 top-2 w-0.5 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'} ${hasManagerAnalysis || expertsStatus === 'active' ? 'connector-flowing' : 'bg-[var(--theme-border-primary)]'}`}
         />
 
         {/* Node 1: Manager Analysis */}
@@ -92,14 +92,14 @@ const ProcessFlow = ({
           <div className="space-y-3 pl-2">
             {managerAnalysis ? (
               <>
-                <p className="text-sm text-slate-600 italic border-l-2 border-slate-300 pl-3">
+                <p className="border-l-2 border-[var(--theme-border-secondary)] pl-3 text-sm italic text-[var(--theme-text-secondary)]">
                   "{managerAnalysis.thought_process}"
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {managerAnalysis.experts?.map((exp, i) => (
                     <span
                       key={i}
-                      className="text-[10px] bg-slate-50 text-slate-600 px-2 py-1 rounded border border-slate-200 font-medium uppercase tracking-wide"
+                      className="rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-[var(--theme-text-secondary)]"
                     >
                       {exp.role}
                     </span>
@@ -107,8 +107,8 @@ const ProcessFlow = ({
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-3 text-slate-500 text-sm">
-                <Loader2 size={14} className="animate-spin text-blue-500" />
+              <div className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)]">
+                <Loader2 size={14} className="animate-spin text-[var(--theme-border-focus)]" />
                 <span>分析请求中...</span>
               </div>
             )}
@@ -125,7 +125,7 @@ const ProcessFlow = ({
             onToggle={() => setIsExpanded(!isExpanded)}
             glow={expertsStatus === 'active'}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-3">
+            <div className="grid grid-cols-1 gap-5 pt-3 lg:grid-cols-2">
               {experts.map((expert) => (
                 <ExpertCard key={expert.id} expert={expert} />
               ))}
@@ -143,14 +143,14 @@ const ProcessFlow = ({
             onToggle={() => setIsExpanded(!isExpanded)}
             glow={synthesisStatus === 'active'}
           >
-            <div className="text-sm text-slate-600 pl-2">
+            <div className="pl-2 text-sm text-[var(--theme-text-secondary)]">
               {synthesisStatus === 'active' ? (
                 <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin text-purple-600" size={14} />
+                  <Loader2 className="animate-spin text-[var(--theme-border-focus)]" size={14} />
                   <span>综合最终答案中...</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-emerald-600">
+                <div className="flex items-center gap-2 text-[var(--theme-text-success)]">
                   <CheckCircle2 size={14} />
                   <span>推理完成。</span>
                 </div>

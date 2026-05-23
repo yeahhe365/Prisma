@@ -116,9 +116,9 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+      <div className="space-y-4 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] p-4">
         <div className="space-y-2">
-          <div className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+          <div className="mb-3 text-xs font-medium text-[var(--theme-text-secondary)]">
             已添加模型 ({allModels.length})
           </div>
 

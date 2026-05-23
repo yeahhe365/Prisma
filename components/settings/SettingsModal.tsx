@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, BrainCircuit, Info, Settings, X } from 'lucide-react';
+import { BrainCircuit, Info, SlidersHorizontal, X } from 'lucide-react';
 import { AppConfig, ModelOption, ThinkingLevel } from '../../types';
 import ModelSection from './ModelSection';
 import ThinkingSection from './ThinkingSection';
@@ -27,7 +27,7 @@ const SETTINGS_TABS = [
     label: '模型管理',
     kicker: 'Connection',
     title: '模型管理',
-    Icon: Bot,
+    Icon: SlidersHorizontal,
   },
   {
     id: 'thinking',
@@ -68,29 +68,29 @@ const SettingsModal = ({
   const activeTabConfig = SETTINGS_TABS.find((tab) => tab.id === activeTab) ?? SETTINGS_TABS[0];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="设置"
-        className="flex h-[min(85vh,800px)] min-h-[560px] w-full max-w-[1120px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:border-slate-700 dark:bg-slate-900 max-md:h-[92vh] max-md:min-h-0 max-md:flex-col"
+        className="flex h-[min(85vh,800px)] min-h-[560px] w-full max-w-[1120px] overflow-hidden rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl animate-in zoom-in-95 duration-200 max-md:h-[92vh] max-md:min-h-0 max-md:flex-col"
       >
-        <aside className="flex w-64 shrink-0 flex-col bg-slate-50 dark:bg-slate-950/60 max-md:w-full max-md:border-b max-md:border-slate-200 max-md:dark:border-slate-800">
+        <aside className="flex w-64 shrink-0 flex-col border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] max-md:w-full max-md:border-b md:border-r">
           <div className="flex min-h-[68px] shrink-0 items-center justify-between px-5 py-4">
             <button
               type="button"
               onClick={onClose}
               aria-label="关闭设置"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--theme-text-tertiary)] transition-colors hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)]"
             >
               <X size={20} />
             </button>
-            <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100 md:hidden">
-              <Settings size={17} className="text-blue-600" />
+            <div className="flex items-center gap-2 font-semibold text-[var(--theme-text-primary)] md:hidden">
+              <SlidersHorizontal size={17} className="text-[var(--theme-icon-settings)]" />
               <span>设置</span>
             </div>
             <span className="h-9 w-9 md:hidden" aria-hidden="true" />
-            <span className="sr-only md:not-sr-only md:block md:text-sm md:font-semibold md:text-slate-500 md:dark:text-slate-400">
+            <span className="sr-only md:not-sr-only md:block md:text-sm md:font-semibold md:text-[var(--theme-text-secondary)]">
               设置
             </span>
           </div>
@@ -113,15 +113,16 @@ const SettingsModal = ({
                     aria-selected={isActive}
                     aria-controls={`settings-panel-${id}`}
                     onClick={() => setActiveTab(id)}
-                    className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-sm transition-colors max-md:w-auto max-md:shrink-0 ${
+                    className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-sm transition-colors outline-none max-md:w-auto max-md:shrink-0 ${
                       isActive
-                        ? 'bg-white font-semibold text-slate-950 shadow-sm dark:bg-slate-800 dark:text-slate-50'
-                        : 'text-slate-600 hover:bg-white/70 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100'
+                        ? 'bg-[var(--theme-bg-tertiary)] font-semibold text-[var(--theme-text-primary)]'
+                        : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]/50 hover:text-[var(--theme-text-primary)]'
                     }`}
                   >
                     <Icon
                       size={19}
-                      className={isActive ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}
+                      strokeWidth={isActive ? 2 : 1.5}
+                      className={isActive ? 'text-[var(--theme-text-primary)]' : 'text-[var(--theme-text-tertiary)]'}
                     />
                     <span className="whitespace-nowrap">{label}</span>
                   </button>
@@ -131,7 +132,7 @@ const SettingsModal = ({
           </nav>
         </aside>
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-slate-900">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--theme-bg-primary)]">
           <div className="min-h-0 flex-1 overflow-y-auto px-9 py-8 custom-scrollbar max-md:px-5 max-md:py-6">
             <section
               id={`settings-panel-${activeTab}`}
@@ -140,10 +141,10 @@ const SettingsModal = ({
               className="mx-auto flex w-full max-w-3xl animate-in fade-in slide-in-from-top-1 flex-col gap-5 duration-200"
             >
               <div className="flex flex-col gap-1.5 pb-0.5">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-text-tertiary)]">
                   {activeTabConfig.kicker}
                 </div>
-                <h2 className="text-xl font-semibold tracking-normal text-slate-950 dark:text-slate-50">
+                <h2 className="text-xl font-semibold tracking-normal text-[var(--theme-text-primary)]">
                   {activeTabConfig.title}
                 </h2>
               </div>
@@ -164,11 +165,11 @@ const SettingsModal = ({
             </section>
           </div>
 
-          <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <div className="flex shrink-0 justify-end border-t border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] px-5 py-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-700 active:scale-95"
+              className="rounded-lg bg-[var(--theme-bg-accent)] px-6 py-2 text-sm font-medium text-[var(--theme-text-accent)] shadow-sm transition-all hover:bg-[var(--theme-bg-accent-hover)] active:scale-95"
             >
               完成
             </button>
