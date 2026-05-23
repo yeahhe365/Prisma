@@ -115,12 +115,10 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
   };
 
   return (
-    <div className="space-y-4 pt-1">
-      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">模型管理</h3>
-
-      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
+    <div className="space-y-4">
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
         <div className="space-y-2">
-          <div className="text-xs font-medium text-slate-500 mb-3">
+          <div className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">
             已添加模型 ({allModels.length})
           </div>
 

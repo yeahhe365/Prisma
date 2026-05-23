@@ -30,7 +30,7 @@ const Header = ({
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50">
       <div className="w-full px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={onToggleSidebar}
             className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -45,18 +45,18 @@ const Header = ({
             title="开始新对话"
           >
             <Logo className="w-8 h-8 transition-transform group-hover:scale-110" />
-            <h1 className="font-bold text-lg tracking-tight text-blue-600 group-hover:opacity-70 transition-opacity">
+            <h1 className="hidden font-bold text-lg tracking-tight text-blue-600 group-hover:opacity-70 transition-opacity sm:block">
               Prisma
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative group">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="relative group min-w-0">
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value as ModelOption)}
-              className="relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5 outline-none appearance-none cursor-pointer pl-3 pr-8 shadow-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="relative block w-auto max-w-[32vw] cursor-pointer appearance-none truncate rounded-lg border border-slate-200 bg-white p-2.5 pl-3 pr-8 text-sm font-medium text-slate-800 shadow-sm outline-none transition-colors hover:bg-slate-50 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:max-w-none"
             >
               {availableModels.map((m) => (
                 <option key={`${m.provider}-${m.value}`} value={m.value}>

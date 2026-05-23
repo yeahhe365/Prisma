@@ -223,26 +223,21 @@ const ChatInput = ({
         </div>
       )}
 
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*,application/pdf,video/*,audio/*,text/*,.js,.ts,.tsx,.py,.json,.csv,.c,.cpp,.rs,.md"
+        multiple
+        onChange={handleFileSelect}
+      />
+
       {/* Input Container */}
-      <div className="w-full flex items-end p-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-[26px] shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 dark:focus-within:bg-slate-800/90 transition-colors duration-200">
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept="image/*,application/pdf,video/*,audio/*,text/*,.js,.ts,.tsx,.py,.json,.csv,.c,.cpp,.rs,.md"
-          multiple
-          onChange={handleFileSelect}
-        />
-
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex-shrink-0 p-2.5 mb-0.5 ml-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          title="添加附件（图片、视频、PDF、音频、代码）"
-          disabled={isRunning}
-        >
-          <Paperclip size={20} />
-        </button>
-
+      <div
+        role="form"
+        aria-label="消息输入区域"
+        className="w-full rounded-[26px] border border-slate-200 bg-white px-4 py-2 shadow-[0_10px_15px_-3px_rgba(15,23,42,0.08),0_4px_6px_-4px_rgba(15,23,42,0.08)] transition-colors duration-200 focus-within:border-slate-700 focus-within:ring-1 focus-within:ring-slate-700 dark:border-slate-800 dark:bg-[#121214] dark:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.3),0_4px_6px_-4px_rgba(0,0,0,0.3)] dark:focus-within:border-blue-500 dark:focus-within:ring-blue-500"
+      >
         <textarea
           ref={textareaRef}
           value={query}
@@ -254,30 +249,50 @@ const ChatInput = ({
           onPaste={handlePaste}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
-          placeholder="输入你的问题..."
+          placeholder="提出问题..."
+          aria-label="消息输入"
+          enterKeyHint="send"
           rows={1}
           autoFocus
-          className="flex-1 max-h-[200px] py-3 pl-2 pr-2 bg-transparent border-none focus:ring-0 resize-none outline-none text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 leading-relaxed custom-scrollbar text-base"
-          style={{ minHeight: '48px' }}
+          className="w-full max-h-[200px] min-h-[38px] resize-none border-none bg-transparent px-1 pb-0 pt-0.5 text-base leading-6 text-slate-950 outline-none placeholder:text-slate-500 focus:ring-0 dark:text-slate-100 dark:placeholder:text-slate-600 custom-scrollbar"
         />
 
-        <div className="flex-shrink-0 pb-0.5 pr-0.5">
-          {isRunning ? (
+        <div
+          data-testid="input-toolbar"
+          className="flex w-full items-center justify-between gap-3 pt-1 max-[480px]:flex-col max-[480px]:items-stretch"
+        >
+          <div className="flex min-w-0 items-center gap-2 max-[480px]:flex-wrap">
             <button
-              onClick={onStop}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-900 text-white hover:bg-slate-700 transition-colors shadow-md"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full border border-transparent px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-45 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+              title="添加附件（图片、视频、PDF、音频、代码）"
+              disabled={isRunning}
             >
-              <Square size={14} className="fill-current" />
+              <Paperclip size={16} />
+              <span>附件</span>
             </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!query.trim() && attachments.length === 0}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 transition-all shadow-md hover:scale-105 active:scale-95"
-            >
-              <ArrowUp size={20} />
-            </button>
-          )}
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end gap-3">
+            {isRunning ? (
+              <button
+                onClick={onStop}
+                aria-label="停止生成"
+                className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-red-600 text-white transition-colors hover:bg-red-700"
+              >
+                <Square size={14} className="fill-current" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                aria-label="发送消息"
+                disabled={!query.trim() && attachments.length === 0}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:bg-blue-600 dark:hover:bg-blue-500 dark:disabled:bg-slate-900 dark:disabled:text-slate-600"
+              >
+                <ArrowUp size={20} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -23,6 +23,23 @@ A Gemini-powered visual multi-agent deep reasoning engine with dynamic planning,
 - Copy and configure environment variables.
 - Run `npm run dev`.
 
+## Docker Deployment
+
+```bash
+docker compose up --build
+```
+
+By default, this maps to `http://localhost:8081`. If that port is already in use, set `PRISMA_DOCKER_PORT` before starting.
+
+Or:
+
+```bash
+docker build -t prisma .
+docker run --rm -p 8081:80 prisma
+```
+
+The container builds the static `dist/` bundle and serves it with Nginx, while Cloudflare Pages can keep using the existing `npm run build` flow.
+
 ## Configuration
 
 - Configure API keys and model settings for Gemini or OpenAI-compatible services.

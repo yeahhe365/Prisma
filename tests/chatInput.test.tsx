@@ -44,6 +44,31 @@ describe('ChatInput', () => {
     vi.stubGlobal('FileReader', MockFileReader);
   });
 
+  it('uses a JustSearch-style stacked input box with a bottom toolbar', () => {
+    render(
+      <ChatInput
+        query=""
+        setQuery={vi.fn()}
+        onRun={vi.fn(() => false)}
+        onStop={vi.fn()}
+        appState="idle"
+      />,
+    );
+
+    const form = screen.getByRole('form', { name: '消息输入区域' });
+    const textarea = screen.getByPlaceholderText('提出问题...');
+    const toolbar = screen.getByTestId('input-toolbar');
+    const attachmentButton = screen.getByTitle('添加附件（图片、视频、PDF、音频、代码）');
+    const sendButton = screen.getByRole('button', { name: '发送消息' });
+
+    expect(form.contains(textarea)).toBe(true);
+    expect(form.contains(toolbar)).toBe(true);
+    expect(toolbar.contains(attachmentButton)).toBe(true);
+    expect(toolbar.contains(sendButton)).toBe(true);
+    expect(form.firstElementChild).toBe(textarea);
+    expect(form.lastElementChild).toBe(toolbar);
+  });
+
   it('announces input errors through an alert region and clears them on typing', async () => {
     const user = userEvent.setup();
     const clearInputError = vi.fn();
@@ -62,7 +87,7 @@ describe('ChatInput', () => {
 
     expect(screen.getByRole('alert').textContent).toContain('当前模型仅支持图片和文本/代码附件');
 
-    await user.type(screen.getByPlaceholderText('输入你的问题...'), 'hi');
+    await user.type(screen.getByPlaceholderText('提出问题...'), 'hi');
 
     expect(clearInputError).toHaveBeenCalled();
   });
@@ -88,7 +113,7 @@ describe('ChatInput', () => {
     });
     expect(await screen.findByAltText('attachment')).toBeTruthy();
 
-    await user.type(screen.getByPlaceholderText('输入你的问题...'), '{enter}');
+    await user.type(screen.getByPlaceholderText('提出问题...'), '{enter}');
 
     expect(onRun).toHaveBeenCalledWith([
       expect.objectContaining({
@@ -124,7 +149,7 @@ describe('ChatInput', () => {
     await waitFor(() => {
       expect(URL.createObjectURL).toHaveBeenCalledWith(file);
     });
-    await user.type(screen.getByPlaceholderText('输入你的问题...'), '{enter}');
+    await user.type(screen.getByPlaceholderText('提出问题...'), '{enter}');
 
     expect(await screen.findByAltText('attachment')).toBeTruthy();
   });
@@ -178,7 +203,7 @@ describe('ChatInput', () => {
       />,
     );
 
-    await user.click(screen.getAllByRole('button')[1]);
+    await user.click(screen.getByRole('button', { name: '停止生成' }));
 
     expect(onStop).toHaveBeenCalled();
   });
@@ -260,7 +285,7 @@ describe('ChatInput', () => {
     const pastedImage = new File(['image'], 'paste.png', { type: 'image/png' });
     const preventDefault = vi.fn();
 
-    const pasteEvent = createEvent.paste(screen.getByPlaceholderText('输入你的问题...'));
+    const pasteEvent = createEvent.paste(screen.getByPlaceholderText('提出问题...'));
     Object.defineProperty(pasteEvent, 'clipboardData', {
       value: {
         items: [
@@ -272,7 +297,7 @@ describe('ChatInput', () => {
       },
     });
     pasteEvent.preventDefault = preventDefault;
-    fireEvent(screen.getByPlaceholderText('输入你的问题...'), pasteEvent);
+    fireEvent(screen.getByPlaceholderText('提出问题...'), pasteEvent);
 
     await waitFor(() => {
       expect(preventDefault).toHaveBeenCalled();
@@ -280,8 +305,8 @@ describe('ChatInput', () => {
       expect(URL.createObjectURL).toHaveBeenCalledWith(pastedImage);
     });
 
-    fireEvent.compositionStart(screen.getByPlaceholderText('输入你的问题...'));
-    fireEvent.keyDown(screen.getByPlaceholderText('输入你的问题...'), {
+    fireEvent.compositionStart(screen.getByPlaceholderText('提出问题...'));
+    fireEvent.keyDown(screen.getByPlaceholderText('提出问题...'), {
       key: 'Enter',
       shiftKey: false,
       nativeEvent: { isComposing: true },
@@ -297,7 +322,7 @@ describe('ChatInput', () => {
       <ChatInput query="hello" setQuery={vi.fn()} onRun={onRun} onStop={vi.fn()} appState="idle" />,
     );
 
-    const textarea = screen.getByPlaceholderText('输入你的问题...');
+    const textarea = screen.getByPlaceholderText('提出问题...');
 
     fireEvent.compositionStart(textarea);
     fireEvent.keyDown(textarea, {

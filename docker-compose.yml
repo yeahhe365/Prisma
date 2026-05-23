@@ -1,0 +1,8 @@
+services:
+  prisma:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '${PRISMA_DOCKER_PORT:-8081}:80'
+    restart: unless-stopped

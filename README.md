@@ -128,6 +128,23 @@ npm run lint
 npm run build
 ```
 
+### 6. 使用 Docker 部署
+
+```bash
+docker compose up --build
+```
+
+默认映射到 `http://localhost:8081`。如果本机端口已被占用，可以先设置 `PRISMA_DOCKER_PORT` 再启动。
+
+或者：
+
+```bash
+docker build -t prisma .
+docker run --rm -p 8081:80 prisma
+```
+
+Docker 镜像会在构建阶段生成静态 `dist/` 并用 Nginx 提供服务，Cloudflare Pages 仍然可以继续沿用现有的 `npm run build` 流程。
+
 ---
 
 ## 🛠️ 技术栈
