@@ -9,22 +9,26 @@ const SUGGESTIONS = [
   {
     icon: Lightbulb,
     text: '用简单的方式解释量子计算',
-    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
+    color:
+      'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
   {
     icon: Code,
     text: '编写一个排序算法并分析时间复杂度',
-    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
+    color:
+      'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
   {
     icon: BookOpen,
     text: '总结系统思维的核心思想',
-    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
+    color:
+      'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
   {
     icon: BarChart3,
     text: '比较不同的机器学习方法',
-    color: 'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
+    color:
+      'text-[var(--theme-text-primary)] bg-[var(--theme-bg-input)] border-[var(--theme-border-secondary)]',
   },
 ];
 
@@ -37,6 +41,11 @@ interface ChatAreaProps {
   processStartTime: number | null;
   processEndTime: number | null;
   onSuggestionClick?: (text: string) => void;
+  onEditMessage?: (messageId: string, mode: 'update' | 'resend') => void;
+  onDeleteMessage?: (messageId: string) => void;
+  onRetryMessage?: (messageId: string) => void;
+  onContinueGeneration?: (messageId: string) => void;
+  onForkMessage?: (messageId: string) => void;
 }
 
 const ChatArea = ({
@@ -48,6 +57,11 @@ const ChatArea = ({
   processStartTime,
   processEndTime,
   onSuggestionClick,
+  onEditMessage,
+  onDeleteMessage,
+  onRetryMessage,
+  onContinueGeneration,
+  onForkMessage,
 }: ChatAreaProps) => {
   const isIdle = messages.length === 0 && appState === 'idle';
 
@@ -71,7 +85,9 @@ const ChatArea = ({
                   className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-[var(--theme-border-focus)] hover:bg-[var(--theme-bg-tertiary)] hover:shadow-md active:translate-y-0 ${s.color}`}
                 >
                   <s.icon size={16} className="shrink-0 text-[var(--theme-text-tertiary)]" />
-                  <span className="font-medium leading-snug text-[var(--theme-text-primary)]">{s.text}</span>
+                  <span className="font-medium leading-snug text-[var(--theme-text-primary)]">
+                    {s.text}
+                  </span>
                 </button>
               ))}
             </div>
@@ -80,8 +96,17 @@ const ChatArea = ({
       ) : (
         <div className="pb-28">
           {/* History */}
-          {messages.map((msg) => (
-            <ChatMessageView key={msg.id} message={msg} />
+          {messages.map((msg, index) => (
+            <ChatMessageView
+              key={msg.id}
+              message={msg}
+              prevMessage={messages[index - 1]}
+              onEditMessage={onEditMessage}
+              onDeleteMessage={onDeleteMessage}
+              onRetryMessage={onRetryMessage}
+              onContinueGeneration={onContinueGeneration}
+              onForkMessage={onForkMessage}
+            />
           ))}
 
           {/* Active Generation (Ghost Message) */}
@@ -127,6 +152,7 @@ const ChatArea = ({
                           content: finalOutput,
                           isThinking: false,
                         }}
+                        prevMessage={messages[messages.length - 1]}
                       />
                     </div>
                   )}

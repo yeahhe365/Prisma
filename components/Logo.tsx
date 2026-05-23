@@ -1,12 +1,10 @@
 import React from 'react';
 
-interface LogoProps {
-  className?: string;
-}
+type LogoProps = React.SVGProps<SVGSVGElement>;
 
-const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
+const Logo = ({ className = 'w-8 h-8', ...props }: LogoProps) => {
   return (
-    <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
       <g id="prism">
         {/* Inner Triangle */}
         <path
@@ -57,14 +55,7 @@ const Logo = ({ className = 'w-8 h-8' }: LogoProps) => {
 
       <g id="beams">
         {/* Input Beam */}
-        <line
-          x1="0"
-          y1="275"
-          x2="195"
-          y2="275"
-          stroke="currentColor"
-          strokeWidth="12"
-        />
+        <line x1="0" y1="275" x2="195" y2="275" stroke="currentColor" strokeWidth="12" />
 
         {/* Blue Beam */}
         <polyline

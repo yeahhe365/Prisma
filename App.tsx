@@ -41,6 +41,11 @@ const App = () => {
     clearInputError,
     handleSetThinkingLevel,
     handleSetRecursiveLoop,
+    handleEditMessage,
+    handleDeleteMessage,
+    handleRetryMessage,
+    handleContinueGeneration,
+    handleForkMessage,
   } = useAppLogic();
 
   const { isDark, toggle: toggleDark } = useDarkMode();
@@ -94,6 +99,11 @@ const App = () => {
             onSuggestionClick={(text) => {
               setQuery(text);
             }}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            onRetryMessage={handleRetryMessage}
+            onContinueGeneration={handleContinueGeneration}
+            onForkMessage={handleForkMessage}
           />
 
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex justify-center bg-[linear-gradient(to_top,var(--theme-bg-primary)_0%,color-mix(in_srgb,var(--theme-bg-primary)_82%,transparent)_68%,transparent_100%)] p-4 pb-6">

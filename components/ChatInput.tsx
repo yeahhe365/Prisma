@@ -14,6 +14,9 @@ interface ChatInputProps {
   onClearInputError?: () => void;
 }
 
+const chatInputButtonClass =
+  'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-0 p-0 leading-none transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--theme-bg-input)] disabled:cursor-not-allowed disabled:opacity-50';
+
 const ChatInput = ({
   query,
   setQuery,
@@ -43,8 +46,9 @@ const ChatInput = ({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
+      const minHeight = 26;
       const maxHeight = 200;
-      textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+      textareaRef.current.style.height = `${Math.max(minHeight, Math.min(scrollHeight, maxHeight))}px`;
 
       if (scrollHeight > maxHeight) {
         textareaRef.current.style.overflowY = 'auto';
@@ -159,6 +163,17 @@ const ChatInput = ({
   };
 
   const isRunning = appState !== 'idle';
+  const focusBlockingSelector =
+    'button, a, input, textarea, select, label, summary, audio, video, [role="button"], [role="menuitem"], [contenteditable="true"]';
+
+  const handleInputShellClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest(focusBlockingSelector)) {
+      return;
+    }
+
+    textareaRef.current?.focus();
+  };
 
   return (
     <div className="w-full">
@@ -169,58 +184,6 @@ const ChatInput = ({
           className="mb-3 rounded-2xl border border-[var(--theme-bg-danger)]/30 bg-[var(--theme-bg-error-message)] px-4 py-3 text-sm text-[var(--theme-text-danger)] shadow-sm"
         >
           {inputError}
-        </div>
-      )}
-
-      {/* Attachments Preview */}
-      {attachments.length > 0 && (
-        <div className="flex gap-3 mb-3 overflow-x-auto px-1 py-1 custom-scrollbar">
-          {attachments.map((att) => (
-            <div key={att.id} className="relative group shrink-0">
-              {att.type === 'image' ? (
-                <img
-                  src={att.url}
-                  alt="attachment"
-                  className="h-16 w-16 rounded-lg border border-[var(--theme-border-secondary)] object-cover shadow-sm"
-                />
-              ) : att.type === 'video' ? (
-                <div className="relative flex h-16 w-24 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg bg-[var(--theme-bg-code-block)] p-2 shadow-sm">
-                  <Video size={20} className="text-white/50" />
-                  <span className="text-[8px] font-medium text-white/70 truncate w-full text-center px-1">
-                    {att.name || 'video.mp4'}
-                  </span>
-                </div>
-              ) : att.type === 'audio' ? (
-                <div className="flex h-16 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
-                  <Music size={20} className="text-[var(--theme-text-link)]" />
-                  <span className="w-full truncate px-1 text-center text-[8px] font-medium text-[var(--theme-text-secondary)]">
-                    {att.name || 'audio.mp3'}
-                  </span>
-                </div>
-              ) : att.type === 'pdf' ? (
-                <div className="flex h-16 w-32 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
-                  <FileText size={20} className="text-[var(--theme-text-danger)]" />
-                  <span className="w-full truncate px-1 text-center text-[10px] font-medium text-[var(--theme-text-secondary)]">
-                    {att.name || 'document.pdf'}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex h-16 w-32 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
-                  <FileCode size={20} className="text-[var(--theme-text-link)]" />
-                  <span className="w-full truncate px-1 text-center text-[10px] font-medium text-[var(--theme-text-secondary)]">
-                    {att.name || 'file.txt'}
-                  </span>
-                </div>
-              )}
-              <button
-                onClick={() => removeAttachment(att.id)}
-                className="absolute -right-2 -top-2 z-10 rounded-full bg-[var(--theme-bg-accent)] p-1 text-[var(--theme-text-accent)] opacity-100 shadow-md transition-colors hover:bg-[var(--theme-bg-danger)]"
-                aria-label="移除附件"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          ))}
         </div>
       )}
 
@@ -237,60 +200,125 @@ const ChatInput = ({
       <div
         role="form"
         aria-label="消息输入区域"
-        className="w-full rounded-[26px] border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] px-3 py-1.5 shadow-lg transition-colors duration-200 focus-within:border-[var(--theme-border-focus)] focus-within:ring-1 focus-within:ring-[var(--theme-border-focus)] sm:px-4 sm:py-2"
+        onClick={handleInputShellClick}
+        className="relative z-20 flex w-full flex-col gap-1.5 rounded-[26px] border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] px-3 py-1.5 shadow-lg transition-colors duration-200 focus-within:border-[var(--theme-border-focus)] sm:px-4 sm:py-2"
       >
-        <textarea
-          ref={textareaRef}
-          value={query}
-          onChange={(e) => {
-            onClearInputError?.();
-            setQuery(e.target.value);
-          }}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          onCompositionStart={() => setIsComposing(true)}
-          onCompositionEnd={() => setIsComposing(false)}
-          placeholder="提出问题..."
-          aria-label="消息输入"
-          enterKeyHint="send"
-          rows={1}
-          autoFocus
-          className="custom-scrollbar max-h-[200px] min-h-[34px] w-full resize-none border-none bg-transparent px-1 pb-0 pt-0.5 text-base leading-6 text-[var(--theme-text-primary)] outline-none placeholder:text-[var(--theme-text-tertiary)] focus:ring-0 sm:min-h-[38px]"
-        />
+        {attachments.length > 0 && (
+          <div className="custom-scrollbar flex gap-3 overflow-x-auto px-1 py-1">
+            {attachments.map((att) => (
+              <div key={att.id} className="group relative shrink-0">
+                {att.type === 'image' ? (
+                  <img
+                    src={att.url}
+                    alt="attachment"
+                    className="h-16 w-16 rounded-lg border border-[var(--theme-border-secondary)] object-cover shadow-sm"
+                  />
+                ) : att.type === 'video' ? (
+                  <div className="relative flex h-16 w-24 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg bg-[var(--theme-bg-code-block)] p-2 shadow-sm">
+                    <Video size={20} className="text-white/50" />
+                    <span className="w-full truncate px-1 text-center text-[8px] font-medium text-white/70">
+                      {att.name || 'video.mp4'}
+                    </span>
+                  </div>
+                ) : att.type === 'audio' ? (
+                  <div className="flex h-16 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
+                    <Music size={20} className="text-[var(--theme-text-link)]" />
+                    <span className="w-full truncate px-1 text-center text-[8px] font-medium text-[var(--theme-text-secondary)]">
+                      {att.name || 'audio.mp3'}
+                    </span>
+                  </div>
+                ) : att.type === 'pdf' ? (
+                  <div className="flex h-16 w-32 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
+                    <FileText size={20} className="text-[var(--theme-text-danger)]" />
+                    <span className="w-full truncate px-1 text-center text-[10px] font-medium text-[var(--theme-text-secondary)]">
+                      {att.name || 'document.pdf'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex h-16 w-32 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
+                    <FileCode size={20} className="text-[var(--theme-text-link)]" />
+                    <span className="w-full truncate px-1 text-center text-[10px] font-medium text-[var(--theme-text-secondary)]">
+                      {att.name || 'file.txt'}
+                    </span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(att.id)}
+                  className="absolute -right-2 -top-2 z-10 rounded-full bg-[var(--theme-bg-accent)] p-1 text-[var(--theme-text-accent)] opacity-100 shadow-md transition-colors hover:bg-[var(--theme-bg-danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--theme-bg-input)]"
+                  aria-label="移除附件"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="relative flex min-h-0 w-full flex-grow cursor-text flex-col">
+          <textarea
+            ref={textareaRef}
+            value={query}
+            onChange={(e) => {
+              onClearInputError?.();
+              setQuery(e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
+            placeholder="提出问题..."
+            aria-label="消息输入"
+            enterKeyHint="send"
+            rows={1}
+            autoFocus
+            data-chat-input-textarea="true"
+            className="custom-scrollbar max-h-[200px] min-h-[26px] w-full flex-grow resize-none border-0 bg-transparent px-1 pb-0 pt-0.5 text-base leading-6 text-[var(--theme-text-primary)] outline-none placeholder:text-[var(--theme-text-tertiary)] focus:outline-none focus:ring-0 focus-visible:!outline-none"
+          />
+        </div>
 
         <div
           data-testid="input-toolbar"
-          className="flex w-full items-center justify-between gap-3 pt-1"
+          className="flex w-full items-center justify-between gap-2 overflow-visible pt-1"
         >
-          <div className="flex min-w-0 items-center gap-2">
+          <div
+            data-testid="input-toolbar-left"
+            className="flex min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full border border-transparent px-3 text-sm font-medium text-[var(--theme-icon-attach)] transition-colors hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] disabled:cursor-not-allowed disabled:opacity-45"
+              className={`${chatInputButtonClass} bg-transparent text-[var(--theme-icon-attach)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)]`}
               title="添加附件（图片、视频、PDF、音频、代码）"
+              aria-label="添加附件"
               disabled={isRunning}
             >
-              <Paperclip size={16} />
-              <span>附件</span>
+              <Paperclip size={18} strokeWidth={2} />
             </button>
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
+          <div
+            data-testid="input-toolbar-right"
+            className="flex min-w-0 flex-shrink-0 items-center justify-end gap-1.5 sm:gap-3"
+          >
             {isRunning ? (
               <button
+                type="button"
                 onClick={onStop}
                 aria-label="停止生成"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--theme-bg-danger)] text-[var(--theme-icon-stop)] transition-colors hover:bg-[var(--theme-bg-danger-hover)]"
+                className={`${chatInputButtonClass} !h-10 !w-10 !rounded-[10px] bg-[var(--theme-bg-danger)] text-[var(--theme-icon-stop)] shadow-sm hover:bg-[var(--theme-bg-danger-hover)]`}
               >
-                <Square size={14} className="fill-current" />
+                <Square size={10} className="fill-current" />
               </button>
             ) : (
               <button
+                type="button"
                 onClick={handleSubmit}
                 aria-label="发送消息"
                 disabled={!query.trim() && attachments.length === 0}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--theme-bg-accent)] text-[var(--theme-icon-send)] transition-colors hover:bg-[var(--theme-bg-accent-hover)] disabled:cursor-not-allowed disabled:bg-[var(--theme-bg-tertiary)] disabled:text-[var(--theme-text-tertiary)]"
+                className={`${chatInputButtonClass} !h-10 !w-10 bg-[var(--theme-bg-accent)] text-[var(--theme-icon-send)] shadow-sm hover:bg-[var(--theme-bg-accent-hover)] disabled:bg-[var(--theme-bg-tertiary)] disabled:text-[var(--theme-text-tertiary)]`}
               >
-                <ArrowUp size={20} />
+                <ArrowUp size={18} strokeWidth={2} />
               </button>
             )}
           </div>

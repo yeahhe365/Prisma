@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -9,6 +9,8 @@ import { DEFAULT_CONFIG } from '../config';
 import SettingsModal from '../components/settings/SettingsModal';
 
 describe('SettingsModal', () => {
+  const fetchMock = vi.fn();
+
   const renderModal = () =>
     render(
       <SettingsModal
@@ -24,14 +26,21 @@ describe('SettingsModal', () => {
     );
 
   beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve({
-          json: () => Promise.resolve({ stargazers_count: 1234 }),
-        }),
-      ),
-    );
+    fetchMock.mockReset();
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith('/releases/latest')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ tag_name: '0.0.0' }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ stargazers_count: 1234 }),
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   it('uses a JustSearch-style sidebar tab layout for settings sections', async () => {
@@ -58,7 +67,7 @@ describe('SettingsModal', () => {
 
     expect(aboutTab.getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tabpanel', { name: '关于' }).textContent).toContain(
-      'yeahhe365 / Prisma',
+      '在 GitHub 上查看',
     );
   });
 
@@ -74,5 +83,62 @@ describe('SettingsModal', () => {
     expect(tablist.parentElement?.className).toContain('bg-[var(--theme-bg-secondary)]');
     expect(modelTab.className).toContain('bg-[var(--theme-bg-tertiary)]');
     expect(modelTab.className).toContain('text-[var(--theme-text-primary)]');
+  });
+
+  it('renders the about panel in an AMC-style centered presentation', async () => {
+    const user = userEvent.setup();
+
+    renderModal();
+
+    await user.click(screen.getByRole('tab', { name: '关于' }));
+
+    const aboutSection = screen.getByTestId('settings-about-section');
+    const logo = screen.getByLabelText('Prisma 标志');
+    const releaseLink = screen.getByRole('link', { name: /v0\.0\.0/ });
+    const githubLink = screen.getByRole('link', { name: '在 GitHub 上查看' });
+    const starsLink = screen.getByRole('link', { name: /星标/ });
+
+    expect(aboutSection.className).toContain('items-center');
+    expect(aboutSection.className).toContain('text-center');
+    expect(aboutSection.className).toContain('animate-in');
+    expect(logo.getAttribute('class')).toContain('drop-shadow-2xl');
+    expect(releaseLink.className).toContain('rounded-full');
+    expect(releaseLink.className).toContain('p-[1px]');
+    expect(githubLink.getAttribute('href')).toBe('https://github.com/yeahhe365/Prisma');
+    expect(githubLink.className).toContain('bg-[#24292F]');
+    expect(starsLink.getAttribute('href')).toBe('https://github.com/yeahhe365/Prisma/stargazers');
+    expect(screen.queryByText('yeahhe365 / Prisma')).toBeNull();
+
+    await waitFor(() => {
+      expect(starsLink.textContent).toContain('1,234');
+    });
+  });
+
+  it('localizes the release status when a newer Prisma release is available', async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith('/releases/latest')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ tag_name: '0.0.1' }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ stargazers_count: 7 }),
+      });
+    });
+
+    renderModal();
+
+    await user.click(screen.getByRole('tab', { name: '关于' }));
+
+    const releaseLink = screen.getByRole('link', { name: /v0\.0\.0/ });
+
+    await waitFor(() => {
+      expect(releaseLink.textContent).toContain('有新版本');
+      expect(releaseLink.getAttribute('title')).toBe('有新版本：0.0.1');
+    });
   });
 });

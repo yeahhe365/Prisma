@@ -134,6 +134,19 @@ export const useAppLogic = () => {
   const currentSessionIdRef = useRef(currentSessionId);
   currentSessionIdRef.current = currentSessionId;
 
+  const syncMessagesToActiveSession = useCallback(
+    (nextMessages: ChatMessage[]) => {
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+
+      const sid = currentSessionIdRef.current;
+      if (sid) {
+        updateSessionMessages(sid, nextMessages);
+      }
+    },
+    [updateSessionMessages],
+  );
+
   // Handle AI Completion — triggered only by appState
   useEffect(() => {
     if (appState !== 'completed') return;
@@ -239,6 +252,121 @@ export const useAppLogic = () => {
     ],
   );
 
+  const handleDeleteMessage = useCallback(
+    (messageId: string) => {
+      const nextMessages = messagesRef.current.filter((message) => message.id !== messageId);
+      if (nextMessages.length === messagesRef.current.length) return;
+
+      setInputError(null);
+      syncMessagesToActiveSession(nextMessages);
+    },
+    [syncMessagesToActiveSession],
+  );
+
+  const handleEditMessage = useCallback(
+    (messageId: string, mode: 'update' | 'resend') => {
+      const currentMessages = messagesRef.current;
+      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
+      const message = currentMessages[messageIndex];
+      if (!message?.content) return;
+
+      stopDeepThink();
+      resetDeepThink();
+      setInputError(null);
+      setQuery(message.content);
+      setFocusTrigger((prev) => prev + 1);
+
+      if (mode === 'resend') {
+        syncMessagesToActiveSession(currentMessages.slice(0, messageIndex));
+      }
+    },
+    [resetDeepThink, stopDeepThink, syncMessagesToActiveSession],
+  );
+
+  const handleRetryMessage = useCallback(
+    (messageId: string) => {
+      const currentMessages = messagesRef.current;
+      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
+      const message = currentMessages[messageIndex];
+      if (!message || message.role !== 'model') return;
+
+      const previousUserMessage = [...currentMessages.slice(0, messageIndex)]
+        .reverse()
+        .find((entry) => entry.role === 'user');
+      if (!previousUserMessage?.content) return;
+
+      const retryHistory = currentMessages.slice(0, messageIndex);
+      stopDeepThink();
+      resetDeepThink();
+      setInputError(null);
+      syncMessagesToActiveSession(retryHistory);
+      runDynamicDeepThink(
+        previousUserMessage.content,
+        retryHistory,
+        selectedModel,
+        effectiveConfig,
+      );
+    },
+    [
+      effectiveConfig,
+      resetDeepThink,
+      runDynamicDeepThink,
+      selectedModel,
+      stopDeepThink,
+      syncMessagesToActiveSession,
+    ],
+  );
+
+  const handleContinueGeneration = useCallback(
+    (messageId: string) => {
+      const currentMessages = messagesRef.current;
+      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
+      const message = currentMessages[messageIndex];
+      if (!message || message.role !== 'model') return;
+
+      const continuationPrompt = '继续';
+      const continuationMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: continuationPrompt,
+      };
+      const continuationHistory = [
+        ...currentMessages.slice(0, messageIndex + 1),
+        continuationMessage,
+      ];
+
+      stopDeepThink();
+      resetDeepThink();
+      setInputError(null);
+      setQuery('');
+      syncMessagesToActiveSession(continuationHistory);
+      runDynamicDeepThink(continuationPrompt, continuationHistory, selectedModel, effectiveConfig);
+    },
+    [
+      effectiveConfig,
+      resetDeepThink,
+      runDynamicDeepThink,
+      selectedModel,
+      stopDeepThink,
+      syncMessagesToActiveSession,
+    ],
+  );
+
+  const handleForkMessage = useCallback(
+    (messageId: string) => {
+      const currentMessages = messagesRef.current;
+      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
+      if (messageIndex === -1) return;
+
+      stopDeepThink();
+      resetDeepThink();
+      setInputError(null);
+      syncMessagesToActiveSession(currentMessages.slice(0, messageIndex + 1));
+      setFocusTrigger((prev) => prev + 1);
+    },
+    [resetDeepThink, stopDeepThink, syncMessagesToActiveSession],
+  );
+
   const handleNewChat = useCallback(() => {
     stopDeepThink();
     setCurrentSessionId(null);
@@ -304,5 +432,10 @@ export const useAppLogic = () => {
     clearInputError,
     handleSetThinkingLevel,
     handleSetRecursiveLoop,
+    handleEditMessage,
+    handleDeleteMessage,
+    handleRetryMessage,
+    handleContinueGeneration,
+    handleForkMessage,
   };
 };

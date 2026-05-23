@@ -294,4 +294,140 @@ describe('useAppLogic', () => {
     expect(deepThinkMock.stopDeepThink).toHaveBeenCalled();
     expect(chatSessionsMock.setCurrentSessionId).toHaveBeenCalledWith(null);
   });
+
+  it('deletes a message from the active session', async () => {
+    const messageSession: ChatSession = {
+      ...session,
+      messages: [
+        { id: 'user-1', role: 'user', content: 'question' },
+        { id: 'model-1', role: 'model', content: 'answer' },
+      ],
+    };
+    chatSessionsMock.sessions = [messageSession];
+    chatSessionsMock.currentSessionId = 'session-1';
+
+    const { result } = renderHook(() => useAppLogic());
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(2);
+    });
+
+    act(() => {
+      result.current.handleDeleteMessage('model-1');
+    });
+
+    expect(result.current.messages).toEqual([{ id: 'user-1', role: 'user', content: 'question' }]);
+    expect(chatSessionsMock.updateSessionMessages).toHaveBeenCalledWith('session-1', [
+      { id: 'user-1', role: 'user', content: 'question' },
+    ]);
+  });
+
+  it('prepares a user message for resend by trimming later messages into the input', async () => {
+    const messageSession: ChatSession = {
+      ...session,
+      messages: [
+        { id: 'user-1', role: 'user', content: 'first question' },
+        { id: 'model-1', role: 'model', content: 'first answer' },
+        { id: 'user-2', role: 'user', content: 'rewrite this' },
+        { id: 'model-2', role: 'model', content: 'second answer' },
+      ],
+    };
+    chatSessionsMock.sessions = [messageSession];
+    chatSessionsMock.currentSessionId = 'session-1';
+
+    const { result } = renderHook(() => useAppLogic());
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(4);
+    });
+
+    act(() => {
+      result.current.handleEditMessage('user-2', 'resend');
+    });
+
+    expect(result.current.query).toBe('rewrite this');
+    expect(result.current.messages).toEqual([
+      { id: 'user-1', role: 'user', content: 'first question' },
+      { id: 'model-1', role: 'model', content: 'first answer' },
+    ]);
+    expect(result.current.focusTrigger).toBe(1);
+    expect(chatSessionsMock.updateSessionMessages).toHaveBeenCalledWith('session-1', [
+      { id: 'user-1', role: 'user', content: 'first question' },
+      { id: 'model-1', role: 'model', content: 'first answer' },
+    ]);
+  });
+
+  it('retries a model message from the previous user message', async () => {
+    const messageSession: ChatSession = {
+      ...session,
+      messages: [
+        { id: 'user-1', role: 'user', content: 'first question' },
+        { id: 'model-1', role: 'model', content: 'first answer' },
+        { id: 'user-2', role: 'user', content: 'retry me' },
+        { id: 'model-2', role: 'model', content: 'stale answer' },
+      ],
+    };
+    chatSessionsMock.sessions = [messageSession];
+    chatSessionsMock.currentSessionId = 'session-1';
+
+    const { result } = renderHook(() => useAppLogic());
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(4);
+    });
+
+    act(() => {
+      result.current.handleRetryMessage('model-2');
+    });
+
+    const expectedHistory = [
+      { id: 'user-1', role: 'user', content: 'first question' },
+      { id: 'model-1', role: 'model', content: 'first answer' },
+      { id: 'user-2', role: 'user', content: 'retry me' },
+    ];
+    expect(result.current.messages).toEqual(expectedHistory);
+    expect(chatSessionsMock.updateSessionMessages).toHaveBeenCalledWith(
+      'session-1',
+      expectedHistory,
+    );
+    expect(deepThinkMock.stopDeepThink).toHaveBeenCalled();
+    expect(deepThinkMock.resetDeepThink).toHaveBeenCalled();
+    expect(deepThinkMock.runDynamicDeepThink).toHaveBeenCalledWith(
+      'retry me',
+      expectedHistory,
+      'glm-5-turbo',
+      expect.objectContaining({ planningLevel: DEFAULT_CONFIG.planningLevel }),
+    );
+  });
+
+  it('forks the conversation by keeping messages through the selected message', async () => {
+    const messageSession: ChatSession = {
+      ...session,
+      messages: [
+        { id: 'user-1', role: 'user', content: 'first question' },
+        { id: 'model-1', role: 'model', content: 'first answer' },
+        { id: 'user-2', role: 'user', content: 'later question' },
+      ],
+    };
+    chatSessionsMock.sessions = [messageSession];
+    chatSessionsMock.currentSessionId = 'session-1';
+
+    const { result } = renderHook(() => useAppLogic());
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(3);
+    });
+
+    act(() => {
+      result.current.handleForkMessage('model-1');
+    });
+
+    const forkedHistory = [
+      { id: 'user-1', role: 'user', content: 'first question' },
+      { id: 'model-1', role: 'model', content: 'first answer' },
+    ];
+    expect(result.current.messages).toEqual(forkedHistory);
+    expect(result.current.focusTrigger).toBe(1);
+    expect(chatSessionsMock.updateSessionMessages).toHaveBeenCalledWith('session-1', forkedHistory);
+  });
 });

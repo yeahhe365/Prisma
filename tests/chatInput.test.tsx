@@ -44,7 +44,7 @@ describe('ChatInput', () => {
     vi.stubGlobal('FileReader', MockFileReader);
   });
 
-  it('uses a JustSearch-style stacked input box with a bottom toolbar', () => {
+  it('uses an AMC-style composer shell with a textarea stack and bottom toolbar', () => {
     render(
       <ChatInput
         query=""
@@ -58,18 +58,27 @@ describe('ChatInput', () => {
     const form = screen.getByRole('form', { name: '消息输入区域' });
     const textarea = screen.getByPlaceholderText('提出问题...');
     const toolbar = screen.getByTestId('input-toolbar');
-    const attachmentButton = screen.getByTitle('添加附件（图片、视频、PDF、音频、代码）');
+    const textareaShell = textarea.parentElement;
     const sendButton = screen.getByRole('button', { name: '发送消息' });
 
+    expect(form.className).toContain('flex');
+    expect(form.className).toContain('flex-col');
+    expect(form.className).toContain('gap-1.5');
+    expect(form.className).toContain('relative');
+    expect(form.className).toContain('z-20');
+    expect(form.className).not.toContain('focus-within:ring-1');
     expect(form.contains(textarea)).toBe(true);
     expect(form.contains(toolbar)).toBe(true);
-    expect(toolbar.contains(attachmentButton)).toBe(true);
     expect(toolbar.contains(sendButton)).toBe(true);
-    expect(form.firstElementChild).toBe(textarea);
+    expect(textarea.getAttribute('data-chat-input-textarea')).toBe('true');
+    expect(textareaShell?.className).toContain('relative');
+    expect(textareaShell?.className).toContain('cursor-text');
+    expect(textarea.className).toContain('focus-visible:!outline-none');
+    expect(form.firstElementChild).toBe(textareaShell);
     expect(form.lastElementChild).toBe(toolbar);
   });
 
-  it('uses AMC-style composer tokens and icon button sizing', () => {
+  it('uses AMC-style action groups and compact icon controls', () => {
     render(
       <ChatInput
         query=""
@@ -81,15 +90,51 @@ describe('ChatInput', () => {
     );
 
     const form = screen.getByRole('form', { name: '消息输入区域' });
+    const toolbar = screen.getByTestId('input-toolbar');
+    const leftActions = screen.getByTestId('input-toolbar-left');
+    const rightActions = screen.getByTestId('input-toolbar-right');
     const attachmentButton = screen.getByTitle('添加附件（图片、视频、PDF、音频、代码）');
     const sendButton = screen.getByRole('button', { name: '发送消息' });
 
     expect(form.className).toContain('border-[var(--theme-border-secondary)]');
     expect(form.className).toContain('bg-[var(--theme-bg-input)]');
     expect(form.className).toContain('focus-within:border-[var(--theme-border-focus)]');
+    expect(toolbar.className).toContain('gap-2');
+    expect(toolbar.className).toContain('overflow-visible');
+    expect(leftActions.className).toContain('overflow-x-auto');
+    expect(rightActions.className).toContain('gap-1.5');
+    expect(rightActions.className).toContain('sm:gap-3');
+    expect(screen.queryByText('附件')).toBeNull();
     expect(attachmentButton.className).toContain('text-[var(--theme-icon-attach)]');
-    expect(sendButton.className).toContain('h-11');
+    expect(attachmentButton.className).toContain('h-11');
+    expect(attachmentButton.className).toContain('w-11');
+    expect(attachmentButton.className).not.toContain('px-3');
+    expect(sendButton.className).toContain('!h-10');
+    expect(sendButton.className).toContain('!w-10');
     expect(sendButton.className).toContain('bg-[var(--theme-bg-accent)]');
+  });
+
+  it('focuses the textarea when the AMC-style composer shell is clicked', () => {
+    render(
+      <ChatInput
+        query=""
+        setQuery={vi.fn()}
+        onRun={vi.fn(() => false)}
+        onStop={vi.fn()}
+        appState="idle"
+      />,
+    );
+
+    const form = screen.getByRole('form', { name: '消息输入区域' });
+    const textarea = screen.getByPlaceholderText('提出问题...');
+    const attachmentButton = screen.getByTitle('添加附件（图片、视频、PDF、音频、代码）');
+
+    attachmentButton.focus();
+    expect(document.activeElement).toBe(attachmentButton);
+
+    fireEvent.click(form);
+
+    expect(document.activeElement).toBe(textarea);
   });
 
   it('announces input errors through an alert region and clears them on typing', async () => {
@@ -134,7 +179,11 @@ describe('ChatInput', () => {
     await waitFor(() => {
       expect(URL.createObjectURL).toHaveBeenCalledWith(file);
     });
-    expect(await screen.findByAltText('attachment')).toBeTruthy();
+    const preview = await screen.findByAltText('attachment');
+    const form = screen.getByRole('form', { name: '消息输入区域' });
+
+    expect(preview).toBeTruthy();
+    expect(form.contains(preview)).toBe(true);
 
     await user.type(screen.getByPlaceholderText('提出问题...'), '{enter}');
 
