@@ -1,12 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
-  MessageSquare,
-  PanelLeftClose,
-  PanelLeftOpen,
+  History as HistoryIcon,
+  MoreHorizontal,
   Search,
   Settings,
-  Sparkles,
   SquarePen,
   Trash2,
   X,
@@ -43,6 +48,40 @@ const SIDEBAR_ICON_BUTTON_CLASS =
 
 const SIDEBAR_ACTION_ROW_CLASS =
   'group flex h-8 w-full items-center gap-3 rounded-full bg-transparent px-3 text-left text-sm transition-colors hover:bg-[var(--theme-bg-tertiary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--theme-border-focus)]';
+
+const RECENT_CHATS_CLOSE_DELAY_MS = 120;
+const RECENT_CHATS_PANEL_WIDTH = 320;
+const RECENT_CHATS_PANEL_GAP = 0;
+const RECENT_CHATS_PANEL_MARGIN = 16;
+
+type RecentChatsOpenMode = 'hover' | 'focus' | 'click';
+
+const IconSidebarToggle = ({
+  size = 20,
+  strokeWidth = 2,
+  className,
+  color = 'currentColor',
+}: {
+  size?: number;
+  strokeWidth?: number;
+  className?: string;
+  color?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <line x1="4" x2="20" y1="8" y2="8" />
+    <line x1="4" x2="14" y1="16" y2="16" />
+  </svg>
+);
 
 const MiniSidebarButton = ({
   onClick,
@@ -86,10 +125,90 @@ const Sidebar = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isRecentChatsOpen, setIsRecentChatsOpen] = useState(false);
+  const [recentChatsOpenMode, setRecentChatsOpenMode] = useState<RecentChatsOpenMode | null>(null);
+  const [recentChatsPanelPosition, setRecentChatsPanelPosition] = useState<CSSProperties>({});
+  const [activeSessionMenuId, setActiveSessionMenuId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const expandedPaneRef = useRef<HTMLDivElement>(null);
+  const sessionMenuRef = useRef<HTMLDivElement>(null);
   const recentChatsButtonRef = useRef<HTMLButtonElement>(null);
   const recentChatsPanelRef = useRef<HTMLDivElement>(null);
+  const recentChatsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 250);
+
+  const computeRecentChatsPanelPosition = useCallback((): CSSProperties => {
+    if (!recentChatsButtonRef.current) {
+      return {};
+    }
+
+    const buttonRect = recentChatsButtonRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const leftCandidate = buttonRect.right + RECENT_CHATS_PANEL_GAP;
+    const fitsRight =
+      leftCandidate + RECENT_CHATS_PANEL_WIDTH <= viewportWidth - RECENT_CHATS_PANEL_MARGIN;
+    const left = fitsRight
+      ? leftCandidate
+      : Math.max(
+          RECENT_CHATS_PANEL_MARGIN,
+          buttonRect.left - RECENT_CHATS_PANEL_WIDTH - RECENT_CHATS_PANEL_GAP,
+        );
+    const top = Math.min(
+      Math.max(RECENT_CHATS_PANEL_MARGIN, buttonRect.top),
+      viewportHeight - RECENT_CHATS_PANEL_MARGIN * 2,
+    );
+
+    return {
+      position: 'fixed',
+      top,
+      left,
+      width: RECENT_CHATS_PANEL_WIDTH,
+      maxHeight: `calc(100vh - ${top + RECENT_CHATS_PANEL_MARGIN}px)`,
+      zIndex: 9999,
+    };
+  }, []);
+
+  const clearRecentChatsCloseTimer = useCallback(() => {
+    if (recentChatsCloseTimerRef.current !== null) {
+      clearTimeout(recentChatsCloseTimerRef.current);
+      recentChatsCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const closeRecentChats = useCallback(() => {
+    clearRecentChatsCloseTimer();
+    setIsRecentChatsOpen(false);
+    setRecentChatsOpenMode(null);
+  }, [clearRecentChatsCloseTimer]);
+
+  const openRecentChats = useCallback(
+    (mode: RecentChatsOpenMode) => {
+      clearRecentChatsCloseTimer();
+      setRecentChatsPanelPosition(computeRecentChatsPanelPosition());
+      setIsRecentChatsOpen(true);
+      setRecentChatsOpenMode((currentMode) => {
+        if (currentMode === 'click' && mode !== 'click') {
+          return currentMode;
+        }
+        return mode;
+      });
+    },
+    [clearRecentChatsCloseTimer, computeRecentChatsPanelPosition],
+  );
+
+  const scheduleRecentChatsClose = useCallback(() => {
+    if (recentChatsOpenMode === 'click') {
+      clearRecentChatsCloseTimer();
+      return;
+    }
+
+    clearRecentChatsCloseTimer();
+    recentChatsCloseTimerRef.current = setTimeout(() => {
+      setIsRecentChatsOpen(false);
+      setRecentChatsOpenMode(null);
+      recentChatsCloseTimerRef.current = null;
+    }, RECENT_CHATS_CLOSE_DELAY_MS);
+  }, [clearRecentChatsCloseTimer, recentChatsOpenMode]);
 
   const filteredSessions = useMemo(() => {
     if (!debouncedSearch.trim()) return sessions;
@@ -108,6 +227,40 @@ const Sidebar = ({
   }, [isSearching, isOpen]);
 
   useEffect(() => {
+    const pane = expandedPaneRef.current as (HTMLDivElement & { inert?: boolean }) | null;
+    if (!pane) {
+      return;
+    }
+
+    if (isOpen) {
+      pane.inert = false;
+      pane.removeAttribute('inert');
+      return;
+    }
+
+    pane.inert = true;
+    pane.setAttribute('inert', '');
+  }, [isOpen]);
+
+  useEffect(() => () => clearRecentChatsCloseTimer(), [clearRecentChatsCloseTimer]);
+
+  useEffect(() => {
+    if (!isRecentChatsOpen) return;
+
+    const updatePosition = () => {
+      setRecentChatsPanelPosition(computeRecentChatsPanelPosition());
+    };
+
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [computeRecentChatsPanelPosition, isRecentChatsOpen]);
+
+  useEffect(() => {
     if (!isRecentChatsOpen) return;
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
@@ -118,12 +271,12 @@ const Sidebar = ({
       ) {
         return;
       }
-      setIsRecentChatsOpen(false);
+      closeRecentChats();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsRecentChatsOpen(false);
+        closeRecentChats();
       }
     };
 
@@ -136,17 +289,35 @@ const Sidebar = ({
       document.removeEventListener('touchstart', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isRecentChatsOpen]);
+  }, [closeRecentChats, isRecentChatsOpen]);
 
-  const getLastMessage = (session: ChatSession) => {
-    const lastMessage = session.messages[session.messages.length - 1];
-    if (!lastMessage) return null;
-    return lastMessage.role === 'user' ? lastMessage.content : lastMessage.content?.slice(0, 60);
-  };
+  useEffect(() => {
+    if (!activeSessionMenuId) return;
 
-  const formatSessionDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('zh-CN');
-  };
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (sessionMenuRef.current && target && sessionMenuRef.current.contains(target)) {
+        return;
+      }
+      setActiveSessionMenuId(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveSessionMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeSessionMenuId]);
 
   const closeSearch = () => {
     setIsSearching(false);
@@ -193,10 +364,13 @@ const Sidebar = ({
         aria-label="历史记录"
       >
         <div
+          ref={expandedPaneRef}
           data-sidebar-expanded-pane
           aria-hidden={!isOpen}
           className={`flex h-full w-64 min-w-[16rem] shrink-0 flex-col md:absolute md:inset-0 md:w-[16.2rem] md:min-w-[16.2rem] ${
-            isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-100 pointer-events-none md:opacity-0'
+            isOpen
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-100 pointer-events-none md:opacity-0'
           } transition-opacity duration-200`}
         >
           <div className="flex h-[60px] shrink-0 items-center justify-between p-2 sm:p-3">
@@ -213,10 +387,10 @@ const Sidebar = ({
             <button
               type="button"
               onClick={onClose}
-              className={`${SIDEBAR_ICON_BUTTON_CLASS} hidden -translate-y-1 md:flex`}
+              className="hidden -translate-y-1 rounded-md p-2 text-[var(--theme-icon-history)] transition-colors hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] md:flex"
               aria-label="收起历史记录"
             >
-              <PanelLeftClose size={20} strokeWidth={2} />
+              <IconSidebarToggle size={20} strokeWidth={2} />
             </button>
 
             <button
@@ -231,8 +405,14 @@ const Sidebar = ({
 
           <div className="shrink-0 space-y-1 px-2 pt-2" data-testid="sidebar-actions-stack">
             <button type="button" onClick={handleNewChat} className={SIDEBAR_ACTION_ROW_CLASS}>
-              <SquarePen size={18} strokeWidth={2} className="shrink-0 text-[var(--theme-icon-history)]" />
-              <span className="min-w-0 flex-1 truncate text-[var(--theme-text-primary)]">新建对话</span>
+              <SquarePen
+                size={18}
+                strokeWidth={2}
+                className="shrink-0 text-[var(--theme-icon-history)]"
+              />
+              <span className="min-w-0 flex-1 truncate text-[var(--theme-text-primary)]">
+                新建对话
+              </span>
             </button>
 
             {isSearching ? (
@@ -271,73 +451,96 @@ const Sidebar = ({
                 className={SIDEBAR_ACTION_ROW_CLASS}
                 aria-label="搜索对话"
               >
-                <Search size={18} strokeWidth={2} className="shrink-0 text-[var(--theme-icon-history)]" />
-                <span className="min-w-0 flex-1 truncate text-[var(--theme-text-primary)]">搜索对话</span>
+                <Search
+                  size={18}
+                  strokeWidth={2}
+                  className="shrink-0 text-[var(--theme-icon-history)]"
+                />
+                <span className="min-w-0 flex-1 truncate text-[var(--theme-text-primary)]">
+                  搜索对话
+                </span>
               </button>
             )}
           </div>
 
-          <div className="custom-scrollbar flex-1 space-y-1 overflow-y-auto p-2">
+          <div
+            data-sidebar-session-scroller
+            className="custom-scrollbar flex-grow cursor-ew-resize overflow-y-auto p-2"
+          >
             {sessions.length === 0 ? (
-              <div className="py-10 text-center">
-                <Sparkles size={28} className="mx-auto mb-3 text-[var(--theme-text-tertiary)]" />
-                <p className="text-sm font-medium text-[var(--theme-text-tertiary)]">暂无对话记录</p>
-                <p className="mt-1 text-xs text-[var(--theme-text-tertiary)]">开始对话后将显示在这里</p>
-              </div>
+              <p className="cursor-auto p-4 text-center text-xs text-[var(--theme-text-tertiary)] sm:text-sm">
+                暂无对话记录
+              </p>
             ) : filteredSessions.length === 0 ? (
-              <div className="py-10 text-center">
-                <Search size={28} className="mx-auto mb-3 text-[var(--theme-text-tertiary)]" />
-                <p className="text-sm text-[var(--theme-text-tertiary)]">未找到结果</p>
-              </div>
+              <p className="cursor-auto p-4 text-center text-xs text-[var(--theme-text-tertiary)] sm:text-sm">
+                未找到结果
+              </p>
             ) : (
-              filteredSessions.map((session) => {
-                const lastMessage = getLastMessage(session);
-
-                return (
-                  <div
-                    key={session.id}
-                    data-session-row
+              filteredSessions.map((session) => (
+                <div
+                  key={session.id}
+                  data-session-row
+                  className={`group relative my-0.5 rounded-lg transition-colors duration-100 ease-out ${
+                    currentSessionId === session.id ? 'bg-[var(--theme-bg-tertiary)]' : ''
+                  } ${activeSessionMenuId === session.id ? 'z-20' : ''}`}
+                >
+                  <button
+                    type="button"
                     onClick={() => {
                       onSelectSession(session.id);
                       if (window.innerWidth < 1024) onClose();
                     }}
-                    className={`
-                      group relative flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 transition-colors
-                      ${
-                        currentSessionId === session.id
-                          ? 'bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-primary)]'
-                          : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)]/60'
-                      }
-                    `}
+                    className={`relative w-full rounded-lg py-2 pl-2.5 pr-1 text-left text-sm transition-colors ${
+                      currentSessionId === session.id
+                        ? 'text-[var(--theme-text-primary)]'
+                        : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)]'
+                    }`}
+                    aria-current={currentSessionId === session.id ? 'page' : undefined}
                   >
-                    <MessageSquare
-                      size={16}
-                      className={`mt-0.5 shrink-0 ${currentSessionId === session.id ? 'text-[var(--theme-text-primary)]' : 'text-[var(--theme-icon-history)]'}`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <h4 className="truncate pr-6 text-sm font-medium">{session.title}</h4>
-                      {lastMessage && (
-                        <p className="mt-0.5 line-clamp-1 text-[11px] leading-relaxed text-[var(--theme-text-tertiary)]">
-                          {lastMessage}
-                        </p>
-                      )}
-                      <span className="mt-0.5 block text-[10px] text-[var(--theme-text-tertiary)]">
-                        {formatSessionDate(session.createdAt)}
+                    <span className="flex w-full min-w-0 items-center pr-8 text-inherit">
+                      <span className="truncate font-medium" title={session.title}>
+                        {session.title}
                       </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(event) => onDeleteSession(session.id, event)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-[var(--theme-text-tertiary)] opacity-0 transition-all hover:bg-[var(--theme-bg-danger)]/10 hover:text-[var(--theme-text-danger)] focus:opacity-100 group-hover:opacity-100"
-                      title="删除对话"
-                      aria-label="删除对话"
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActiveSessionMenuId((currentMenuId) =>
+                        currentMenuId === session.id ? null : session.id,
+                      );
+                    }}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--theme-text-tertiary)] opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--theme-border-focus)]"
+                    aria-label={`打开 ${session.title} 操作菜单`}
+                    aria-haspopup="menu"
+                    aria-expanded={activeSessionMenuId === session.id}
+                  >
+                    <MoreHorizontal size={16} strokeWidth={2} />
+                  </button>
+                  {activeSessionMenuId === session.id && (
+                    <div
+                      ref={sessionMenuRef}
+                      className="absolute right-3 top-9 z-10 w-40 rounded-md border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-primary)] py-1 shadow-lg"
+                      role="menu"
+                      aria-label={`${session.title} 操作`}
                     >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                );
-              })
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          onDeleteSession(session.id, event);
+                          setActiveSessionMenuId(null);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--theme-text-danger)] transition-colors hover:bg-[var(--theme-bg-danger)]/10 focus:bg-[var(--theme-bg-danger)]/10 focus:outline-none"
+                        role="menuitem"
+                      >
+                        <Trash2 size={14} strokeWidth={2} />
+                        <span>删除</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
 
@@ -366,7 +569,12 @@ const Sidebar = ({
           }`}
           onClick={onOpen}
         >
-          <MiniSidebarButton onClick={onOpen} icon={PanelLeftOpen} title="展开历史记录" className="-translate-y-1" />
+          <MiniSidebarButton
+            onClick={onOpen}
+            icon={IconSidebarToggle}
+            title="展开历史记录"
+            className="-translate-y-1"
+          />
 
           <div className="my-1 h-px w-8 bg-[var(--theme-border-primary)]" />
 
@@ -377,7 +585,39 @@ const Sidebar = ({
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              setIsRecentChatsOpen((value) => !value);
+              if (isRecentChatsOpen && recentChatsOpenMode === 'click') {
+                closeRecentChats();
+                return;
+              }
+              openRecentChats('click');
+            }}
+            onMouseEnter={() => {
+              if (recentChatsOpenMode === 'click') {
+                clearRecentChatsCloseTimer();
+                return;
+              }
+              openRecentChats('hover');
+            }}
+            onMouseLeave={() => {
+              if (recentChatsOpenMode === 'hover') {
+                scheduleRecentChatsClose();
+              }
+            }}
+            onFocus={() => openRecentChats('focus')}
+            onBlur={(event) => {
+              const nextFocusTarget = event.relatedTarget as Node | null;
+              if (
+                nextFocusTarget &&
+                ((recentChatsButtonRef.current &&
+                  recentChatsButtonRef.current.contains(nextFocusTarget)) ||
+                  (recentChatsPanelRef.current &&
+                    recentChatsPanelRef.current.contains(nextFocusTarget)))
+              ) {
+                return;
+              }
+              if (recentChatsOpenMode === 'focus') {
+                scheduleRecentChatsClose();
+              }
             }}
             className={SIDEBAR_ICON_BUTTON_CLASS}
             title="最近对话"
@@ -385,7 +625,7 @@ const Sidebar = ({
             aria-haspopup="dialog"
             aria-expanded={isRecentChatsOpen}
           >
-            <MessageSquare size={20} strokeWidth={2} />
+            <HistoryIcon size={20} strokeWidth={2} />
           </button>
 
           <div className="mt-auto">
@@ -403,11 +643,27 @@ const Sidebar = ({
           createPortal(
             <div
               ref={recentChatsPanelRef}
-              className="fixed left-[52.2px] top-[60px] z-[60] w-[320px] overflow-hidden rounded-2xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl"
+              style={recentChatsPanelPosition}
+              className="overflow-hidden rounded-2xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl"
+              onMouseEnter={() => {
+                if (recentChatsOpenMode === 'click') {
+                  clearRecentChatsCloseTimer();
+                  return;
+                }
+                openRecentChats('hover');
+              }}
+              onMouseLeave={() => {
+                if (recentChatsOpenMode === 'hover') {
+                  scheduleRecentChatsClose();
+                }
+              }}
+              onClick={(event) => event.stopPropagation()}
               role="dialog"
               aria-label="最近对话"
             >
-              <div className="px-4 py-3 text-sm font-medium text-[var(--theme-text-secondary)]">最近对话</div>
+              <div className="px-4 py-3 text-sm font-medium text-[var(--theme-text-secondary)]">
+                最近对话
+              </div>
               <div className="max-h-[min(420px,calc(100vh-120px))] overflow-y-auto py-1 custom-scrollbar">
                 {recentSessions.length > 0 ? (
                   recentSessions.map((session) => (
@@ -416,7 +672,7 @@ const Sidebar = ({
                       type="button"
                       onClick={() => {
                         onSelectSession(session.id);
-                        setIsRecentChatsOpen(false);
+                        closeRecentChats();
                       }}
                       className="block w-full px-4 py-2.5 text-left text-sm text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-tertiary)] focus:bg-[var(--theme-bg-tertiary)] focus:outline-none"
                     >
@@ -426,7 +682,9 @@ const Sidebar = ({
                     </button>
                   ))
                 ) : (
-                  <p className="px-4 py-3 text-sm text-[var(--theme-text-tertiary)]">暂无对话记录</p>
+                  <p className="px-4 py-3 text-sm text-[var(--theme-text-tertiary)]">
+                    暂无对话记录
+                  </p>
                 )}
               </div>
             </div>,
