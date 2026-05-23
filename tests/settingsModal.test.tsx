@@ -85,6 +85,32 @@ describe('SettingsModal', () => {
     expect(modelTab.className).toContain('text-[var(--theme-text-primary)]');
   });
 
+  it('does not render a bottom completion button', () => {
+    renderModal();
+
+    expect(screen.queryByRole('button', { name: '完成' })).toBeNull();
+  });
+
+  it('does not show a standalone settings title in the sidebar header', () => {
+    renderModal();
+
+    expect(screen.queryByText('设置', { selector: 'span, div' })).toBeNull();
+  });
+
+  it('does not show English kicker labels above settings panel titles', async () => {
+    const user = userEvent.setup();
+
+    renderModal();
+
+    expect(screen.queryByText('Connection')).toBeNull();
+
+    await user.click(screen.getByRole('tab', { name: '推理设置' }));
+    expect(screen.queryByText('Reasoning')).toBeNull();
+
+    await user.click(screen.getByRole('tab', { name: '关于' }));
+    expect(screen.queryByText('Project')).toBeNull();
+  });
+
   it('renders the about panel in an AMC-style centered presentation', async () => {
     const user = userEvent.setup();
 

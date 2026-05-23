@@ -98,4 +98,16 @@ describe('App layout', () => {
     expect(sidebar.parentElement?.className).toContain('flex');
     expect(sidebar.parentElement).toBe(main?.parentElement);
   });
+
+  it('uses the AMC chat input width configuration', async () => {
+    const { default: App } = await import('../App');
+
+    render(<App />);
+
+    const chatInput = screen.getByTestId('chat-input');
+    const inputWidthContainer = chatInput.parentElement;
+
+    expect(inputWidthContainer?.className).toContain('max-w-[40.32rem]');
+    expect(inputWidthContainer?.className).not.toContain('max-w-4xl');
+  });
 });

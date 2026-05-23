@@ -25,28 +25,24 @@ const SETTINGS_TABS = [
   {
     id: 'models',
     label: '模型管理',
-    kicker: 'Connection',
     title: '模型管理',
     Icon: SlidersHorizontal,
   },
   {
     id: 'thinking',
     label: '推理设置',
-    kicker: 'Reasoning',
     title: '推理设置',
     Icon: BrainCircuit,
   },
   {
     id: 'about',
     label: '关于',
-    kicker: 'Project',
     title: '关于 Prisma',
     Icon: Info,
   },
 ] satisfies Array<{
   id: SettingsTabId;
   label: string;
-  kicker: string;
   title: string;
   Icon: React.ComponentType<{ size?: number; className?: string }>;
 }>;
@@ -85,14 +81,7 @@ const SettingsModal = ({
             >
               <X size={20} />
             </button>
-            <div className="flex items-center gap-2 font-semibold text-[var(--theme-text-primary)] md:hidden">
-              <SlidersHorizontal size={17} className="text-[var(--theme-icon-settings)]" />
-              <span>设置</span>
-            </div>
-            <span className="h-9 w-9 md:hidden" aria-hidden="true" />
-            <span className="sr-only md:not-sr-only md:block md:text-sm md:font-semibold md:text-[var(--theme-text-secondary)]">
-              设置
-            </span>
+            <span className="h-9 w-9" aria-hidden="true" />
           </div>
 
           <nav
@@ -141,9 +130,6 @@ const SettingsModal = ({
               className="mx-auto flex w-full max-w-3xl animate-in fade-in slide-in-from-top-1 flex-col gap-5 duration-200"
             >
               <div className="flex flex-col gap-1.5 pb-0.5">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-text-tertiary)]">
-                  {activeTabConfig.kicker}
-                </div>
                 <h2 className="text-xl font-semibold tracking-normal text-[var(--theme-text-primary)]">
                   {activeTabConfig.title}
                 </h2>
@@ -165,15 +151,6 @@ const SettingsModal = ({
             </section>
           </div>
 
-          <div className="flex shrink-0 justify-end border-t border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] px-5 py-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg bg-[var(--theme-bg-accent)] px-6 py-2 text-sm font-medium text-[var(--theme-text-accent)] shadow-sm transition-all hover:bg-[var(--theme-bg-accent-hover)] active:scale-95"
-            >
-              完成
-            </button>
-          </div>
         </main>
       </div>
     </div>

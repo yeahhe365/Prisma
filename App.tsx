@@ -107,7 +107,7 @@ const App = () => {
           />
 
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex justify-center bg-[linear-gradient(to_top,var(--theme-bg-primary)_0%,color-mix(in_srgb,var(--theme-bg-primary)_82%,transparent)_68%,transparent_100%)] p-4 pb-6">
-            <div className="pointer-events-auto w-full max-w-4xl">
+            <div className="pointer-events-auto w-full max-w-[40.32rem]">
               <ChatInput
                 query={query}
                 setQuery={setQuery}
