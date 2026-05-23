@@ -40,6 +40,8 @@ docker run --rm -p 8081:80 prisma
 
 The container builds the static `dist/` bundle and serves it with Nginx, while Cloudflare Pages can keep using the existing `npm run build` flow.
 
+Cloudflare Pages reads the root `.node-version`; this repository pins Node.js 22 so Pages, GitHub Actions, and Docker builds use the same major runtime.
+
 ## Configuration
 
 - Configure API keys and model settings for Gemini or OpenAI-compatible services.

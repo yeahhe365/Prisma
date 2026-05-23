@@ -145,6 +145,8 @@ docker run --rm -p 8081:80 prisma
 
 Docker 镜像会在构建阶段生成静态 `dist/` 并用 Nginx 提供服务，Cloudflare Pages 仍然可以继续沿用现有的 `npm run build` 流程。
 
+Cloudflare Pages 会读取仓库根目录的 `.node-version`，当前固定为 Node.js 22，以便和 GitHub Actions、Docker 构建环境保持一致。
+
 ---
 
 ## 🛠️ 技术栈
