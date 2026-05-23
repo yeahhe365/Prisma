@@ -1,0 +1,101 @@
+// @vitest-environment jsdom
+
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../hooks/useAppLogic', () => ({
+  useAppLogic: () => ({
+    sessions: [],
+    currentSessionId: null,
+    messages: [],
+    query: '',
+    setQuery: vi.fn(),
+    selectedModel: 'glm-5-turbo',
+    setSelectedModel: vi.fn(),
+    config: {
+      provider: 'openai',
+      apiKey: '',
+      baseUrl: '',
+      planningLevel: 'medium',
+      expertLevel: 'medium',
+      synthesisLevel: 'medium',
+      enableRecursiveLoop: false,
+      customModels: [],
+      presetOverrides: [],
+    },
+    setConfig: vi.fn(),
+    effectiveConfig: {
+      provider: 'openai',
+      apiKey: '',
+      baseUrl: '',
+      planningLevel: 'medium',
+      expertLevel: 'medium',
+      synthesisLevel: 'medium',
+      enableRecursiveLoop: false,
+      customModels: [],
+      presetOverrides: [],
+    },
+    isSidebarOpen: false,
+    setIsSidebarOpen: vi.fn(),
+    isSettingsOpen: false,
+    setIsSettingsOpen: vi.fn(),
+    appState: 'idle',
+    managerAnalysis: null,
+    experts: [],
+    finalOutput: '',
+    processStartTime: null,
+    processEndTime: null,
+    handleRun: vi.fn(),
+    handleNewChat: vi.fn(),
+    handleSelectSession: vi.fn(),
+    handleDeleteSession: vi.fn(),
+    stopDeepThink: vi.fn(),
+    focusTrigger: 0,
+    inputError: null,
+    clearInputError: vi.fn(),
+    handleSetThinkingLevel: vi.fn(),
+    handleSetRecursiveLoop: vi.fn(),
+  }),
+}));
+
+vi.mock('../hooks/useDarkMode', () => ({
+  useDarkMode: () => ({ isDark: false, toggle: vi.fn() }),
+}));
+
+vi.mock('../components/settings/SettingsModal', () => ({
+  default: () => <div data-testid="settings-modal" />,
+}));
+
+vi.mock('../components/Header', () => ({
+  default: () => <header data-testid="app-header" />,
+}));
+
+vi.mock('../components/Sidebar', () => ({
+  default: () => <aside data-testid="app-sidebar" />,
+}));
+
+vi.mock('../components/ChatArea', () => ({
+  default: () => <section data-testid="chat-area" />,
+}));
+
+vi.mock('../components/ChatInput', () => ({
+  default: () => <form data-testid="chat-input" />,
+}));
+
+describe('App layout', () => {
+  it('keeps the header inside the main content beside the sidebar like AMC', async () => {
+    const { default: App } = await import('../App');
+
+    render(<App />);
+
+    const header = screen.getByTestId('app-header');
+    const sidebar = screen.getByTestId('app-sidebar');
+    const main = header.closest('main');
+
+    expect(main).toBeTruthy();
+    expect(main?.className).toContain('flex-col');
+    expect(sidebar.parentElement?.className).toContain('flex');
+    expect(sidebar.parentElement).toBe(main?.parentElement);
+  });
+});

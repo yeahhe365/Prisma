@@ -8,7 +8,7 @@ import { DEFAULT_CONFIG, DEFAULT_MODEL } from '../config';
 import Header from '../components/Header';
 
 describe('Header', () => {
-  it('keeps model controls shrinkable on narrow screens', () => {
+  it('keeps the AMC-style model selector shrinkable without rendering a desktop brand block', () => {
     const { container } = render(
       <Header
         selectedModel={DEFAULT_MODEL}
@@ -22,12 +22,13 @@ describe('Header', () => {
       />,
     );
 
-    const title = screen.getByText('Prisma');
     const select = container.querySelector('select');
+    const sidebarButton = screen.getByTitle('切换历史记录');
 
-    expect(title.className).toContain('hidden');
+    expect(screen.queryByText('Prisma')).toBeNull();
     expect(select?.parentElement?.className).toContain('min-w-0');
-    expect(select?.className).toContain('max-w-[32vw]');
+    expect(select?.className).toContain('max-w-[180px]');
+    expect(sidebarButton.className).toContain('md:hidden');
   });
 
   it('uses AMC-style theme surfaces and compact icon controls', () => {
@@ -49,8 +50,12 @@ describe('Header', () => {
     const sidebarButton = screen.getByTitle('切换历史记录');
     const settingsButton = screen.getByTitle('设置');
 
-    expect(header?.className).toContain('bg-[var(--theme-bg-secondary)]');
-    expect(header?.className).toContain('border-[var(--theme-border-primary)]');
+    expect(header?.className).toContain('bg-[var(--theme-bg-primary)]');
+    expect(header?.className).toContain('relative');
+    expect(header?.className).toContain('z-20');
+    expect(header?.className).toContain('flex-shrink-0');
+    expect(header?.className).not.toContain('sticky');
+    expect(header?.className).not.toContain('border-b');
     expect(select?.className).toContain('bg-transparent');
     expect(select?.className).toContain('hover:bg-[var(--theme-bg-tertiary)]');
     expect(sidebarButton.className).toContain('h-9');
