@@ -221,6 +221,44 @@ describe('Sidebar', () => {
     expect(onOpen).toHaveBeenCalled();
   });
 
+  it('opens the sidebar when the collapsed rail blank area is clicked like AMC', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+
+    renderSidebar({ isOpen: false, onOpen });
+
+    await user.click(screen.getByTestId('history-sidebar-mini-rail'));
+
+    expect(onOpen).toHaveBeenCalled();
+  });
+
+  it('collapses the sidebar when the expanded history blank area is clicked like AMC', () => {
+    const onClose = vi.fn();
+    const { container } = renderSidebar({ onClose });
+    const sidebarScroller = container.querySelector('[data-sidebar-session-scroller]');
+
+    if (!sidebarScroller) {
+      throw new Error('expected sidebar session scroller');
+    }
+
+    fireEvent.click(sidebarScroller);
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('does not collapse the sidebar when clicking session rows', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    renderSidebar({ onClose });
+
+    await user.click(screen.getByText('Frontend architecture'));
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('opens search from the mini rail and focuses the inline field', async () => {
     vi.useRealTimers();
     const user = userEvent.setup();

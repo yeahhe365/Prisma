@@ -328,6 +328,12 @@ const Sidebar = ({
     onOpen();
   };
 
+  const handleEmptySpaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   const recentSessions = useMemo(
     () =>
       [...sessions]
@@ -460,6 +466,7 @@ const Sidebar = ({
           <div
             data-sidebar-session-scroller
             className="custom-scrollbar flex-grow cursor-ew-resize overflow-y-auto p-2"
+            onClick={handleEmptySpaceClick}
           >
             {sessions.length === 0 ? (
               <p className="cursor-auto p-4 text-center text-xs text-[var(--theme-text-tertiary)] sm:text-sm">

@@ -377,7 +377,7 @@ const ChatMessage = ({
               )}
 
               {/* Text Content */}
-              <div className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-7 prose-pre:bg-[var(--theme-bg-code-block)] prose-pre:text-[var(--theme-text-primary)]">
+              <div className="max-w-none">
                 {message.content ? (
                   message.isThinking ? (
                     <pre className="whitespace-pre-wrap break-words text-sm text-[var(--theme-text-secondary)]">

@@ -25,6 +25,7 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
     "rehype-katex": "7.0.0",
+    "remark-gfm": "^4.0.1",
     "remark-math": "6.0.0",
     "tailwindcss": "^4.2.2"
   },
