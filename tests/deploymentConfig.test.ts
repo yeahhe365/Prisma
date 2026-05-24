@@ -15,4 +15,17 @@ describe('deployment configuration', () => {
 
     expect(nodeVersion).toMatch(/^22\./);
   });
+
+  it('keeps the Docker-only API proxy out of the Cloudflare Pages config', () => {
+    const dockerfile = readFileSync(path.join(projectRoot, 'Dockerfile'), 'utf8');
+    const dockerComposeConfig = readFileSync(path.join(projectRoot, 'docker-compose.yml'), 'utf8');
+    const wranglerConfig = readFileSync(path.join(projectRoot, 'wrangler.toml'), 'utf8');
+
+    expect(dockerfile).toContain('VITE_API_PROXY_MODE=local');
+    expect(dockerfile).toContain('CMD ["node", "server.mjs"]');
+    expect(dockerComposeConfig).toContain("PRISMA_PROXY_ALLOWED_HOSTS:-*");
+    expect(wranglerConfig).toContain('pages_build_output_dir = "dist"');
+    expect(wranglerConfig).not.toContain('VITE_API_PROXY_MODE');
+    expect(wranglerConfig).not.toContain('custom-api');
+  });
 });

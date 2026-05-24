@@ -1,14 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ModelOption, AppConfig, ChatMessage, MessageAttachment, ThinkingLevel } from '../types';
+import type {
+  ModelOption,
+  AppConfig,
+  ChatMessage,
+  MessageAttachment,
+  ThinkingLevel,
+} from '../types';
 import {
   STORAGE_KEYS,
   DEFAULT_CONFIG,
-  DEFAULT_MODEL,
   getEffectiveConfig,
   getInitialSelectedModel,
+  normalizeConfig,
   setModelPreference,
 } from '../config';
-import { findCustomModel, getAIProvider } from '../api';
+import { resolveModelApiConfig } from '../api';
 import { getUnsupportedOpenAIAttachments } from '../services/deepThink/contentBuilder';
 import { useDeepThink } from './useDeepThink';
 import { useChatSessions } from './useChatSessions';
@@ -38,21 +44,21 @@ export const useAppLogic = () => {
   messagesRef.current = messages;
 
   // App Configuration with Persistence
-  const [selectedModel, setSelectedModel] = useState<ModelOption>(() => {
-    const cached = localStorage.getItem(STORAGE_KEYS.MODEL);
-    return getInitialSelectedModel(cached);
-  });
-
   const [config, setConfig] = useState<AppConfig>(() => {
     const cached = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (cached) {
       try {
-        return { ...DEFAULT_CONFIG, ...JSON.parse(cached) };
+        return normalizeConfig(JSON.parse(cached));
       } catch {
         return DEFAULT_CONFIG;
       }
     }
     return DEFAULT_CONFIG;
+  });
+
+  const [selectedModel, setSelectedModel] = useState<ModelOption | null>(() => {
+    const cached = localStorage.getItem(STORAGE_KEYS.MODEL);
+    return getInitialSelectedModel(cached, config);
   });
 
   // Deep Think Engine
@@ -71,17 +77,28 @@ export const useAppLogic = () => {
 
   // Effective config: per-model preferences override global defaults
   const effectiveConfig = useMemo(
-    () => getEffectiveConfig(selectedModel, config),
+    () => (selectedModel ? getEffectiveConfig(selectedModel, config) : config),
     [selectedModel, config],
   );
 
   // Persistence Effects
   useEffect(() => {
+    const nextSelectedModel = getInitialSelectedModel(selectedModel, config);
+    if (nextSelectedModel !== selectedModel) {
+      setSelectedModel(nextSelectedModel);
+    }
+  }, [config, selectedModel]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(config));
   }, [config]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.MODEL, selectedModel);
+    if (selectedModel) {
+      localStorage.setItem(STORAGE_KEYS.MODEL, selectedModel);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.MODEL);
+    }
   }, [selectedModel]);
 
   useEffect(() => {
@@ -109,12 +126,12 @@ export const useAppLogic = () => {
       const session = getSession(currentSessionId);
       if (session) {
         setMessages(session.messages);
-        setSelectedModel(session.model || DEFAULT_MODEL);
+        setSelectedModel(getInitialSelectedModel(session.model || null, config));
       }
     } else {
       setMessages([]);
     }
-  }, [currentSessionId, getSession]);
+  }, [config, currentSessionId, getSession]);
 
   // Refs for stable access inside effects
   const finalOutputRef = useRef(finalOutput);
@@ -171,7 +188,7 @@ export const useAppLogic = () => {
     const sid = currentSessionIdRef.current;
     if (sid) {
       updateSessionMessages(sid, newMessages);
-    } else {
+    } else if (selectedModelRef.current) {
       createSession(newMessages, selectedModelRef.current);
     }
 
@@ -182,6 +199,7 @@ export const useAppLogic = () => {
   // Update a per-model thinking setting
   const handleSetThinkingLevel = useCallback(
     (key: 'planningLevel' | 'expertLevel' | 'synthesisLevel', value: ThinkingLevel) => {
+      if (!selectedModel) return;
       setConfig((prev) => setModelPreference(prev, selectedModel, { [key]: value }));
     },
     [selectedModel],
@@ -190,6 +208,7 @@ export const useAppLogic = () => {
   // Update per-model recursive loop toggle
   const handleSetRecursiveLoop = useCallback(
     (value: boolean) => {
+      if (!selectedModel) return;
       setConfig((prev) => setModelPreference(prev, selectedModel, { enableRecursiveLoop: value }));
     },
     [selectedModel],
@@ -202,9 +221,12 @@ export const useAppLogic = () => {
   const handleRun = useCallback(
     (attachments: MessageAttachment[] = []) => {
       if (!query.trim() && attachments.length === 0) return false;
+      if (!selectedModel) {
+        setInputError('请先在设置中添加并选择一个模型。');
+        return false;
+      }
 
-      const customModelConfig = findCustomModel(selectedModel, config.customModels);
-      const provider = customModelConfig?.provider || getAIProvider(selectedModel);
+      const provider = resolveModelApiConfig(selectedModel, config).provider;
       const unsupportedOpenAIAttachments =
         provider === 'openai' ? getUnsupportedOpenAIAttachments(attachments) : [];
 
@@ -244,7 +266,7 @@ export const useAppLogic = () => {
       query,
       currentSessionId,
       selectedModel,
-      config.customModels,
+      config,
       effectiveConfig,
       createSession,
       updateSessionMessages,
@@ -285,6 +307,11 @@ export const useAppLogic = () => {
 
   const handleRetryMessage = useCallback(
     (messageId: string) => {
+      if (!selectedModel) {
+        setInputError('请先在设置中添加并选择一个模型。');
+        return;
+      }
+
       const currentMessages = messagesRef.current;
       const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
       const message = currentMessages[messageIndex];
@@ -319,6 +346,11 @@ export const useAppLogic = () => {
 
   const handleContinueGeneration = useCallback(
     (messageId: string) => {
+      if (!selectedModel) {
+        setInputError('请先在设置中添加并选择一个模型。');
+        return;
+      }
+
       const currentMessages = messagesRef.current;
       const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
       const message = currentMessages[messageIndex];

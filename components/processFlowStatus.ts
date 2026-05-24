@@ -1,4 +1,4 @@
-import { AppState, ExpertResult } from '../types';
+import type { AppState, ExpertResult } from '../types';
 
 export type ProcessNodeStatus = 'idle' | 'active' | 'completed';
 

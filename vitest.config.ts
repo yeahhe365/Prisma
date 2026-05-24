@@ -1,7 +1,11 @@
 import path from 'path';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
+import packageJson from './package.json' with { type: 'json' };
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
@@ -17,6 +21,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     clearMocks: true,
     restoreMocks: true,
+    exclude: [...configDefaults.exclude, '**/prisma/**'],
     coverage: {
       enabled: false,
       provider: 'v8',
@@ -27,14 +32,17 @@ export default defineConfig({
         'config.ts',
         'utils.ts',
         'services/storage.ts',
+        'services/attachments.ts',
         'services/utils/retry.ts',
         'services/deepThink/contentBuilder.ts',
         'services/deepThink/orchestrator.ts',
+        'hooks/useDebounce.ts',
         'hooks/useDeepThinkState.ts',
         'hooks/useChatSessions.ts',
         'hooks/useAppLogic.ts',
         'hooks/useDeepThink.ts',
         'components/settings/AddModelForm.tsx',
+        'components/AttachmentPreview.tsx',
         'components/ChatInput.tsx',
         'components/Sidebar.tsx',
       ],

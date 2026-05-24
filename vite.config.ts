@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import type { Connect } from 'vite';
+import packageJson from './package.json' with { type: 'json' };
 
 // Allowed API hostnames to prevent SSRF
 const ALLOWED_HOSTS = [
@@ -140,6 +141,9 @@ function customApiProxyMiddleware(): Connect.NextHandleFunction {
 
 export default defineConfig(() => {
   return {
+    define: {
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+    },
     server: {
       port: 3000,
       host: '0.0.0.0',

@@ -35,6 +35,10 @@ describe('cleanJsonString', () => {
     vi.stubGlobal('FileReader', MockFileReader);
   });
 
+  it('returns an empty JSON object for empty input', () => {
+    expect(cleanJsonString('')).toBe('{}');
+  });
+
   it('extracts json from markdown code fences', () => {
     const input = 'Here is the result:\n```json\n{"ok":true}\n```';
 
@@ -59,6 +63,14 @@ describe('cleanJsonString', () => {
     const input = 'prefix {"message":"hello \\"world\\"","nested":{"ok":true}} suffix';
 
     expect(cleanJsonString(input)).toBe('{"message":"hello \\"world\\"","nested":{"ok":true}}');
+  });
+
+  it('ignores braces inside quoted JSON strings while matching the object', () => {
+    const input = 'Result: {"message":"literal { brace } and \\"quote\\"","ok":true} trailing';
+
+    expect(cleanJsonString(input)).toBe(
+      '{"message":"literal { brace } and \\"quote\\"","ok":true}',
+    );
   });
 });
 

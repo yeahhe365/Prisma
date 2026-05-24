@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChatSession, ChatMessage, ModelOption } from '../types';
+import type { ChatSession, ChatMessage, ModelOption } from '../types';
 import {
   getAllSessions,
   putSession,

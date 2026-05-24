@@ -1,4 +1,4 @@
-import { MessageAttachment } from '../../types';
+import type { MessageAttachment } from '../../types';
 
 interface TextPart {
   text: string;

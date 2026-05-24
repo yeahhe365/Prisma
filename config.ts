@@ -1,27 +1,16 @@
-import { ModelOption, ThinkingLevel, AppConfig, ApiProvider, ModelPreferences, ModelCatalogItem } from './types';
+import type {
+  ModelOption,
+  ThinkingLevel,
+  AppConfig,
+  ApiProvider,
+  ModelPreferences,
+  ModelCatalogItem,
+  CustomModel,
+} from './types';
 
-export const DEFAULT_MODEL: ModelOption = 'gemini-3-flash-preview';
+export const DEFAULT_MODEL: ModelOption | null = null;
 
-export const MODELS: ModelCatalogItem[] = [
-  {
-    value: 'gemini-3-flash-preview',
-    label: 'Gemini 3 Flash',
-    desc: '低延迟，高吞吐，动态思考。',
-    provider: 'google',
-  },
-  {
-    value: 'gemini-3.1-pro-preview',
-    label: 'Gemini 3.1 Pro',
-    desc: '深度推理，复杂任务，更高智能。',
-    provider: 'google',
-  },
-  {
-    value: 'custom',
-    label: '自定义模型',
-    desc: '通过配置自定义基础 URL，使用任何 OpenAI 兼容 API（LM Studio、Ollama、LocalAI 等）。',
-    provider: 'openai',
-  },
-];
+export const MODELS: ModelCatalogItem[] = [];
 
 export const STORAGE_KEYS = {
   SETTINGS: 'prisma-settings',
@@ -29,39 +18,113 @@ export const STORAGE_KEYS = {
   SESSION_ID: 'prisma-active-session-id',
 };
 
-export const getInitialSelectedModel = (cachedModel: string | null): ModelOption => {
-  return (cachedModel as ModelOption) || DEFAULT_MODEL;
-};
-
 export const DEFAULT_CONFIG: AppConfig = {
   planningLevel: 'high',
   expertLevel: 'high',
   synthesisLevel: 'high',
-  customModels: [
-    {
-      id: 'custom-glm-5-turbo',
-      name: 'glm-5-turbo',
-      displayName: 'GLM-5 Turbo',
-      provider: 'openai',
-    },
-    {
-      id: 'custom-glm-5-turbo-nothinking',
-      name: 'glm-5-turbo-nothinking',
-      displayName: 'GLM-5 Turbo Nothinking',
-      provider: 'openai',
-    },
-  ],
+  customModels: [],
   presetOverrides: [],
   expertConcurrency: 3,
   enableRecursiveLoop: true,
   modelPreferences: {},
 };
 
+const LEGACY_BUNDLED_CUSTOM_MODELS: CustomModel[] = [
+  {
+    id: 'custom-glm-5-turbo',
+    name: 'glm-5-turbo',
+    displayName: 'GLM-5 Turbo',
+    provider: 'openai',
+  },
+  {
+    id: 'custom-glm-5-turbo-nothinking',
+    name: 'glm-5-turbo-nothinking',
+    displayName: 'GLM-5 Turbo Nothinking',
+    provider: 'openai',
+  },
+];
+
+const LEGACY_PRESET_MODEL_LABELS: Record<string, string> = {
+  'gemini-3.5-flash': 'Gemini 3.5 Flash',
+  'gemini-3.1-pro-preview': 'Gemini 3.1 Pro Preview',
+  'gemini-3.1-flash-lite': 'Gemini 3.1 Flash-Lite',
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const isStoredCustomModel = (model: unknown): model is CustomModel => {
+  return (
+    isPlainObject(model) &&
+    typeof model.id === 'string' &&
+    typeof model.name === 'string' &&
+    (model.provider === 'google' || model.provider === 'openai')
+  );
+};
+
+const isLegacyBundledCustomModel = (model: CustomModel): boolean => {
+  return LEGACY_BUNDLED_CUSTOM_MODELS.some((legacyModel) => {
+    return (
+      model.id === legacyModel.id &&
+      model.name === legacyModel.name &&
+      model.displayName === legacyModel.displayName &&
+      model.provider === legacyModel.provider &&
+      !model.apiKey &&
+      !model.baseUrl
+    );
+  });
+};
+
+export const normalizeConfig = (rawConfig: unknown): AppConfig => {
+  if (!isPlainObject(rawConfig)) return DEFAULT_CONFIG;
+
+  const removedLegacyModelNames = new Set<string>();
+  const customModels: CustomModel[] = Array.isArray(rawConfig.customModels)
+    ? rawConfig.customModels.filter(isStoredCustomModel).filter((model) => {
+        const shouldRemove = isLegacyBundledCustomModel(model);
+        if (shouldRemove) removedLegacyModelNames.add(model.name);
+        return !shouldRemove;
+      })
+    : [];
+
+  const legacyPresetOverrides = Array.isArray(rawConfig.presetOverrides)
+    ? rawConfig.presetOverrides.filter(isStoredCustomModel)
+    : [];
+  const migratedPresetModels = legacyPresetOverrides
+    .filter((model) => !customModels.some((customModel) => customModel.name === model.name))
+    .map((model) => ({
+      ...model,
+      id: model.id || `custom-${model.name}`,
+      displayName: model.displayName || LEGACY_PRESET_MODEL_LABELS[model.name] || model.name,
+    }));
+  const userModels = [...customModels, ...migratedPresetModels];
+
+  const modelPreferences = isPlainObject(rawConfig.modelPreferences)
+    ? { ...(rawConfig.modelPreferences as Record<string, ModelPreferences>) }
+    : { ...DEFAULT_CONFIG.modelPreferences };
+
+  for (const removedModelName of removedLegacyModelNames) {
+    if (!userModels.some((model) => model.name === removedModelName)) {
+      delete modelPreferences[removedModelName];
+    }
+  }
+
+  return {
+    ...DEFAULT_CONFIG,
+    ...rawConfig,
+    customModels: userModels,
+    presetOverrides: [],
+    modelPreferences,
+  };
+};
+
 export const getValidThinkingLevels = (model: ModelOption): ThinkingLevel[] => {
-  if (model === 'gemini-3.1-pro-preview') {
+  const normalizedModel = model.toLowerCase();
+  if (normalizedModel.includes('gemini') && normalizedModel.includes('pro')) {
     return ['low', 'medium', 'high'];
   }
-  if (model === 'o1-preview' || model === 'o1-mini') {
+  if (/^o[134]-/.test(normalizedModel)) {
     return ['low', 'medium', 'high'];
   }
   return ['minimal', 'low', 'medium', 'high'];
@@ -118,7 +181,8 @@ export const setModelPreference = (
  * For OpenAI-compatible models, see getReasoningEffort() instead.
  */
 export const getThinkingBudget = (level: ThinkingLevel, model: ModelOption): number => {
-  const isGeminiPro = model === 'gemini-3.1-pro-preview';
+  const normalizedModel = model.toLowerCase();
+  const isGeminiPro = normalizedModel.includes('gemini') && normalizedModel.includes('pro');
 
   switch (level) {
     case 'minimal':
@@ -157,21 +221,25 @@ export const getReasoningEffort = (level: ThinkingLevel): string | undefined => 
 };
 
 export const getProvider = (model: ModelOption): ApiProvider => {
-  const modelInfo = MODELS.find((m) => m.value === model);
-  return modelInfo?.provider || 'google';
+  return model.toLowerCase().includes('gemini') ? 'google' : 'openai';
 };
 
-export const getAllModels = (
-  config: AppConfig,
-): ModelCatalogItem[] => {
-  const presetModels = MODELS.filter((m) => m.value !== 'custom');
-
+export const getAllModels = (config: AppConfig): ModelCatalogItem[] => {
   const customModels = (config.customModels || []).map((m) => ({
-    value: m.name as ModelOption,
+    value: m.name,
     label: m.displayName || m.name,
-    desc: `自定义 ${m.provider} 模型`,
+    desc: m.provider === 'google' ? 'Gemini API 模型' : 'OpenAI 兼容 API 模型',
     provider: m.provider,
   }));
 
-  return [...presetModels, ...customModels];
+  return customModels;
+};
+
+export const getInitialSelectedModel = (
+  cachedModel: string | null,
+  config: AppConfig = DEFAULT_CONFIG,
+): ModelOption | null => {
+  const model = cachedModel;
+  if (model && getAllModels(config).some((item) => item.value === model)) return model;
+  return getAllModels(config)[0]?.value ?? DEFAULT_MODEL;
 };

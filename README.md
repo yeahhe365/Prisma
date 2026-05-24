@@ -71,7 +71,7 @@
 - **思考预算 (Thinking Budget)**：
   - 支持为 **规划**、**执行**、**综合** 三个阶段分别设置思考深度（Minimal, Low, Medium, High）。
   - 这决定了模型在生成 Token 时分配给 "Thinking" 字段的配额。
-- **模型切换**：内置 `Gemini 3 Flash` 与 `Gemini 3.1 Pro`，也支持接入 OpenAI 兼容自定义模型。
+- **模型管理**：不预置任何模型配置，启动后由用户自行添加 Gemini API 或 OpenAI 兼容 API 模型。
 
 ### 🛠️ 现代化工程体验
 
@@ -101,25 +101,15 @@ cd Prisma
 npm install
 ```
 
-### 3. 配置环境
-
-在项目根目录创建 `.env.local` 文件并填入你的 API Key：
-
-```env
-VITE_API_KEY=your_api_key_here
-```
-
-兼容旧配置名：`GEMINI_API_KEY` 仍可继续使用。
-
-### 4. 启动开发服务器
+### 3. 启动开发服务器
 
 ```bash
 npm run dev
 ```
 
-访问 `http://localhost:3000` 即可开始推理。
+访问 `http://localhost:3000` 后，先在「设置 -> 模型管理」中添加至少一个 Gemini API 或 OpenAI 兼容 API 模型。
 
-### 5. 运行校验
+### 4. 运行校验
 
 ```bash
 npm test
@@ -128,7 +118,7 @@ npm run lint
 npm run build
 ```
 
-### 6. 使用 Docker 部署
+### 5. 使用 Docker 部署
 
 ```bash
 docker compose up --build
@@ -143,7 +133,13 @@ docker build -t prisma .
 docker run --rm -p 8081:80 prisma
 ```
 
-Docker 镜像会在构建阶段生成静态 `dist/` 并用 Nginx 提供服务，Cloudflare Pages 仍然可以继续沿用现有的 `npm run build` 流程。
+Docker 镜像会在构建阶段生成静态 `dist/`，并由一个轻量 Node 运行时提供页面和本地 API 代理：浏览器只请求同源的 `/custom-api`，真正的 Gemini/OpenAI 兼容 API 请求由容器内的 Node 服务发出，用来避开浏览器侧 CORS 限制。默认允许常见模型 API 域名；如果要接入自定义网关或本地模型服务，可以追加允许域名：
+
+```bash
+PRISMA_PROXY_ALLOWED_HOSTS=api.example.com,host.docker.internal docker compose up --build
+```
+
+这个代理开关只在 Dockerfile 中注入。Cloudflare Pages 仍然走普通 `npm run build` 的纯前端直连模式，不需要 `/custom-api` 服务。
 
 Cloudflare Pages 会读取仓库根目录的 `.node-version`，当前固定为 Node.js 22，以便和 GitHub Actions、Docker 构建环境保持一致。
 
@@ -243,6 +239,7 @@ Prisma/
 ## 📄 许可证
 
 MIT License
+
 ---
 
 ## 友链

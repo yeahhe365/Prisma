@@ -9,6 +9,8 @@ import ChatInput from './components/ChatInput';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 
+const CHAT_INPUT_MAX_WIDTH_CLASS = 'max-w-[40.32rem]';
+
 const App = () => {
   const {
     sessions,
@@ -52,7 +54,7 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <div className="relative flex h-screen overflow-hidden bg-[var(--theme-bg-secondary)] font-sans text-[var(--theme-text-primary)]">
+      <div className="theme-transition-colors relative flex h-full overflow-hidden bg-[var(--theme-bg-secondary)] font-sans text-[var(--theme-text-primary)]">
         <SettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
@@ -76,7 +78,7 @@ const App = () => {
           onDeleteSession={handleDeleteSession}
         />
 
-        <main className="relative flex min-w-0 flex-1 flex-col bg-[var(--theme-bg-primary)]">
+        <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--theme-bg-primary)]">
           <Header
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
@@ -106,8 +108,10 @@ const App = () => {
             onForkMessage={handleForkMessage}
           />
 
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex justify-center bg-[linear-gradient(to_top,var(--theme-bg-primary)_0%,color-mix(in_srgb,var(--theme-bg-primary)_82%,transparent)_68%,transparent_100%)] p-4 pb-6">
-            <div className="pointer-events-auto w-full max-w-[40.32rem]">
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-30">
+            <div
+              className={`pointer-events-auto mx-auto w-full ${CHAT_INPUT_MAX_WIDTH_CLASS} px-2 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:px-3`}
+            >
               <ChatInput
                 query={query}
                 setQuery={setQuery}

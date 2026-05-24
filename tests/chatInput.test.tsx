@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ChatInput from '../components/ChatInput';
+import type { MessageAttachment } from '../types';
 
 describe('ChatInput', () => {
   beforeEach(() => {
@@ -56,7 +57,7 @@ describe('ChatInput', () => {
     );
 
     const form = screen.getByRole('form', { name: '消息输入区域' });
-    const textarea = screen.getByPlaceholderText('提出问题...');
+    const textarea = screen.getByPlaceholderText('询问任何问题');
     const toolbar = screen.getByTestId('input-toolbar');
     const textareaShell = textarea.parentElement;
     const sendButton = screen.getByRole('button', { name: '发送消息' });
@@ -126,7 +127,7 @@ describe('ChatInput', () => {
     );
 
     const form = screen.getByRole('form', { name: '消息输入区域' });
-    const textarea = screen.getByPlaceholderText('提出问题...');
+    const textarea = screen.getByPlaceholderText('询问任何问题');
     const attachmentButton = screen.getByTitle('添加附件（图片、视频、PDF、音频、代码）');
 
     attachmentButton.focus();
@@ -155,14 +156,14 @@ describe('ChatInput', () => {
 
     expect(screen.getByRole('alert').textContent).toContain('当前模型仅支持图片和文本/代码附件');
 
-    await user.type(screen.getByPlaceholderText('提出问题...'), 'hi');
+    await user.type(screen.getByPlaceholderText('询问任何问题'), 'hi');
 
     expect(clearInputError).toHaveBeenCalled();
   });
 
   it('clears uploaded attachments after a successful submit and releases object urls', async () => {
     const user = userEvent.setup();
-    const onRun = vi.fn(() => true);
+    const onRun = vi.fn<(attachments: MessageAttachment[]) => boolean>(() => true);
 
     render(
       <ChatInput query="" setQuery={vi.fn()} onRun={onRun} onStop={vi.fn()} appState="idle" />,
@@ -185,14 +186,16 @@ describe('ChatInput', () => {
     expect(preview).toBeTruthy();
     expect(form.contains(preview)).toBe(true);
 
-    await user.type(screen.getByPlaceholderText('提出问题...'), '{enter}');
+    await user.type(screen.getByPlaceholderText('询问任何问题'), '{enter}');
 
     expect(onRun).toHaveBeenCalledWith([
       expect.objectContaining({
         name: 'diagram.png',
         type: 'image',
+        data: 'ZmFrZS1kYXRh',
       }),
     ]);
+    expect(onRun.mock.calls[0][0][0]).not.toHaveProperty('url');
     expect(screen.queryByAltText('attachment')).toBeNull();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview-url');
   });
@@ -221,7 +224,7 @@ describe('ChatInput', () => {
     await waitFor(() => {
       expect(URL.createObjectURL).toHaveBeenCalledWith(file);
     });
-    await user.type(screen.getByPlaceholderText('提出问题...'), '{enter}');
+    await user.type(screen.getByPlaceholderText('询问任何问题'), '{enter}');
 
     expect(await screen.findByAltText('attachment')).toBeTruthy();
   });
@@ -357,7 +360,7 @@ describe('ChatInput', () => {
     const pastedImage = new File(['image'], 'paste.png', { type: 'image/png' });
     const preventDefault = vi.fn();
 
-    const pasteEvent = createEvent.paste(screen.getByPlaceholderText('提出问题...'));
+    const pasteEvent = createEvent.paste(screen.getByPlaceholderText('询问任何问题'));
     Object.defineProperty(pasteEvent, 'clipboardData', {
       value: {
         items: [
@@ -369,7 +372,7 @@ describe('ChatInput', () => {
       },
     });
     pasteEvent.preventDefault = preventDefault;
-    fireEvent(screen.getByPlaceholderText('提出问题...'), pasteEvent);
+    fireEvent(screen.getByPlaceholderText('询问任何问题'), pasteEvent);
 
     await waitFor(() => {
       expect(preventDefault).toHaveBeenCalled();
@@ -377,8 +380,8 @@ describe('ChatInput', () => {
       expect(URL.createObjectURL).toHaveBeenCalledWith(pastedImage);
     });
 
-    fireEvent.compositionStart(screen.getByPlaceholderText('提出问题...'));
-    fireEvent.keyDown(screen.getByPlaceholderText('提出问题...'), {
+    fireEvent.compositionStart(screen.getByPlaceholderText('询问任何问题'));
+    fireEvent.keyDown(screen.getByPlaceholderText('询问任何问题'), {
       key: 'Enter',
       shiftKey: false,
       nativeEvent: { isComposing: true },
@@ -394,7 +397,7 @@ describe('ChatInput', () => {
       <ChatInput query="hello" setQuery={vi.fn()} onRun={onRun} onStop={vi.fn()} appState="idle" />,
     );
 
-    const textarea = screen.getByPlaceholderText('提出问题...');
+    const textarea = screen.getByPlaceholderText('询问任何问题');
 
     fireEvent.compositionStart(textarea);
     fireEvent.keyDown(textarea, {

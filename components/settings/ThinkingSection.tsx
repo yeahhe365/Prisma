@@ -1,13 +1,13 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
-import { AppConfig, ModelOption, ThinkingLevel } from '../../types';
+import type { AppConfig, ModelOption, ThinkingLevel } from '../../types';
 import { getValidThinkingLevels, getAllModels } from '../../config';
 import LevelSelect from './LevelSelect';
 
 interface ThinkingSectionProps {
   config: AppConfig;
   globalConfig: AppConfig;
-  model: ModelOption;
+  model: ModelOption | null;
   onSetThinkingLevel: (
     key: 'planningLevel' | 'expertLevel' | 'synthesisLevel',
     value: ThinkingLevel,
@@ -22,17 +22,38 @@ const ThinkingSection = ({
   onSetThinkingLevel,
   onSetRecursiveLoop,
 }: ThinkingSectionProps) => {
-  const validLevels = getValidThinkingLevels(model);
-
   // Find display name for the current model
   const allModels = getAllModels(globalConfig);
-  const modelInfo = allModels.find((m) => m.value === model);
-  const modelLabel = modelInfo?.label || model;
+  const modelInfo = model ? allModels.find((m) => m.value === model) : undefined;
+  const modelLabel = modelInfo?.label || model || '未选择模型';
+  const validLevels: ThinkingLevel[] = model
+    ? getValidThinkingLevels(model)
+    : ['minimal', 'low', 'medium', 'high'];
+
+  if (!model) {
+    return (
+      <div className="space-y-3 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-tertiary)]">
+            思考过程
+          </h3>
+          <span className="rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] px-2 py-0.5 text-[10px] font-medium text-[var(--theme-text-secondary)]">
+            {modelLabel}
+          </span>
+        </div>
+        <p className="text-sm leading-relaxed text-[var(--theme-text-tertiary)]">
+          添加并选择一个模型后，可为它配置推理深度和递归优化。
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] p-4">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-tertiary)]">思考过程</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-tertiary)]">
+          思考过程
+        </h3>
         <span className="rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] px-2 py-0.5 text-[10px] font-medium text-[var(--theme-text-secondary)]">
           {modelLabel}
         </span>
@@ -44,9 +65,7 @@ const ThinkingSection = ({
             <RefreshCw size={16} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--theme-text-primary)]">
-              递归优化
-            </p>
+            <p className="text-sm font-semibold text-[var(--theme-text-primary)]">递归优化</p>
             <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-tertiary)]">
               循环生成专家输出直到满意为止。
             </p>

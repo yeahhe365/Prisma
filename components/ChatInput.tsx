@@ -1,7 +1,12 @@
 import React, { useRef, useLayoutEffect, useState, useEffect } from 'react';
-import { ArrowUp, Square, Paperclip, X, FileText, Video, Music, FileCode } from 'lucide-react';
-import { AppState, MessageAttachment } from '../types';
-import { fileToBase64 } from '../utils';
+import { ArrowUp, Square, Paperclip } from 'lucide-react';
+import type { AppState, MessageAttachment } from '../types';
+import AttachmentPreview from './AttachmentPreview';
+import {
+  createAttachmentFromFile,
+  revokeAttachmentUrls,
+  toPersistentAttachments,
+} from '../services/attachments';
 
 interface ChatInputProps {
   query: string;
@@ -33,14 +38,6 @@ const ChatInput = ({
   const [isComposing, setIsComposing] = useState(false);
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   attachmentsRef.current = attachments;
-
-  const revokeAttachmentUrls = (items: MessageAttachment[]) => {
-    items.forEach((attachment) => {
-      if (attachment.url) {
-        URL.revokeObjectURL(attachment.url);
-      }
-    });
-  };
 
   const adjustHeight = () => {
     if (textareaRef.current) {
@@ -75,36 +72,11 @@ const ChatInput = ({
   }, [query]);
 
   const processFile = async (file: File) => {
-    const isImage = file.type.startsWith('image/');
-    const isPdf = file.type === 'application/pdf';
-    const isVideo = file.type.startsWith('video/');
-    const isAudio = file.type.startsWith('audio/');
-    const isText =
-      file.type.startsWith('text/') ||
-      ['application/json', 'application/javascript', 'application/x-javascript'].includes(
-        file.type,
-      ) ||
-      file.name.match(/\.(js|ts|tsx|py|c|cpp|rs|md|csv|json|html|css|go|java|rb|php)$/i);
-
-    if (!isImage && !isPdf && !isVideo && !isAudio && !isText) return;
-
     try {
-      const base64 = await fileToBase64(file);
-      let type: MessageAttachment['type'] = 'document';
-      if (isImage) type = 'image';
-      else if (isPdf) type = 'pdf';
-      else if (isVideo) type = 'video';
-      else if (isAudio) type = 'audio';
-
-      const newAttachment: MessageAttachment = {
-        id: Math.random().toString(36).substring(7),
-        type,
-        name: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        data: base64,
-        url: isImage || isVideo || isAudio ? URL.createObjectURL(file) : undefined,
-      };
-      setAttachments((prev) => [...prev, newAttachment]);
+      const newAttachment = await createAttachmentFromFile(file);
+      if (newAttachment) {
+        setAttachments((prev) => [...prev, newAttachment]);
+      }
     } catch (e) {
       console.error('Failed to process file', e);
     }
@@ -155,7 +127,7 @@ const ChatInput = ({
 
   const handleSubmit = () => {
     if (!query.trim() && attachments.length === 0) return;
-    const didSubmit = onRun(attachments);
+    const didSubmit = onRun(toPersistentAttachments(attachments));
     if (didSubmit) {
       revokeAttachmentUrls(attachments);
       setAttachments([]);
@@ -206,51 +178,7 @@ const ChatInput = ({
         {attachments.length > 0 && (
           <div className="custom-scrollbar flex gap-3 overflow-x-auto px-1 py-1">
             {attachments.map((att) => (
-              <div key={att.id} className="group relative shrink-0">
-                {att.type === 'image' ? (
-                  <img
-                    src={att.url}
-                    alt="attachment"
-                    className="h-16 w-16 rounded-lg border border-[var(--theme-border-secondary)] object-cover shadow-sm"
-                  />
-                ) : att.type === 'video' ? (
-                  <div className="relative flex h-16 w-24 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg bg-[var(--theme-bg-code-block)] p-2 shadow-sm">
-                    <Video size={20} className="text-white/50" />
-                    <span className="w-full truncate px-1 text-center text-[8px] font-medium text-white/70">
-                      {att.name || 'video.mp4'}
-                    </span>
-                  </div>
-                ) : att.type === 'audio' ? (
-                  <div className="flex h-16 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
-                    <Music size={20} className="text-[var(--theme-text-link)]" />
-                    <span className="w-full truncate px-1 text-center text-[8px] font-medium text-[var(--theme-text-secondary)]">
-                      {att.name || 'audio.mp3'}
-                    </span>
-                  </div>
-                ) : att.type === 'pdf' ? (
-                  <div className="flex h-16 w-32 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
-                    <FileText size={20} className="text-[var(--theme-text-danger)]" />
-                    <span className="w-full truncate px-1 text-center text-[10px] font-medium text-[var(--theme-text-secondary)]">
-                      {att.name || 'document.pdf'}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex h-16 w-32 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-2 shadow-sm">
-                    <FileCode size={20} className="text-[var(--theme-text-link)]" />
-                    <span className="w-full truncate px-1 text-center text-[10px] font-medium text-[var(--theme-text-secondary)]">
-                      {att.name || 'file.txt'}
-                    </span>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeAttachment(att.id)}
-                  className="absolute -right-2 -top-2 z-10 rounded-full bg-[var(--theme-bg-accent)] p-1 text-[var(--theme-text-accent)] opacity-100 shadow-md transition-colors hover:bg-[var(--theme-bg-danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--theme-bg-input)]"
-                  aria-label="移除附件"
-                >
-                  <X size={10} />
-                </button>
-              </div>
+              <AttachmentPreview key={att.id} attachment={att} onRemove={removeAttachment} />
             ))}
           </div>
         )}
@@ -267,7 +195,7 @@ const ChatInput = ({
             onPaste={handlePaste}
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => setIsComposing(false)}
-            placeholder="提出问题..."
+            placeholder="询问任何问题"
             aria-label="消息输入"
             enterKeyHint="send"
             rows={1}

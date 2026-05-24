@@ -25,9 +25,7 @@ export type OpenAIClient = Pick<OpenAI, 'chat'>;
 
 export type OpenAIChatCompletion = OpenAI.Chat.ChatCompletion;
 
-export type PresetModelOption = 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'custom';
-export type CustomModelName = string & { readonly __customModelNameBrand?: never };
-export type ModelOption = PresetModelOption | CustomModelName;
+export type ModelOption = string;
 export type ThinkingLevel = 'minimal' | 'low' | 'medium' | 'high';
 export type ApiProvider = 'google' | 'openai';
 

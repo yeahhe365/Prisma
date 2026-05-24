@@ -24,7 +24,7 @@ const existingSession: ChatSession = {
   id: 'existing',
   title: 'Existing chat',
   createdAt: 1,
-  model: 'gemini-3-flash-preview',
+  model: 'gemini-3.5-flash',
   messages: [{ id: 'm1', role: 'user', content: 'hello' }],
 };
 
@@ -69,7 +69,7 @@ describe('useChatSessions', () => {
             content: 'This is a very long prompt that should be truncated in the title',
           },
         ],
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
       );
     });
 
@@ -175,7 +175,7 @@ describe('useChatSessions', () => {
     act(() => {
       result.current.createSession(
         [{ id: 'u1', role: 'user', content: 'short title' }],
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
       );
       result.current.updateSessionMessages('existing', [
         { id: 'm1', role: 'user', content: 'updated' },

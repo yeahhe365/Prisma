@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ModelOption, OpenAIClient, ThinkingLevel } from '../../types';
+import type { ModelOption, OpenAIClient, ThinkingLevel } from '../../types';
 import { withRetry } from '../utils/retry';
 import { getReasoningEffort } from '../../config';
 

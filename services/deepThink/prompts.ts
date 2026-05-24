@@ -1,4 +1,4 @@
-import { ExpertResult } from '../../types';
+import type { ExpertResult } from '../../types';
 
 export const MANAGER_SYSTEM_PROMPT = `You are the "Dynamic Planning Engine". Your goal is to analyze a user query (considering the conversation context) and decompose it into a set of specialized expert personas (2 to 4) who can collaboratively solve specific aspects of the problem.
 

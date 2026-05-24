@@ -1,5 +1,11 @@
 import type OpenAI from 'openai';
-import { AIClient, ModelOption, ExpertResult, MessageAttachment, ThinkingLevel } from '../../types';
+import type {
+  AIClient,
+  ModelOption,
+  ExpertResult,
+  MessageAttachment,
+  ThinkingLevel,
+} from '../../types';
 import { getSynthesisPrompt } from './prompts';
 import { generateContentStream as generateOpenAIStream } from './openaiClient';
 import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';

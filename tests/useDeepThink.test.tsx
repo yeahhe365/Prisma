@@ -7,6 +7,7 @@ const apiMocks = vi.hoisted(() => ({
   getAI: vi.fn(),
   getAIProvider: vi.fn(),
   findCustomModel: vi.fn(),
+  resolveModelApiConfig: vi.fn(),
 }));
 
 const configMocks = vi.hoisted(() => ({
@@ -27,6 +28,7 @@ vi.mock('../api', () => ({
   getAI: apiMocks.getAI,
   getAIProvider: apiMocks.getAIProvider,
   findCustomModel: apiMocks.findCustomModel,
+  resolveModelApiConfig: apiMocks.resolveModelApiConfig,
 }));
 
 vi.mock('../config', async () => {
@@ -77,6 +79,7 @@ describe('useDeepThink', () => {
     apiMocks.getAI.mockReset().mockReturnValue(aiClient);
     apiMocks.getAIProvider.mockReset().mockReturnValue('google');
     apiMocks.findCustomModel.mockReset().mockReturnValue(undefined);
+    apiMocks.resolveModelApiConfig.mockReset().mockReturnValue({ provider: 'google' });
     configMocks.getThinkingBudget.mockReset().mockReturnValue(100);
     managerMocks.executeManagerAnalysis.mockReset().mockResolvedValue(makeAnalysis());
     managerMocks.executeManagerReview
@@ -138,7 +141,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         baseConfig,
       );
     });
@@ -192,7 +195,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         {
           ...baseConfig,
           enableRecursiveLoop: true,
@@ -220,7 +223,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         baseConfig,
       );
     });
@@ -239,7 +242,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         '',
         emptyHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         baseConfig,
       );
     });
@@ -284,7 +287,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         baseConfig,
       );
     });
@@ -308,7 +311,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         baseConfig,
       );
     });
@@ -343,7 +346,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         {
           ...baseConfig,
           enableRecursiveLoop: true,
@@ -366,7 +369,7 @@ describe('useDeepThink', () => {
       await result.current.runDynamicDeepThink(
         'current prompt',
         baseHistory,
-        'gemini-3-flash-preview',
+        'gemini-3.5-flash',
         baseConfig,
       );
     });
@@ -387,7 +390,7 @@ describe('useDeepThink', () => {
         await result.current.runDynamicDeepThink(
           'current prompt',
           baseHistory,
-          'gemini-3-flash-preview',
+          'gemini-3.5-flash',
           baseConfig,
         );
       } catch (error) {

@@ -1,16 +1,6 @@
-import { ApiProvider } from '../../types';
+import type { ApiProvider } from '../../types';
 
-export type EditableModelItem = {
-  id: string;
-  modelId: string;
-  displayName: string;
-  isPreset: boolean;
-  provider: ApiProvider;
-  apiKey?: string;
-  baseUrl?: string;
-};
-
-export const PROVIDER_OPTIONS: { value: ApiProvider; label: string }[] = [
-  { value: 'google', label: 'Gemini（v1beta）' },
-  { value: 'openai', label: 'OpenAI 兼容（v1）' },
+export const PROVIDER_OPTIONS: { value: ApiProvider; label: string; shortLabel: string }[] = [
+  { value: 'google', label: 'Gemini（v1beta）', shortLabel: 'Gemini' },
+  { value: 'openai', label: 'OpenAI 兼容（v1）', shortLabel: 'OpenAI 兼容' },
 ];

@@ -1,6 +1,6 @@
-import { findCustomModel, getAI, getAIProvider } from '../../api';
+import { getAI, resolveModelApiConfig } from '../../api';
 import { getThinkingBudget } from '../../config';
-import {
+import type {
   AIClient,
   AnalysisResult,
   AppConfig,
@@ -78,16 +78,19 @@ const toRoundExperts = (
   }));
 };
 
-const getAIClient = (model: ModelOption, config: AppConfig): AIClient => {
-  const customModelConfig = findCustomModel(model, config.customModels);
-  const provider = customModelConfig?.provider || getAIProvider(model);
-  const apiConfig = {
-    provider,
-    ...(customModelConfig?.apiKey ? { apiKey: customModelConfig.apiKey } : {}),
-    ...(customModelConfig?.baseUrl ? { baseUrl: customModelConfig.baseUrl } : {}),
-  };
+export const formatSynthesisErrorMessage = (error: unknown): string => {
+  const message =
+    error instanceof Error ? error.message : 'Failed to aggregate expert responses.';
 
-  return getAI(apiConfig);
+  const guidance = message.includes('Target host not allowed')
+    ? 'Docker API 代理未放行当前 Base URL 域名。请把该域名加入 PRISMA_PROXY_ALLOWED_HOSTS 后重新部署。'
+    : 'Please check your API keys and try again.';
+
+  return `## Error in Synthesis\n\n${message}\n\n${guidance}`;
+};
+
+const getAIClient = (model: ModelOption, config: AppConfig): AIClient => {
+  return getAI(resolveModelApiConfig(model, config));
 };
 
 const runExpertLifecycle = async (
@@ -337,13 +340,7 @@ export const runDynamicDeepThinkOrchestration = async (
     } catch (synthesisError: unknown) {
       console.error('Synthesis error:', synthesisError);
       if (!fullFinalText) {
-        const message =
-          synthesisError instanceof Error
-            ? synthesisError.message
-            : 'Failed to aggregate expert responses.';
-        bridge.setFinalOutput(
-          `## Error in Synthesis\n\n${message}\n\nPlease check your API keys and try again.`,
-        );
+        bridge.setFinalOutput(formatSynthesisErrorMessage(synthesisError));
       }
     }
 

@@ -11,7 +11,7 @@ import {
   Repeat,
 } from 'lucide-react';
 import LazyMarkdownRenderer from './LazyMarkdownRenderer';
-import { ExpertResult } from '../types';
+import type { ExpertResult } from '../types';
 
 // Simple component to format milliseconds to ss.ms or mm:ss
 const TimeDisplay = ({ start, end, status }: { start?: number; end?: number; status: string }) => {
@@ -114,7 +114,9 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <p className="flex-1 truncate text-[10px] text-[var(--theme-text-tertiary)]">{expert.description}</p>
+            <p className="flex-1 truncate text-[10px] text-[var(--theme-text-tertiary)]">
+              {expert.description}
+            </p>
             {expert.temperature !== undefined && (
               <div
                 className="flex shrink-0 items-center gap-0.5 rounded-full border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-tertiary)]/50 px-1.5 py-0.5 font-mono text-[9px] text-[var(--theme-text-tertiary)]"
@@ -127,7 +129,9 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
           </div>
         </div>
         <div className="flex-shrink-0 pt-0.5">
-          {isWorking && <Loader2 size={16} className="animate-spin text-[var(--theme-border-focus)]" />}
+          {isWorking && (
+            <Loader2 size={16} className="animate-spin text-[var(--theme-border-focus)]" />
+          )}
           {isDone && <CheckCircle2 size={16} className="text-[var(--theme-text-success)]" />}
           {isError && <X size={16} className="text-[var(--theme-text-danger)]" />}
         </div>

@@ -53,12 +53,33 @@ vi.mock('../hooks/useDeepThink', () => ({
   }),
 }));
 
-import { DEFAULT_CONFIG } from '../config';
+import { DEFAULT_CONFIG, DEFAULT_MODEL, STORAGE_KEYS } from '../config';
 import { useAppLogic } from '../hooks/useAppLogic';
 
 const baseConfig: AppConfig = {
   ...DEFAULT_CONFIG,
   customModels: [{ id: 'glm-1', name: 'glm-5-turbo', displayName: 'GLM 5', provider: 'openai' }],
+};
+
+const legacyBundledConfig: AppConfig = {
+  ...DEFAULT_CONFIG,
+  customModels: [
+    {
+      id: 'custom-glm-5-turbo',
+      name: 'glm-5-turbo',
+      displayName: 'GLM-5 Turbo',
+      provider: 'openai',
+    },
+    {
+      id: 'custom-glm-5-turbo-nothinking',
+      name: 'glm-5-turbo-nothinking',
+      displayName: 'GLM-5 Turbo Nothinking',
+      provider: 'openai',
+    },
+  ],
+  modelPreferences: {
+    'glm-5-turbo': { planningLevel: 'low' },
+  },
 };
 
 const session: ChatSession = {
@@ -100,6 +121,7 @@ describe('useAppLogic', () => {
   });
 
   it('loads the selected session and model from session state', async () => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(baseConfig));
     chatSessionsMock.sessions = [session];
     chatSessionsMock.currentSessionId = 'session-1';
 
@@ -109,6 +131,27 @@ describe('useAppLogic', () => {
       expect(result.current.messages).toEqual(session.messages);
       expect(result.current.selectedModel).toBe('glm-5-turbo');
     });
+  });
+
+  it('migrates legacy bundled models out of cached settings', async () => {
+    localStorage.setItem(STORAGE_KEYS.MODEL, 'glm-5-turbo');
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(legacyBundledConfig));
+
+    const { result } = renderHook(() => useAppLogic());
+
+    expect(result.current.selectedModel).toBe(DEFAULT_MODEL);
+    expect(result.current.config.customModels).toEqual([]);
+    expect(result.current.config.modelPreferences).not.toHaveProperty('glm-5-turbo');
+
+    await waitFor(() => {
+      expect(localStorage.getItem(STORAGE_KEYS.MODEL)).toBeNull();
+    });
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS) || '{}')).toEqual(
+      expect.objectContaining({
+        customModels: [],
+        modelPreferences: {},
+      }),
+    );
   });
 
   it('keeps the sidebar open by default on desktop and closed by default on mobile', () => {
@@ -175,7 +218,7 @@ describe('useAppLogic', () => {
           content: 'hello world',
         }),
       ],
-      'gemini-3-flash-preview',
+      'glm-5-turbo',
     );
     expect(deepThinkMock.runDynamicDeepThink).toHaveBeenCalledWith(
       'hello world',
@@ -185,7 +228,7 @@ describe('useAppLogic', () => {
           content: 'hello world',
         }),
       ],
-      'gemini-3-flash-preview',
+      'glm-5-turbo',
       expect.objectContaining({ planningLevel: DEFAULT_CONFIG.planningLevel }),
     );
     expect(result.current.query).toBe('');
@@ -263,6 +306,7 @@ describe('useAppLogic', () => {
   });
 
   it('updates per-model settings helpers and deletes the active session through the new-chat path', async () => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(baseConfig));
     chatSessionsMock.sessions = [session];
     chatSessionsMock.currentSessionId = 'session-1';
 
@@ -358,6 +402,7 @@ describe('useAppLogic', () => {
   });
 
   it('retries a model message from the previous user message', async () => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(baseConfig));
     const messageSession: ChatSession = {
       ...session,
       messages: [

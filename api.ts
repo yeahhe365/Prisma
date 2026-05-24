@@ -1,19 +1,31 @@
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
-import { ApiProvider, CustomModel, AIClient, GoogleGenAIClient, OpenAIClient } from './types';
+import type {
+  ApiProvider,
+  AppConfig,
+  CustomModel,
+  AIClient,
+  GoogleGenAIClient,
+  ModelOption,
+  OpenAIClient,
+} from './types';
 
 // --- Configuration & Types ---
 
-type AIProviderConfig = {
+export type AIProviderConfig = {
   provider?: ApiProvider;
   apiKey?: string;
   baseUrl?: string;
+  proxyMode?: ApiProxyMode;
 };
 
 type ApiEnv = {
   VITE_API_KEY?: string;
   GEMINI_API_KEY?: string;
+  VITE_API_PROXY_MODE?: string;
 };
+
+type ApiProxyMode = 'direct' | 'local';
 
 // --- Provider Detection ---
 
@@ -33,14 +45,48 @@ export const isGoogleProvider = (ai: AIClient | unknown): ai is GoogleGenAIClien
  * Only handles API version prefix deduplication as a safety net.
  * URL routing is handled by SDK-level options (httpOptions.baseUrl / baseURL).
  */
-const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
-  if (!baseUrl) return window.fetch.bind(window);
-
+const createCustomFetch = (
+  baseUrl: string | null,
+  proxyMode: ApiProxyMode,
+): typeof globalThis.fetch => {
   const nativeFetch = window.fetch.bind(window);
-  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+  const cleanBaseUrl = baseUrl?.replace(/\/+$/, '') ?? null;
+
+  const createProxyInit = (
+    input: RequestInfo | URL,
+    init: RequestInit | undefined,
+    targetOrigin: string,
+  ): RequestInit => {
+    const request = input instanceof Request ? input : null;
+    const method = init?.method ?? request?.method;
+    const headers = new Headers(request?.headers);
+
+    new Headers(init?.headers).forEach((value, key) => {
+      headers.set(key, value);
+    });
+    headers.set('X-Target-URL', targetOrigin);
+
+    return {
+      ...init,
+      method,
+      headers,
+      body:
+        init?.body ??
+        (request && !['GET', 'HEAD'].includes(method ?? request.method) ? request.body : undefined),
+      cache: init?.cache ?? request?.cache,
+      credentials: init?.credentials ?? request?.credentials,
+      integrity: init?.integrity ?? request?.integrity,
+      keepalive: init?.keepalive ?? request?.keepalive,
+      mode: init?.mode ?? request?.mode,
+      redirect: init?.redirect ?? request?.redirect,
+      referrer: init?.referrer ?? request?.referrer,
+      signal: init?.signal ?? request?.signal,
+    };
+  };
 
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     let urlString: string;
+    let requestInput: RequestInfo | URL = input;
     if (typeof input === 'string') {
       urlString = input;
     } else if (input instanceof URL) {
@@ -49,8 +95,8 @@ const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
       urlString = input.url;
     }
 
-    // Safety: deduplicate API version prefix (e.g., /v1beta/v1beta → /v1beta)
-    // Some Google SDK versions may double-append version prefixes when httpOptions.baseUrl includes one
+    // Safety: deduplicate API version prefix (e.g., /v1beta/v1beta -> /v1beta).
+    // Some Google SDK versions may double-append version prefixes when httpOptions.baseUrl includes one.
     if (cleanBaseUrl) {
       try {
         const baseHost = new URL(cleanBaseUrl).host;
@@ -60,7 +106,8 @@ const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
           const versionPrefix = basePath.match(/\/v\d+(beta|alpha)?$/)?.[0];
           if (versionPrefix && url.pathname.includes(versionPrefix + versionPrefix)) {
             url.pathname = url.pathname.replace(versionPrefix + versionPrefix, versionPrefix);
-            return nativeFetch(url.toString(), init);
+            urlString = url.toString();
+            requestInput = urlString;
           }
         }
       } catch {
@@ -68,7 +115,22 @@ const createCustomFetch = (baseUrl: string | null): typeof globalThis.fetch => {
       }
     }
 
-    return nativeFetch(input, init);
+    if (proxyMode === 'local') {
+      try {
+        const url = new URL(urlString, window.location.href);
+        const isHttpApiRequest = url.protocol === 'https:' || url.protocol === 'http:';
+        const isExternalRequest = url.origin !== window.location.origin;
+
+        if (isHttpApiRequest && isExternalRequest) {
+          const proxyUrl = `/custom-api${url.pathname}${url.search}`;
+          return nativeFetch(proxyUrl, createProxyInit(input, init, url.origin));
+        }
+      } catch {
+        /* fall through to the native request */
+      }
+    }
+
+    return nativeFetch(requestInput, init);
   };
 };
 
@@ -81,11 +143,22 @@ export const findCustomModel = (
   return customModels?.find((m) => m.name === modelName);
 };
 
+export const findPresetOverride = (
+  modelName: string,
+  presetOverrides?: CustomModel[],
+): CustomModel | undefined => {
+  return presetOverrides?.find((model) => model.name === modelName);
+};
+
 export const resolveApiKey = (
   explicitApiKey?: string,
-  env: ApiEnv = import.meta.env,
+  _env: ApiEnv = import.meta.env,
 ): string | undefined => {
-  return explicitApiKey || env.VITE_API_KEY || env.GEMINI_API_KEY;
+  return explicitApiKey;
+};
+
+export const resolveApiProxyMode = (env: ApiEnv = import.meta.env): ApiProxyMode => {
+  return env.VITE_API_PROXY_MODE === 'local' ? 'local' : 'direct';
 };
 
 /**
@@ -112,13 +185,28 @@ export const getAIProvider = (model: string): ApiProvider => {
   return 'google';
 };
 
+export const resolveModelApiConfig = (
+  model: ModelOption,
+  config: Pick<AppConfig, 'customModels' | 'presetOverrides'>,
+): AIProviderConfig => {
+  const customModelConfig = findCustomModel(model, config.customModels);
+  const provider = customModelConfig?.provider || getAIProvider(model);
+
+  return {
+    provider,
+    ...(customModelConfig?.apiKey ? { apiKey: customModelConfig.apiKey } : {}),
+    ...(customModelConfig?.baseUrl ? { baseUrl: customModelConfig.baseUrl } : {}),
+  };
+};
+
 // --- API Client Factory ---
 
 export const getAI = (config?: AIProviderConfig): AIClient => {
   const provider = config?.provider || 'google';
   const apiKey = resolveApiKey(config?.apiKey);
   const baseUrl = config?.baseUrl || null;
-  const customFetch = createCustomFetch(baseUrl);
+  const proxyMode = config?.proxyMode || resolveApiProxyMode();
+  const customFetch = createCustomFetch(baseUrl, proxyMode);
 
   // Handle OpenAI-compatible providers
   if (provider === 'openai') {

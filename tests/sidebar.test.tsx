@@ -11,14 +11,14 @@ const sessions: ChatSession[] = [
     id: '1',
     title: 'Frontend architecture',
     createdAt: new Date('2026-04-01').getTime(),
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3.5-flash',
     messages: [{ id: 'm1', role: 'user', content: 'Discuss React structure' }],
   },
   {
     id: '2',
     title: 'Database notes',
     createdAt: new Date('2026-04-02').getTime(),
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3.5-flash',
     messages: [{ id: 'm2', role: 'user', content: 'Prisma schema migration ideas' }],
   },
 ];

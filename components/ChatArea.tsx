@@ -1,8 +1,7 @@
 import React from 'react';
-import { ChatMessage, AppState, AnalysisResult, ExpertResult } from '../types';
+import type { ChatMessage, AppState, AnalysisResult, ExpertResult } from '../types';
 import ChatMessageView from './ChatMessage';
 import ProcessFlow from './ProcessFlow';
-import Logo from './Logo';
 import { Code, BookOpen, Lightbulb, BarChart3 } from 'lucide-react';
 
 const SUGGESTIONS = [
@@ -66,26 +65,24 @@ const ChatArea = ({
   const isIdle = messages.length === 0 && appState === 'idle';
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
+    <div className="chat-bg-enhancement relative flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
       {isIdle ? (
-        <div className="relative flex h-full flex-col items-center justify-center overflow-hidden px-4 text-center">
-          <div className="relative z-10 flex flex-col items-center animate-fade-in">
-            <Logo className="mb-6 h-20 w-20 text-[var(--theme-text-primary)] opacity-90" />
-            <p className="text-2xl font-semibold tracking-normal text-[var(--theme-text-primary)]">
-              Prisma
-            </p>
-            <p className="mx-auto mb-8 mt-2 max-w-xs text-sm text-[var(--theme-text-tertiary)]">
-              多智能体深度推理，专家协同协作。
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+        <div className="relative flex h-full flex-col overflow-hidden px-3 text-center">
+          <div className="flex min-h-0 flex-1 items-center justify-center pb-32">
+            <h1 className="text-3xl font-semibold tracking-normal text-[var(--theme-text-primary)] sm:text-4xl">
+              有什么可以帮忙的？
+            </h1>
+          </div>
+          <div className="pointer-events-none absolute bottom-[7.25rem] left-0 right-0 z-10 flex justify-center px-2 sm:px-3">
+            <div className="pointer-events-auto flex w-full max-w-[40.32rem] gap-2 overflow-x-auto px-1 pb-1 no-scrollbar fade-mask-x">
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => onSuggestionClick?.(s.text)}
-                  className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-[var(--theme-border-focus)] hover:bg-[var(--theme-bg-tertiary)] hover:shadow-md active:translate-y-0 ${s.color}`}
+                  className={`flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-left text-sm shadow-sm transition-colors hover:border-[var(--theme-border-focus)] hover:bg-[var(--theme-bg-tertiary)] active:bg-[var(--theme-bg-tertiary)] ${s.color}`}
                 >
                   <s.icon size={16} className="shrink-0 text-[var(--theme-text-tertiary)]" />
-                  <span className="font-medium leading-snug text-[var(--theme-text-primary)]">
+                  <span className="whitespace-nowrap font-medium text-[var(--theme-text-primary)]">
                     {s.text}
                   </span>
                 </button>

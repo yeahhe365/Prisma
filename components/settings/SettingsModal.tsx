@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrainCircuit, Info, SlidersHorizontal, X } from 'lucide-react';
-import { AppConfig, ModelOption, ThinkingLevel } from '../../types';
+import type { AppConfig, ModelOption, ThinkingLevel } from '../../types';
 import ModelSection from './ModelSection';
 import ThinkingSection from './ThinkingSection';
 import GithubSection from './GithubSection';
@@ -11,7 +11,7 @@ interface SettingsModalProps {
   config: AppConfig;
   setConfig: (c: AppConfig) => void;
   effectiveConfig: AppConfig;
-  model: ModelOption;
+  model: ModelOption | null;
   onSetThinkingLevel: (
     key: 'planningLevel' | 'expertLevel' | 'synthesisLevel',
     value: ThinkingLevel,
@@ -64,15 +64,15 @@ const SettingsModal = ({
   const activeTabConfig = SETTINGS_TABS.find((tab) => tab.id === activeTab) ?? SETTINGS_TABS[0];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-0 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="设置"
-        className="flex h-[min(85vh,800px)] min-h-[560px] w-full max-w-[1120px] overflow-hidden rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl animate-in zoom-in-95 duration-200 max-md:h-[92vh] max-md:min-h-0 max-md:flex-col"
+        className="flex h-[100dvh] w-full max-w-6xl overflow-hidden border border-[var(--theme-border-primary)] bg-[var(--theme-bg-primary)] shadow-2xl transition-all animate-in zoom-in-95 duration-200 sm:h-[85vh] sm:max-h-[800px] sm:w-[90vw] sm:rounded-xl max-md:flex-col"
       >
         <aside className="flex w-64 shrink-0 flex-col border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] max-md:w-full max-md:border-b md:border-r">
-          <div className="flex min-h-[68px] shrink-0 items-center justify-between px-5 py-4">
+          <div className="flex shrink-0 items-center justify-between px-4 py-3 md:px-5 md:py-5">
             <button
               type="button"
               onClick={onClose}
@@ -111,7 +111,11 @@ const SettingsModal = ({
                     <Icon
                       size={19}
                       strokeWidth={isActive ? 2 : 1.5}
-                      className={isActive ? 'text-[var(--theme-text-primary)]' : 'text-[var(--theme-text-tertiary)]'}
+                      className={
+                        isActive
+                          ? 'text-[var(--theme-text-primary)]'
+                          : 'text-[var(--theme-text-tertiary)]'
+                      }
                     />
                     <span className="whitespace-nowrap">{label}</span>
                   </button>
@@ -122,12 +126,14 @@ const SettingsModal = ({
         </aside>
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--theme-bg-primary)]">
-          <div className="min-h-0 flex-1 overflow-y-auto px-9 py-8 custom-scrollbar max-md:px-5 max-md:py-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 custom-scrollbar sm:px-6 sm:py-6 md:px-8 md:py-8">
             <section
               id={`settings-panel-${activeTab}`}
               role="tabpanel"
               aria-labelledby={`settings-tab-${activeTab}`}
-              className="mx-auto flex w-full max-w-3xl animate-in fade-in slide-in-from-top-1 flex-col gap-5 duration-200"
+              className={`mx-auto flex w-full animate-in fade-in slide-in-from-top-1 flex-col gap-5 duration-200 ${
+                activeTab === 'models' ? 'max-w-5xl' : 'max-w-3xl'
+              }`}
             >
               <div className="flex flex-col gap-1.5 pb-0.5">
                 <h2 className="text-xl font-semibold tracking-normal text-[var(--theme-text-primary)]">
@@ -150,7 +156,6 @@ const SettingsModal = ({
               {activeTab === 'about' && <GithubSection isOpen={isOpen} />}
             </section>
           </div>
-
         </main>
       </div>
     </div>

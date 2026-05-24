@@ -16,20 +16,9 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { ChatSession } from '../types';
+import type { ChatSession } from '../types';
 import Logo from './Logo';
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => {
-    timerRef.current = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timerRef.current);
-  }, [value, delay]);
-
-  return debounced;
-}
+import { useDebounce } from '../hooks/useDebounce';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -53,6 +42,11 @@ const RECENT_CHATS_CLOSE_DELAY_MS = 120;
 const RECENT_CHATS_PANEL_WIDTH = 320;
 const RECENT_CHATS_PANEL_GAP = 0;
 const RECENT_CHATS_PANEL_MARGIN = 16;
+const SIDEBAR_EXPANDED_WIDTH_CLASS = 'md:w-[16.2rem]';
+const SIDEBAR_EXPANDED_MIN_WIDTH_CLASS = 'md:min-w-[16.2rem]';
+const SIDEBAR_RAIL_WIDTH_CLASS = 'md:w-[52.2px]';
+const SIDEBAR_RAIL_MIN_WIDTH_CLASS = 'min-w-[52.2px]';
+const SIDEBAR_RAIL_ICON_GAP_CLASS = 'gap-[0.56rem]';
 
 type RecentChatsOpenMode = 'hover' | 'focus' | 'click';
 
@@ -358,7 +352,7 @@ const Sidebar = ({
           absolute inset-y-0 left-0 z-40 md:static md:z-auto
           h-full shrink-0 overflow-hidden border-r border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)]
           transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] md:transition-[width]
-          ${isOpen ? 'w-64 translate-x-0 md:w-[16.2rem]' : 'w-64 -translate-x-full md:w-[52.2px] md:translate-x-0'}
+          ${isOpen ? `w-64 translate-x-0 ${SIDEBAR_EXPANDED_WIDTH_CLASS}` : `w-64 -translate-x-full ${SIDEBAR_RAIL_WIDTH_CLASS} md:translate-x-0`}
         `}
         role="complementary"
         aria-label="历史记录"
@@ -367,7 +361,7 @@ const Sidebar = ({
           ref={expandedPaneRef}
           data-sidebar-expanded-pane
           aria-hidden={!isOpen}
-          className={`flex h-full w-64 min-w-[16rem] shrink-0 flex-col md:absolute md:inset-0 md:w-[16.2rem] md:min-w-[16.2rem] ${
+          className={`flex h-full w-64 min-w-[16rem] shrink-0 flex-col md:absolute md:inset-0 ${SIDEBAR_EXPANDED_WIDTH_CLASS} ${SIDEBAR_EXPANDED_MIN_WIDTH_CLASS} ${
             isOpen
               ? 'opacity-100 pointer-events-auto'
               : 'opacity-100 pointer-events-none md:opacity-0'
@@ -564,7 +558,7 @@ const Sidebar = ({
         <div
           data-testid="history-sidebar-mini-rail"
           aria-hidden={isOpen}
-          className={`absolute inset-0 hidden h-full w-full min-w-[52.2px] cursor-ew-resize flex-col items-center gap-[0.56rem] py-4 transition-[opacity,background-color] duration-200 hover:bg-[var(--theme-bg-tertiary)]/30 md:flex ${
+          className={`absolute inset-0 hidden h-full w-full ${SIDEBAR_RAIL_MIN_WIDTH_CLASS} cursor-ew-resize flex-col items-center ${SIDEBAR_RAIL_ICON_GAP_CLASS} py-4 transition-[opacity,background-color] duration-200 hover:bg-[var(--theme-bg-tertiary)]/30 md:flex ${
             isOpen ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
           }`}
           onClick={onOpen}

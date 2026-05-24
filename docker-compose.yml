@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      PRISMA_PROXY_ALLOWED_HOSTS: '${PRISMA_PROXY_ALLOWED_HOSTS:-*}'
+      PRISMA_PROXY_DEBUG: ${PRISMA_PROXY_DEBUG:-false}
     ports:
       - '${PRISMA_DOCKER_PORT:-8081}:80'
     restart: unless-stopped

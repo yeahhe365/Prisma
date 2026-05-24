@@ -1,6 +1,6 @@
 import { Type } from '@google/genai';
 import type OpenAI from 'openai';
-import {
+import type {
   AIClient,
   ModelOption,
   AnalysisResult,

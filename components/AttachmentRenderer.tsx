@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, Download, FileCode } from 'lucide-react';
-import { MessageAttachment } from '../types';
+import type { MessageAttachment } from '../types';
 
 interface AttachmentRendererProps {
   attachments: MessageAttachment[];

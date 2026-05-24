@@ -1,10 +1,11 @@
 import React from 'react';
-import { Settings, ChevronDown, Sun, Moon, SquarePen } from 'lucide-react';
+import { Settings, Sun, Moon, SquarePen } from 'lucide-react';
 import { getAllModels } from '../config';
-import { ModelOption, AppConfig } from '../types';
+import type { ModelOption, AppConfig } from '../types';
+import ModelPicker from './ModelPicker';
 
 interface HeaderProps {
-  selectedModel: ModelOption;
+  selectedModel: ModelOption | null;
   setSelectedModel: (model: ModelOption) => void;
   onOpenSettings: () => void;
   onToggleSidebar: () => void;
@@ -25,6 +26,13 @@ const Header = ({
   onToggleDark,
 }: HeaderProps) => {
   const availableModels = getAllModels(config);
+  const selectedModelInfo = availableModels.find((model) => model.value === selectedModel);
+  const hasModels = availableModels.length > 0;
+  const selectedModelLabel = selectedModelInfo?.label || selectedModel || '未配置模型';
+  const abbreviatedModelName = selectedModelLabel
+    .replace(/^Gemini\s+/i, '')
+    .replace(/\s+Preview/i, '')
+    .replace(/\s+Latest/i, '');
   const headerButtonBase =
     'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--theme-bg-primary)]';
   const headerButtonInactive =
@@ -55,21 +63,44 @@ const Header = ({
           </svg>
         </button>
 
-        <div className="relative group min-w-0">
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as ModelOption)}
-            className="relative block min-h-9 max-w-[180px] cursor-pointer appearance-none truncate rounded-xl border border-transparent bg-transparent py-1.5 pl-2 pr-8 text-base font-semibold text-[var(--theme-text-primary)] outline-none transition-all duration-200 hover:border-[var(--theme-border-secondary)] hover:bg-[var(--theme-bg-tertiary)] focus:border-[var(--theme-border-focus)] focus:ring-2 focus:ring-[var(--theme-border-focus)]/20 sm:max-w-[220px] sm:px-3"
-          >
-            {availableModels.map((m) => (
-              <option key={`${m.provider}-${m.value}`} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--theme-text-tertiary)] transition-colors group-hover:text-[var(--theme-text-primary)]"
-            size={14}
+        <div className="min-w-0">
+          <ModelPicker
+            models={availableModels}
+            selectedId={selectedModel}
+            onSelect={setSelectedModel}
+            renderTrigger={({ isOpen, setIsOpen, listboxId, activeDescendantId }) => (
+              <button
+                onClick={() => {
+                  if (!hasModels) {
+                    onOpenSettings();
+                    return;
+                  }
+                  setIsOpen(!isOpen);
+                }}
+                className="flex min-h-9 items-center gap-2 rounded-xl border border-transparent bg-transparent px-2 py-1.5 text-base font-medium text-[var(--theme-text-primary)] transition-all duration-200 ease-out hover:border-[var(--theme-border-secondary)] hover:bg-[var(--theme-bg-tertiary)] active:bg-[var(--theme-bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--theme-bg-primary)] sm:px-3"
+                title={
+                  hasModels
+                    ? `当前模型：${selectedModelLabel}。切换模型`
+                    : '未配置模型。打开模型设置'
+                }
+                aria-label={
+                  hasModels
+                    ? `当前模型：${selectedModelLabel}。切换模型`
+                    : '未配置模型。打开模型设置'
+                }
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                aria-controls={isOpen ? listboxId : undefined}
+                aria-activedescendant={isOpen ? activeDescendantId : undefined}
+              >
+                <span
+                  data-testid="header-model-selector-label"
+                  className="max-w-[180px] truncate font-semibold sm:max-w-[220px]"
+                >
+                  {abbreviatedModelName}
+                </span>
+              </button>
+            )}
           />
         </div>
       </div>

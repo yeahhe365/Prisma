@@ -14,7 +14,7 @@ const makeSession = (id: string, createdAt: number): ChatSession => ({
   id,
   title: `Session ${id}`,
   createdAt,
-  model: 'gemini-3-flash-preview',
+  model: 'gemini-3.5-flash',
   messages: [{ id: `msg-${id}`, role: 'user', content: `hello ${id}` }],
 });
 

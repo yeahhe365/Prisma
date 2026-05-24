@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Github, Star } from 'lucide-react';
 import Logo from '../Logo';
+import { APP_VERSION } from '../../appVersion';
 
-const CURRENT_VERSION = '0.0.0';
 const REPO_URL = 'https://github.com/yeahhe365/Prisma';
 const RELEASES_URL = `${REPO_URL}/releases`;
 const STARGAZERS_URL = `${REPO_URL}/stargazers`;
@@ -91,7 +91,7 @@ const GithubSection = ({ isOpen }: { isOpen: boolean }) => {
     };
   }, [isOpen]);
 
-  const comparison = latestVersion ? compareVersions(latestVersion, CURRENT_VERSION) : 0;
+  const comparison = latestVersion ? compareVersions(latestVersion, APP_VERSION) : 0;
   const isUpdateAvailable = comparison === 1;
   const isBeta = comparison === -1;
   const isReleaseUnavailable = !isLoading && !hasReleaseData;
@@ -150,7 +150,7 @@ const GithubSection = ({ isOpen }: { isOpen: boolean }) => {
 
           <span className="relative flex items-center gap-3 rounded-full bg-[var(--theme-bg-primary)] px-4 py-1.5 transition-all duration-75 ease-in group-hover:bg-opacity-[0.96] sm:px-5">
             <span className="font-mono text-sm font-bold text-[var(--theme-text-primary)]">
-              v{CURRENT_VERSION}
+              v{APP_VERSION}
             </span>
             <span className="h-3.5 w-px bg-[var(--theme-border-secondary)] opacity-50" />
             <span className="flex items-center gap-2">

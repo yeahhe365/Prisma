@@ -4,7 +4,7 @@ import {
   runDynamicDeepThinkOrchestration,
 } from '../services/deepThink/orchestrator';
 import { RequestQueue } from '../services/utils/retry';
-import { AppConfig, ChatMessage, ModelOption } from '../types';
+import type { AppConfig, ChatMessage, ModelOption } from '../types';
 import { useDeepThinkState } from './useDeepThinkState';
 
 function useExpertQueue() {
