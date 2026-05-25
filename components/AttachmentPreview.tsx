@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileCode, FileText, Music, Video, X } from 'lucide-react';
-import type { MessageAttachment } from '../types';
+import type { MessageAttachment } from '@/types';
 
 interface AttachmentPreviewProps {
   attachment: MessageAttachment;

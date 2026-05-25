@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import ChatMessage from '../components/ChatMessage';
+import ChatMessage from '@/components/ChatMessage';
 
 describe('ChatMessage', () => {
   it('uses AMC-style model message layout with a side action column', () => {
@@ -33,6 +33,10 @@ describe('ChatMessage', () => {
     expect(actions.className).toContain('group-hover:opacity-100');
     expect(bubble.className).toContain('message-content-container');
     expect(bubble.className).toContain('w-full');
+    expect(bubble.className).toContain('max-w-[calc(100%-2.5rem)]');
+    expect(bubble.className).toContain('sm:max-w-3xl');
+    expect(bubble.className).toContain('lg:max-w-4xl');
+    expect(bubble.className).toContain('xl:max-w-5xl');
     expect(screen.queryByText('Prisma')).toBeNull();
     expect(screen.getByRole('button', { name: '重新生成' }).className).toContain('rounded-lg');
     expect(screen.getByRole('button', { name: '更多操作' }).className).toContain('rounded-lg');
@@ -56,6 +60,10 @@ describe('ChatMessage', () => {
 
     expect(row.className).toContain('justify-end');
     expect(bubble.className).toContain('w-fit');
+    expect(bubble.className).toContain('max-w-[80%]');
+    expect(bubble.className).toContain('sm:max-w-3xl');
+    expect(bubble.className).toContain('lg:max-w-4xl');
+    expect(bubble.className).toContain('xl:max-w-5xl');
     expect(bubble.className).toContain('rounded-2xl');
     expect(bubble.className).toContain('rounded-tr-sm');
     expect(screen.queryByText('你')).toBeNull();

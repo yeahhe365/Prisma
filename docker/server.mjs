@@ -228,7 +228,14 @@ const sendFile = async (res, filePath, method) => {
 
 const resolveStaticPath = (staticDir, requestUrl) => {
   const incomingUrl = new URL(requestUrl, 'http://localhost');
-  const decodedPath = decodeURIComponent(incomingUrl.pathname);
+  let decodedPath = '/';
+
+  try {
+    decodedPath = decodeURIComponent(incomingUrl.pathname);
+  } catch {
+    decodedPath = '/';
+  }
+
   const relativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^[/\\]+/, '');
   const filePath = path.resolve(staticDir, relativePath);
   const staticRoot = path.resolve(staticDir);

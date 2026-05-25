@@ -4,8 +4,8 @@ import {
   buildGoogleContents,
   buildOpenAIContent,
   getUnsupportedOpenAIAttachments,
-} from '../services/deepThink/contentBuilder';
-import type { MessageAttachment } from '../types';
+} from '@/services/deepThink/contentBuilder';
+import type { MessageAttachment } from '@/types';
 
 const textAttachment: MessageAttachment = {
   id: 'text-1',

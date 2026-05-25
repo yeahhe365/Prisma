@@ -1,5 +1,5 @@
-import { getAI, resolveModelApiConfig } from '../../api';
-import { getThinkingBudget } from '../../config';
+import { getAI, resolveModelApiConfig } from '@/api';
+import { getThinkingBudget } from '@/config';
 import type {
   AIClient,
   AnalysisResult,
@@ -10,11 +10,11 @@ import type {
   MessageAttachment,
   ModelOption,
   ThinkingLevel,
-} from '../../types';
-import { RequestQueue } from '../utils/retry';
-import { streamExpertResponse } from './expert';
-import { executeManagerAnalysis, executeManagerReview } from './manager';
-import { streamSynthesisResponse } from './synthesis';
+} from '@/types';
+import { RequestQueue } from '@/services/utils/retry';
+import { streamExpertResponse } from '@/services/deepThink/expert';
+import { executeManagerAnalysis, executeManagerReview } from '@/services/deepThink/manager';
+import { streamSynthesisResponse } from '@/services/deepThink/synthesis';
 
 type Ref<T> = {
   current: T;
@@ -79,8 +79,7 @@ const toRoundExperts = (
 };
 
 export const formatSynthesisErrorMessage = (error: unknown): string => {
-  const message =
-    error instanceof Error ? error.message : 'Failed to aggregate expert responses.';
+  const message = error instanceof Error ? error.message : 'Failed to aggregate expert responses.';
 
   const guidance = message.includes('Target host not allowed')
     ? 'Docker API 代理未放行当前 Base URL 域名。请把该域名加入 PRISMA_PROXY_ALLOWED_HOSTS 后重新部署。'
@@ -166,8 +165,9 @@ export const runDynamicDeepThinkOrchestration = async (
     return;
 
   if (bridge.abortControllerRef.current) bridge.abortControllerRef.current.abort();
-  bridge.abortControllerRef.current = new AbortController();
-  const signal = bridge.abortControllerRef.current.signal;
+  const abortController = new AbortController();
+  bridge.abortControllerRef.current = abortController;
+  const signal = abortController.signal;
 
   bridge.setAppState('analyzing');
   bridge.updateQueueConcurrency(config.expertConcurrency || 3);
@@ -355,6 +355,8 @@ export const runDynamicDeepThinkOrchestration = async (
       bridge.setProcessEndTime(Date.now());
     }
   } finally {
-    bridge.abortControllerRef.current = null;
+    if (bridge.abortControllerRef.current === abortController) {
+      bridge.abortControllerRef.current = null;
+    }
   }
 };

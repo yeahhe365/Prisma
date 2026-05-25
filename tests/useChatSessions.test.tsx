@@ -9,7 +9,7 @@ const storageMocks = vi.hoisted(() => ({
   migrateFromLocalStorage: vi.fn(),
 }));
 
-vi.mock('../services/storage', () => ({
+vi.mock('@/services/storage', () => ({
   getAllSessions: storageMocks.getAllSessions,
   putSession: storageMocks.putSession,
   deleteSession: storageMocks.deleteSession,
@@ -17,8 +17,8 @@ vi.mock('../services/storage', () => ({
   migrateFromLocalStorage: storageMocks.migrateFromLocalStorage,
 }));
 
-import { useChatSessions } from '../hooks/useChatSessions';
-import type { ChatSession } from '../types';
+import { useChatSessions } from '@/hooks/useChatSessions';
+import type { ChatSession } from '@/types';
 
 const existingSession: ChatSession = {
   id: 'existing',
@@ -50,6 +50,9 @@ describe('useChatSessions', () => {
 
     expect(storageMocks.migrateFromLocalStorage).toHaveBeenCalled();
     expect(storageMocks.autoCleanup).toHaveBeenCalled();
+    expect(storageMocks.autoCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+      storageMocks.getAllSessions.mock.invocationCallOrder[0],
+    );
   });
 
   it('creates sessions with truncated titles and persists them', async () => {

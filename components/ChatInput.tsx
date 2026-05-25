@@ -1,12 +1,12 @@
 import React, { useRef, useLayoutEffect, useState, useEffect } from 'react';
 import { ArrowUp, Square, Paperclip } from 'lucide-react';
-import type { AppState, MessageAttachment } from '../types';
-import AttachmentPreview from './AttachmentPreview';
+import type { AppState, MessageAttachment } from '@/types';
+import AttachmentPreview from '@/components/AttachmentPreview';
 import {
   createAttachmentFromFile,
   revokeAttachmentUrls,
   toPersistentAttachments,
-} from '../services/attachments';
+} from '@/services/attachments';
 
 interface ChatInputProps {
   query: string;

@@ -6,16 +6,15 @@ import type {
   ModelPreferences,
   ModelCatalogItem,
   CustomModel,
-} from './types';
+} from '@/types';
 
 export const DEFAULT_MODEL: ModelOption | null = null;
-
-export const MODELS: ModelCatalogItem[] = [];
 
 export const STORAGE_KEYS = {
   SETTINGS: 'prisma-settings',
   MODEL: 'prisma-selected-model',
   SESSION_ID: 'prisma-active-session-id',
+  SIDEBAR_OPEN: 'prisma-sidebar-open',
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -23,13 +22,12 @@ export const DEFAULT_CONFIG: AppConfig = {
   expertLevel: 'high',
   synthesisLevel: 'high',
   customModels: [],
-  presetOverrides: [],
   expertConcurrency: 3,
   enableRecursiveLoop: true,
   modelPreferences: {},
 };
 
-const LEGACY_BUNDLED_CUSTOM_MODELS: CustomModel[] = [
+const MIGRATION_REMOVED_BUNDLED_CUSTOM_MODELS: CustomModel[] = [
   {
     id: 'custom-glm-5-turbo',
     name: 'glm-5-turbo',
@@ -44,7 +42,7 @@ const LEGACY_BUNDLED_CUSTOM_MODELS: CustomModel[] = [
   },
 ];
 
-const LEGACY_PRESET_MODEL_LABELS: Record<string, string> = {
+const MIGRATION_PRESET_MODEL_LABELS: Record<string, string> = {
   'gemini-3.5-flash': 'Gemini 3.5 Flash',
   'gemini-3.1-pro-preview': 'Gemini 3.1 Pro Preview',
   'gemini-3.1-flash-lite': 'Gemini 3.1 Flash-Lite',
@@ -63,8 +61,8 @@ const isStoredCustomModel = (model: unknown): model is CustomModel => {
   );
 };
 
-const isLegacyBundledCustomModel = (model: CustomModel): boolean => {
-  return LEGACY_BUNDLED_CUSTOM_MODELS.some((legacyModel) => {
+const isRemovedBundledCustomModel = (model: CustomModel): boolean => {
+  return MIGRATION_REMOVED_BUNDLED_CUSTOM_MODELS.some((legacyModel) => {
     return (
       model.id === legacyModel.id &&
       model.name === legacyModel.name &&
@@ -79,24 +77,29 @@ const isLegacyBundledCustomModel = (model: CustomModel): boolean => {
 export const normalizeConfig = (rawConfig: unknown): AppConfig => {
   if (!isPlainObject(rawConfig)) return DEFAULT_CONFIG;
 
+  const {
+    customModels: _storedCustomModels,
+    presetOverrides: storedPresetOverrides,
+    ...rawConfigValues
+  } = rawConfig;
   const removedLegacyModelNames = new Set<string>();
-  const customModels: CustomModel[] = Array.isArray(rawConfig.customModels)
-    ? rawConfig.customModels.filter(isStoredCustomModel).filter((model) => {
-        const shouldRemove = isLegacyBundledCustomModel(model);
+  const customModels: CustomModel[] = Array.isArray(_storedCustomModels)
+    ? _storedCustomModels.filter(isStoredCustomModel).filter((model) => {
+        const shouldRemove = isRemovedBundledCustomModel(model);
         if (shouldRemove) removedLegacyModelNames.add(model.name);
         return !shouldRemove;
       })
     : [];
 
-  const legacyPresetOverrides = Array.isArray(rawConfig.presetOverrides)
-    ? rawConfig.presetOverrides.filter(isStoredCustomModel)
+  const migratedPresetOverrides = Array.isArray(storedPresetOverrides)
+    ? storedPresetOverrides.filter(isStoredCustomModel)
     : [];
-  const migratedPresetModels = legacyPresetOverrides
+  const migratedPresetModels = migratedPresetOverrides
     .filter((model) => !customModels.some((customModel) => customModel.name === model.name))
     .map((model) => ({
       ...model,
       id: model.id || `custom-${model.name}`,
-      displayName: model.displayName || LEGACY_PRESET_MODEL_LABELS[model.name] || model.name,
+      displayName: model.displayName || MIGRATION_PRESET_MODEL_LABELS[model.name] || model.name,
     }));
   const userModels = [...customModels, ...migratedPresetModels];
 
@@ -112,9 +115,8 @@ export const normalizeConfig = (rawConfig: unknown): AppConfig => {
 
   return {
     ...DEFAULT_CONFIG,
-    ...rawConfig,
+    ...(rawConfigValues as Partial<AppConfig>),
     customModels: userModels,
-    presetOverrides: [],
     modelPreferences,
   };
 };

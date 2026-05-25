@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { ThinkingLevel } from '../../types';
+import type { ThinkingLevel } from '@/types';
 
 interface LevelSelectProps {
   label: string;

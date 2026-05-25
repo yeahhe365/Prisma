@@ -4,8 +4,8 @@ import {
   getExpertsStatus,
   getManagerStatus,
   getSynthesisStatus,
-} from '../components/processFlowStatus';
-import type { ExpertResult } from '../types';
+} from '@/components/processFlowStatus';
+import type { ExpertResult } from '@/types';
 
 const expert = (status: ExpertResult['status']): ExpertResult => ({
   id: `expert-${status}`,

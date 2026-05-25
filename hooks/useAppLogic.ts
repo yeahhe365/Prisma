@@ -1,23 +1,22 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type {
-  ModelOption,
-  AppConfig,
-  ChatMessage,
-  MessageAttachment,
-  ThinkingLevel,
-} from '../types';
-import {
-  STORAGE_KEYS,
-  DEFAULT_CONFIG,
-  getEffectiveConfig,
-  getInitialSelectedModel,
-  normalizeConfig,
-  setModelPreference,
-} from '../config';
-import { resolveModelApiConfig } from '../api';
-import { getUnsupportedOpenAIAttachments } from '../services/deepThink/contentBuilder';
-import { useDeepThink } from './useDeepThink';
-import { useChatSessions } from './useChatSessions';
+import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react';
+import type { ChatMessage, MessageAttachment, ThinkingLevel } from '@/types';
+import { getInitialSelectedModel, setModelPreference, STORAGE_KEYS } from '@/config';
+import { resolveModelApiConfig } from '@/api';
+import { getUnsupportedOpenAIAttachments } from '@/services/deepThink/contentBuilder';
+import { useDeepThink } from '@/hooks/useDeepThink';
+import { useChatSessions } from '@/hooks/useChatSessions';
+import { useChatMessageActions } from '@/hooks/useChatMessageActions';
+import { useLatestRef } from '@/hooks/useLatestRef';
+import { useStoredConfig } from '@/hooks/useStoredConfig';
+
+const getInitialSidebarOpen = () => {
+  const storedValue = localStorage.getItem(STORAGE_KEYS.SIDEBAR_OPEN);
+
+  if (storedValue === 'true') return true;
+  if (storedValue === 'false') return false;
+
+  return window.innerWidth >= 1024;
+};
 
 export const useAppLogic = () => {
   // Session Management
@@ -32,34 +31,19 @@ export const useAppLogic = () => {
   } = useChatSessions();
 
   // UI State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(getInitialSidebarOpen);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
+  const hasHydratedSidebarPreferenceRef = useRef(false);
+  const cachedSessionIdRef = useRef(localStorage.getItem(STORAGE_KEYS.SESSION_ID));
 
   // Active Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState('');
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
+  const messagesRef = useLatestRef(messages);
 
-  // App Configuration with Persistence
-  const [config, setConfig] = useState<AppConfig>(() => {
-    const cached = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    if (cached) {
-      try {
-        return normalizeConfig(JSON.parse(cached));
-      } catch {
-        return DEFAULT_CONFIG;
-      }
-    }
-    return DEFAULT_CONFIG;
-  });
-
-  const [selectedModel, setSelectedModel] = useState<ModelOption | null>(() => {
-    const cached = localStorage.getItem(STORAGE_KEYS.MODEL);
-    return getInitialSelectedModel(cached, config);
-  });
+  const { config, setConfig, selectedModel, setSelectedModel, effectiveConfig } = useStoredConfig();
 
   // Deep Think Engine
   const {
@@ -75,48 +59,31 @@ export const useAppLogic = () => {
     processEndTime,
   } = useDeepThink();
 
-  // Effective config: per-model preferences override global defaults
-  const effectiveConfig = useMemo(
-    () => (selectedModel ? getEffectiveConfig(selectedModel, config) : config),
-    [selectedModel, config],
-  );
-
   // Persistence Effects
-  useEffect(() => {
-    const nextSelectedModel = getInitialSelectedModel(selectedModel, config);
-    if (nextSelectedModel !== selectedModel) {
-      setSelectedModel(nextSelectedModel);
-    }
-  }, [config, selectedModel]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(config));
-  }, [config]);
-
-  useEffect(() => {
-    if (selectedModel) {
-      localStorage.setItem(STORAGE_KEYS.MODEL, selectedModel);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.MODEL);
-    }
-  }, [selectedModel]);
-
   useEffect(() => {
     setInputError(null);
   }, [selectedModel]);
 
   useEffect(() => {
-    const cachedSessionId = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
+    if (!hasHydratedSidebarPreferenceRef.current) {
+      hasHydratedSidebarPreferenceRef.current = true;
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_OPEN, String(isSidebarOpen));
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
+    const cachedSessionId = cachedSessionIdRef.current;
     if (cachedSessionId && sessions.some((s) => s.id === cachedSessionId)) {
       setCurrentSessionId(cachedSessionId);
+      cachedSessionIdRef.current = null;
     }
   }, [sessions, setCurrentSessionId]);
 
   useEffect(() => {
     if (currentSessionId) {
       localStorage.setItem(STORAGE_KEYS.SESSION_ID, currentSessionId);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
     }
   }, [currentSessionId]);
 
@@ -131,25 +98,17 @@ export const useAppLogic = () => {
     } else {
       setMessages([]);
     }
-  }, [config, currentSessionId, getSession]);
+  }, [config, currentSessionId, getSession, setSelectedModel]);
 
   // Refs for stable access inside effects
-  const finalOutputRef = useRef(finalOutput);
-  finalOutputRef.current = finalOutput;
-  const managerAnalysisRef = useRef(managerAnalysis);
-  managerAnalysisRef.current = managerAnalysis;
-  const expertsRef = useRef(experts);
-  expertsRef.current = experts;
-  const synthesisThoughtsRef = useRef(synthesisThoughts);
-  synthesisThoughtsRef.current = synthesisThoughts;
-  const processStartTimeRef = useRef(processStartTime);
-  processStartTimeRef.current = processStartTime;
-  const processEndTimeRef = useRef(processEndTime);
-  processEndTimeRef.current = processEndTime;
-  const selectedModelRef = useRef(selectedModel);
-  selectedModelRef.current = selectedModel;
-  const currentSessionIdRef = useRef(currentSessionId);
-  currentSessionIdRef.current = currentSessionId;
+  const finalOutputRef = useLatestRef(finalOutput);
+  const managerAnalysisRef = useLatestRef(managerAnalysis);
+  const expertsRef = useLatestRef(experts);
+  const synthesisThoughtsRef = useLatestRef(synthesisThoughts);
+  const processStartTimeRef = useLatestRef(processStartTime);
+  const processEndTimeRef = useLatestRef(processEndTime);
+  const selectedModelRef = useLatestRef(selectedModel);
+  const currentSessionIdRef = useLatestRef(currentSessionId);
 
   const syncMessagesToActiveSession = useCallback(
     (nextMessages: ChatMessage[]) => {
@@ -161,7 +120,7 @@ export const useAppLogic = () => {
         updateSessionMessages(sid, nextMessages);
       }
     },
-    [updateSessionMessages],
+    [currentSessionIdRef, messagesRef, updateSessionMessages],
   );
 
   // Handle AI Completion — triggered only by appState
@@ -194,7 +153,21 @@ export const useAppLogic = () => {
 
     resetDeepThink();
     setFocusTrigger((prev) => prev + 1);
-  }, [appState, resetDeepThink, createSession, updateSessionMessages]);
+  }, [
+    appState,
+    createSession,
+    currentSessionIdRef,
+    expertsRef,
+    finalOutputRef,
+    managerAnalysisRef,
+    messagesRef,
+    processEndTimeRef,
+    processStartTimeRef,
+    resetDeepThink,
+    selectedModelRef,
+    synthesisThoughtsRef,
+    updateSessionMessages,
+  ]);
 
   // Update a per-model thinking setting
   const handleSetThinkingLevel = useCallback(
@@ -202,7 +175,7 @@ export const useAppLogic = () => {
       if (!selectedModel) return;
       setConfig((prev) => setModelPreference(prev, selectedModel, { [key]: value }));
     },
-    [selectedModel],
+    [selectedModel, setConfig],
   );
 
   // Update per-model recursive loop toggle
@@ -211,7 +184,7 @@ export const useAppLogic = () => {
       if (!selectedModel) return;
       setConfig((prev) => setModelPreference(prev, selectedModel, { enableRecursiveLoop: value }));
     },
-    [selectedModel],
+    [selectedModel, setConfig],
   );
 
   const clearInputError = useCallback(() => {
@@ -269,135 +242,30 @@ export const useAppLogic = () => {
       config,
       effectiveConfig,
       createSession,
+      messagesRef,
       updateSessionMessages,
       runDynamicDeepThink,
     ],
   );
 
-  const handleDeleteMessage = useCallback(
-    (messageId: string) => {
-      const nextMessages = messagesRef.current.filter((message) => message.id !== messageId);
-      if (nextMessages.length === messagesRef.current.length) return;
-
-      setInputError(null);
-      syncMessagesToActiveSession(nextMessages);
-    },
-    [syncMessagesToActiveSession],
-  );
-
-  const handleEditMessage = useCallback(
-    (messageId: string, mode: 'update' | 'resend') => {
-      const currentMessages = messagesRef.current;
-      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
-      const message = currentMessages[messageIndex];
-      if (!message?.content) return;
-
-      stopDeepThink();
-      resetDeepThink();
-      setInputError(null);
-      setQuery(message.content);
-      setFocusTrigger((prev) => prev + 1);
-
-      if (mode === 'resend') {
-        syncMessagesToActiveSession(currentMessages.slice(0, messageIndex));
-      }
-    },
-    [resetDeepThink, stopDeepThink, syncMessagesToActiveSession],
-  );
-
-  const handleRetryMessage = useCallback(
-    (messageId: string) => {
-      if (!selectedModel) {
-        setInputError('请先在设置中添加并选择一个模型。');
-        return;
-      }
-
-      const currentMessages = messagesRef.current;
-      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
-      const message = currentMessages[messageIndex];
-      if (!message || message.role !== 'model') return;
-
-      const previousUserMessage = [...currentMessages.slice(0, messageIndex)]
-        .reverse()
-        .find((entry) => entry.role === 'user');
-      if (!previousUserMessage?.content) return;
-
-      const retryHistory = currentMessages.slice(0, messageIndex);
-      stopDeepThink();
-      resetDeepThink();
-      setInputError(null);
-      syncMessagesToActiveSession(retryHistory);
-      runDynamicDeepThink(
-        previousUserMessage.content,
-        retryHistory,
-        selectedModel,
-        effectiveConfig,
-      );
-    },
-    [
-      effectiveConfig,
-      resetDeepThink,
-      runDynamicDeepThink,
-      selectedModel,
-      stopDeepThink,
-      syncMessagesToActiveSession,
-    ],
-  );
-
-  const handleContinueGeneration = useCallback(
-    (messageId: string) => {
-      if (!selectedModel) {
-        setInputError('请先在设置中添加并选择一个模型。');
-        return;
-      }
-
-      const currentMessages = messagesRef.current;
-      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
-      const message = currentMessages[messageIndex];
-      if (!message || message.role !== 'model') return;
-
-      const continuationPrompt = '继续';
-      const continuationMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: continuationPrompt,
-      };
-      const continuationHistory = [
-        ...currentMessages.slice(0, messageIndex + 1),
-        continuationMessage,
-      ];
-
-      stopDeepThink();
-      resetDeepThink();
-      setInputError(null);
-      setQuery('');
-      syncMessagesToActiveSession(continuationHistory);
-      runDynamicDeepThink(continuationPrompt, continuationHistory, selectedModel, effectiveConfig);
-    },
-    [
-      effectiveConfig,
-      resetDeepThink,
-      runDynamicDeepThink,
-      selectedModel,
-      stopDeepThink,
-      syncMessagesToActiveSession,
-    ],
-  );
-
-  const handleForkMessage = useCallback(
-    (messageId: string) => {
-      const currentMessages = messagesRef.current;
-      const messageIndex = currentMessages.findIndex((message) => message.id === messageId);
-      if (messageIndex === -1) return;
-
-      stopDeepThink();
-      resetDeepThink();
-      setInputError(null);
-      syncMessagesToActiveSession(currentMessages.slice(0, messageIndex + 1));
-      setFocusTrigger((prev) => prev + 1);
-    },
-    [resetDeepThink, stopDeepThink, syncMessagesToActiveSession],
-  );
+  const {
+    handleDeleteMessage,
+    handleEditMessage,
+    handleRetryMessage,
+    handleContinueGeneration,
+    handleForkMessage,
+  } = useChatMessageActions({
+    selectedModel,
+    effectiveConfig,
+    messagesRef,
+    syncMessagesToActiveSession,
+    setInputError,
+    setQuery,
+    setFocusTrigger,
+    stopDeepThink,
+    resetDeepThink,
+    runDynamicDeepThink,
+  });
 
   const handleNewChat = useCallback(() => {
     stopDeepThink();
@@ -406,6 +274,8 @@ export const useAppLogic = () => {
     setQuery('');
     setInputError(null);
     resetDeepThink();
+    cachedSessionIdRef.current = null;
+    localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
     setFocusTrigger((prev) => prev + 1);
     if (window.innerWidth < 1024) setIsSidebarOpen(false);
   }, [stopDeepThink, setCurrentSessionId, resetDeepThink]);
@@ -423,7 +293,7 @@ export const useAppLogic = () => {
   );
 
   const handleDeleteSession = useCallback(
-    (id: string, e: React.MouseEvent) => {
+    (id: string, e: MouseEvent) => {
       e.stopPropagation();
       deleteSession(id);
       if (currentSessionId === id) {

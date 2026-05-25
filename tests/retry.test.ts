@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { RequestQueue, withRetry } from '../services/utils/retry';
+import { RequestQueue, withRetry } from '@/services/utils/retry';
 
 const deferred = <T>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;

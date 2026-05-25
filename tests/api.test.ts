@@ -15,15 +15,14 @@ vi.mock('@google/genai', () => ({
 
 import {
   findCustomModel,
-  findPresetOverride,
   getAI,
   getAIProvider,
   isGoogleProvider,
   resolveApiKey,
   resolveApiProxyMode,
   resolveModelApiConfig,
-} from '../api';
-import type { CustomModel } from '../types';
+} from '@/api';
+import type { CustomModel } from '@/types';
 
 describe('api helpers', () => {
   beforeEach(() => {
@@ -60,27 +59,13 @@ describe('api helpers', () => {
     expect(findCustomModel('missing', models)).toBeUndefined();
   });
 
-  it('finds matching preset override by preset model id', () => {
-    const overrides: CustomModel[] = [
-      {
-        id: 'override-gemini-flash',
-        name: 'gemini-3.5-flash',
-        provider: 'google',
-        apiKey: 'preset-key',
-      },
-    ];
-
-    expect(findPresetOverride('gemini-3.5-flash', overrides)).toEqual(overrides[0]);
-    expect(findPresetOverride('gemini-3.1-pro-preview', overrides)).toBeUndefined();
-  });
-
   it('resolves provider from model prefixes', () => {
     expect(getAIProvider('gpt-4o')).toBe('openai');
     expect(getAIProvider('glm-5-turbo')).toBe('openai');
     expect(getAIProvider('gemini-3.5-flash')).toBe('google');
   });
 
-  it('resolves API config from custom models before preset overrides', () => {
+  it('resolves API config from custom models', () => {
     expect(
       resolveModelApiConfig('glm-5-turbo', {
         customModels: [
@@ -93,14 +78,6 @@ describe('api helpers', () => {
             baseUrl: 'https://custom.example.com/v1',
           },
         ],
-        presetOverrides: [
-          {
-            id: 'override-glm',
-            name: 'glm-5-turbo',
-            provider: 'google',
-            apiKey: 'preset-key',
-          },
-        ],
       }),
     ).toEqual({
       provider: 'openai',
@@ -109,19 +86,10 @@ describe('api helpers', () => {
     });
   });
 
-  it('ignores legacy preset overrides when resolving runtime model config', () => {
+  it('uses provider inference when no custom model config exists', () => {
     expect(
       resolveModelApiConfig('gemini-3.5-flash', {
         customModels: [],
-        presetOverrides: [
-          {
-            id: 'override-gemini-flash',
-            name: 'gemini-3.5-flash',
-            provider: 'google',
-            apiKey: 'preset-key',
-            baseUrl: 'https://gateway.example.com/v1beta',
-          },
-        ],
       }),
     ).toEqual({
       provider: 'google',

@@ -5,7 +5,7 @@ import {
   getAttachmentType,
   revokeAttachmentUrls,
   toPersistentAttachments,
-} from '../services/attachments';
+} from '@/services/attachments';
 
 describe('attachment helpers', () => {
   beforeEach(() => {

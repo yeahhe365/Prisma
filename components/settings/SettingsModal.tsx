@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { BrainCircuit, Info, SlidersHorizontal, X } from 'lucide-react';
-import type { AppConfig, ModelOption, ThinkingLevel } from '../../types';
-import ModelSection from './ModelSection';
-import ThinkingSection from './ThinkingSection';
-import GithubSection from './GithubSection';
+import type { AppConfig, ModelOption, ThinkingLevel } from '@/types';
+import ModelSection from '@/components/settings/ModelSection';
+import ThinkingSection from '@/components/settings/ThinkingSection';
+import GithubSection from '@/components/settings/GithubSection';
 
 interface SettingsModalProps {
   isOpen: boolean;

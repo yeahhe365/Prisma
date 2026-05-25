@@ -5,12 +5,12 @@ import type {
   ExpertResult,
   MessageAttachment,
   ThinkingLevel,
-} from '../../types';
-import { getExpertSystemInstruction, getExpertUserPrompt } from './prompts';
-import { generateContentStream as generateOpenAIStream } from './openaiClient';
-import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
+} from '@/types';
+import { getExpertSystemInstruction, getExpertUserPrompt } from '@/services/deepThink/prompts';
+import { generateContentStream as generateOpenAIStream } from '@/services/deepThink/openaiClient';
+import { buildGoogleContents, buildOpenAIContent } from '@/services/deepThink/contentBuilder';
 
-import { isGoogleProvider } from '../../api';
+import { isGoogleProvider } from '@/api';
 
 export const streamExpertResponse = async (
   ai: AIClient,

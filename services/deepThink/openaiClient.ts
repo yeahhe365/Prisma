@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
-import type { ModelOption, OpenAIClient, ThinkingLevel } from '../../types';
-import { withRetry } from '../utils/retry';
-import { getReasoningEffort } from '../../config';
+import type { ModelOption, OpenAIClient, ThinkingLevel } from '@/types';
+import { withRetry } from '@/services/utils/retry';
+import { getReasoningEffort } from '@/config';
 
 export interface OpenAIStreamChunk {
   text: string;

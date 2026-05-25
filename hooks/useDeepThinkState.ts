@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import type { AppState, AnalysisResult, ExpertResult } from '../types';
+import type { AppState, AnalysisResult, ExpertResult } from '@/types';
 
 export const useDeepThinkState = () => {
   const [appState, setAppState] = useState<AppState>('idle');

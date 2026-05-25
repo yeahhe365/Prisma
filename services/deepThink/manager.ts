@@ -8,14 +8,14 @@ import type {
   ReviewResult,
   MessageAttachment,
   ThinkingLevel,
-} from '../../types';
-import { cleanJsonString } from '../../utils';
-import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from './prompts';
-import { withRetry } from '../utils/retry';
-import { generateContent as generateOpenAIContent } from './openaiClient';
-import { buildGoogleContents, buildOpenAIContent } from './contentBuilder';
+} from '@/types';
+import { cleanJsonString } from '@/utils';
+import { MANAGER_SYSTEM_PROMPT, MANAGER_REVIEW_SYSTEM_PROMPT } from '@/services/deepThink/prompts';
+import { withRetry } from '@/services/utils/retry';
+import { generateContent as generateOpenAIContent } from '@/services/deepThink/openaiClient';
+import { buildGoogleContents, buildOpenAIContent } from '@/services/deepThink/contentBuilder';
 
-import { isGoogleProvider } from '../../api';
+import { isGoogleProvider } from '@/api';
 
 export const executeManagerAnalysis = async (
   ai: AIClient,

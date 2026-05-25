@@ -1,8 +1,8 @@
 import React from 'react';
 import { Settings, Sun, Moon, SquarePen } from 'lucide-react';
-import { getAllModels } from '../config';
-import type { ModelOption, AppConfig } from '../types';
-import ModelPicker from './ModelPicker';
+import { getAllModels } from '@/config';
+import type { ModelOption, AppConfig } from '@/types';
+import ModelPicker from '@/components/ModelPicker';
 
 interface HeaderProps {
   selectedModel: ModelOption | null;

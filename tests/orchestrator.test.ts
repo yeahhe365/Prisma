@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatSynthesisErrorMessage } from '../services/deepThink/orchestrator';
+import { formatSynthesisErrorMessage } from '@/services/deepThink/orchestrator';
 
 describe('formatSynthesisErrorMessage', () => {
   it('explains Docker proxy allowlist failures instead of blaming API keys', () => {

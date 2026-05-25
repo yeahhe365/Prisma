@@ -21,7 +21,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     clearMocks: true,
     restoreMocks: true,
-    exclude: [...configDefaults.exclude, '**/prisma/**'],
+    exclude: configDefaults.exclude,
     coverage: {
       enabled: false,
       provider: 'v8',
@@ -41,7 +41,6 @@ export default defineConfig({
         'hooks/useChatSessions.ts',
         'hooks/useAppLogic.ts',
         'hooks/useDeepThink.ts',
-        'components/settings/AddModelForm.tsx',
         'components/AttachmentPreview.tsx',
         'components/ChatInput.tsx',
         'components/Sidebar.tsx',

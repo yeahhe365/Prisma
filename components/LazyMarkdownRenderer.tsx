@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 
-const MarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
+const MarkdownRenderer = React.lazy(() => import('@/components/MarkdownRenderer'));
 
 interface LazyMarkdownRendererProps {
   content: string;

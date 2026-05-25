@@ -1,8 +1,8 @@
 import React from 'react';
-import type { ApiProvider } from '../../types';
-import ApiBaseUrlInput from './ApiBaseUrlInput';
-import ApiKeyInput from './ApiKeyInput';
-import ApiProviderControl from './ApiProviderControl';
+import type { ApiProvider } from '@/types';
+import ApiBaseUrlInput from '@/components/settings/ApiBaseUrlInput';
+import ApiKeyInput from '@/components/settings/ApiKeyInput';
+import ApiProviderControl from '@/components/settings/ApiProviderControl';
 
 interface ApiConfigFieldsProps {
   idPrefix: string;

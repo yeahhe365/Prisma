@@ -5,8 +5,8 @@ import { createEvent, fireEvent, render, screen, waitFor } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ChatInput from '../components/ChatInput';
-import type { MessageAttachment } from '../types';
+import ChatInput from '@/components/ChatInput';
+import type { MessageAttachment } from '@/types';
 
 describe('ChatInput', () => {
   beforeEach(() => {

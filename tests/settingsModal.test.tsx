@@ -5,9 +5,9 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_CONFIG } from '../config';
-import SettingsModal from '../components/settings/SettingsModal';
-import type { AppConfig } from '../types';
+import { DEFAULT_CONFIG } from '@/config';
+import SettingsModal from '@/components/settings/SettingsModal';
+import type { AppConfig } from '@/types';
 
 describe('SettingsModal', () => {
   const fetchMock = vi.fn();
@@ -70,7 +70,7 @@ describe('SettingsModal', () => {
       if (url.endsWith('/releases/latest')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ tag_name: '0.1.0' }),
+          json: () => Promise.resolve({ tag_name: '0.1.1' }),
         });
       }
 
@@ -284,7 +284,7 @@ describe('SettingsModal', () => {
 
     const aboutSection = screen.getByTestId('settings-about-section');
     const logo = screen.getByLabelText('Prisma 标志');
-    const releaseLink = screen.getByRole('link', { name: /v0\.1\.0/ });
+    const releaseLink = screen.getByRole('link', { name: /v0\.1\.1/ });
     const githubLink = screen.getByRole('link', { name: '在 GitHub 上查看' });
     const starsLink = screen.getByRole('link', { name: /星标/ });
 
@@ -310,7 +310,7 @@ describe('SettingsModal', () => {
       if (url.endsWith('/releases/latest')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ tag_name: '0.1.1' }),
+          json: () => Promise.resolve({ tag_name: '0.1.2' }),
         });
       }
 
@@ -324,11 +324,11 @@ describe('SettingsModal', () => {
 
     await user.click(screen.getByRole('tab', { name: '关于' }));
 
-    const releaseLink = screen.getByRole('link', { name: /v0\.1\.0/ });
+    const releaseLink = screen.getByRole('link', { name: /v0\.1\.1/ });
 
     await waitFor(() => {
       expect(releaseLink.textContent).toContain('有新版本');
-      expect(releaseLink.getAttribute('title')).toBe('有新版本：0.1.1');
+      expect(releaseLink.getAttribute('title')).toBe('有新版本：0.1.2');
     });
   });
 });

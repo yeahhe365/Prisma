@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AnalysisResult, AppConfig, ChatMessage, ReviewResult } from '../types';
+import type { AnalysisResult, AppConfig, ChatMessage, ReviewResult } from '@/types';
 
 const apiMocks = vi.hoisted(() => ({
   getAI: vi.fn(),
@@ -24,36 +24,36 @@ const streamMocks = vi.hoisted(() => ({
   streamSynthesisResponse: vi.fn(),
 }));
 
-vi.mock('../api', () => ({
+vi.mock('@/api', () => ({
   getAI: apiMocks.getAI,
   getAIProvider: apiMocks.getAIProvider,
   findCustomModel: apiMocks.findCustomModel,
   resolveModelApiConfig: apiMocks.resolveModelApiConfig,
 }));
 
-vi.mock('../config', async () => {
-  const actual = await vi.importActual<typeof import('../config')>('../config');
+vi.mock('@/config', async () => {
+  const actual = await vi.importActual<typeof import('@/config')>('@/config');
   return {
     ...actual,
     getThinkingBudget: configMocks.getThinkingBudget,
   };
 });
 
-vi.mock('../services/deepThink/manager', () => ({
+vi.mock('@/services/deepThink/manager', () => ({
   executeManagerAnalysis: managerMocks.executeManagerAnalysis,
   executeManagerReview: managerMocks.executeManagerReview,
 }));
 
-vi.mock('../services/deepThink/expert', () => ({
+vi.mock('@/services/deepThink/expert', () => ({
   streamExpertResponse: streamMocks.streamExpertResponse,
 }));
 
-vi.mock('../services/deepThink/synthesis', () => ({
+vi.mock('@/services/deepThink/synthesis', () => ({
   streamSynthesisResponse: streamMocks.streamSynthesisResponse,
 }));
 
-import { DEFAULT_CONFIG } from '../config';
-import { useDeepThink } from '../hooks/useDeepThink';
+import { DEFAULT_CONFIG } from '@/config';
+import { useDeepThink } from '@/hooks/useDeepThink';
 
 const aiClient = { chat: {} };
 
@@ -73,6 +73,19 @@ const makeAnalysis = (experts: AnalysisResult['experts'] = []): AnalysisResult =
   thought_process: 'analysis complete',
   experts,
 });
+
+const createDeferred = <T,>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
+};
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('useDeepThink', () => {
   beforeEach(() => {
@@ -192,15 +205,10 @@ describe('useDeepThink', () => {
     const { result } = renderHook(() => useDeepThink());
 
     await act(async () => {
-      await result.current.runDynamicDeepThink(
-        'current prompt',
-        baseHistory,
-        'gemini-3.5-flash',
-        {
-          ...baseConfig,
-          enableRecursiveLoop: true,
-        },
-      );
+      await result.current.runDynamicDeepThink('current prompt', baseHistory, 'gemini-3.5-flash', {
+        ...baseConfig,
+        enableRecursiveLoop: true,
+      });
     });
 
     expect(managerMocks.executeManagerReview).toHaveBeenCalledTimes(1);
@@ -239,12 +247,7 @@ describe('useDeepThink', () => {
     ];
 
     await act(async () => {
-      await result.current.runDynamicDeepThink(
-        '',
-        emptyHistory,
-        'gemini-3.5-flash',
-        baseConfig,
-      );
+      await result.current.runDynamicDeepThink('', emptyHistory, 'gemini-3.5-flash', baseConfig);
     });
 
     expect(apiMocks.getAI).not.toHaveBeenCalled();
@@ -343,15 +346,10 @@ describe('useDeepThink', () => {
     const { result } = renderHook(() => useDeepThink());
 
     await act(async () => {
-      await result.current.runDynamicDeepThink(
-        'current prompt',
-        baseHistory,
-        'gemini-3.5-flash',
-        {
-          ...baseConfig,
-          enableRecursiveLoop: true,
-        },
-      );
+      await result.current.runDynamicDeepThink('current prompt', baseHistory, 'gemini-3.5-flash', {
+        ...baseConfig,
+        enableRecursiveLoop: true,
+      });
     });
 
     expect(managerMocks.executeManagerReview).toHaveBeenCalledTimes(1);
@@ -401,5 +399,192 @@ describe('useDeepThink', () => {
     expect(runError).toBeUndefined();
     expect(result.current.appState).toBe('idle');
     expect(result.current.processEndTime).toBe(1000);
+  });
+
+  it('keeps the newer abort controller when an older run finishes after being replaced', async () => {
+    const firstManager = createDeferred<AnalysisResult>();
+    const secondExpertStarted = createDeferred<void>();
+    const secondExpertRelease = createDeferred<void>();
+    let expertCallCount = 0;
+    let secondSignal: AbortSignal | undefined;
+
+    managerMocks.executeManagerAnalysis
+      .mockReset()
+      .mockImplementationOnce(() => firstManager.promise)
+      .mockResolvedValue(makeAnalysis());
+
+    streamMocks.streamExpertResponse
+      .mockReset()
+      .mockImplementation(
+        async (
+          _ai,
+          _model,
+          _expert,
+          _context,
+          _attachments,
+          _budget,
+          _thinkingLevel,
+          signal: AbortSignal,
+          onChunk,
+        ) => {
+          expertCallCount += 1;
+
+          if (expertCallCount === 1) {
+            if (!signal.aborted) {
+              await new Promise<void>((resolve) => {
+                signal.addEventListener('abort', () => resolve(), { once: true });
+              });
+            }
+            return;
+          }
+
+          secondSignal = signal;
+          secondExpertStarted.resolve();
+          await secondExpertRelease.promise;
+          onChunk('second output', 'second thought');
+        },
+      );
+
+    const { result } = renderHook(() => useDeepThink());
+    let firstRun!: Promise<void>;
+    let secondRun!: Promise<void>;
+
+    act(() => {
+      firstRun = result.current.runDynamicDeepThink(
+        'first prompt',
+        baseHistory,
+        'gemini-3.5-flash',
+        baseConfig,
+      );
+    });
+
+    await waitFor(() => {
+      expect(streamMocks.streamExpertResponse).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      secondRun = result.current.runDynamicDeepThink(
+        'second prompt',
+        baseHistory,
+        'gemini-3.5-flash',
+        baseConfig,
+      );
+    });
+
+    await secondExpertStarted.promise;
+
+    await act(async () => {
+      firstManager.resolve(makeAnalysis());
+      await firstRun;
+    });
+
+    expect(secondSignal?.aborted).toBe(false);
+
+    act(() => {
+      result.current.stopDeepThink();
+    });
+
+    expect(secondSignal?.aborted).toBe(true);
+
+    await act(async () => {
+      secondExpertRelease.resolve();
+      await secondRun;
+    });
+  });
+
+  it('starts a fresh supplemental expert queue for a replacement run with the same concurrency', async () => {
+    const oldExpertStarted = createDeferred<void>();
+    const oldExpertRelease = createDeferred<void>();
+    const newExpertStarted = createDeferred<void>();
+
+    managerMocks.executeManagerAnalysis
+      .mockReset()
+      .mockResolvedValueOnce(
+        makeAnalysis([
+          {
+            role: 'Old Expert A',
+            description: 'Blocks the old queue',
+            temperature: 0.2,
+            prompt: 'old-a',
+          },
+          {
+            role: 'Old Expert B',
+            description: 'Would be queued behind old A',
+            temperature: 0.2,
+            prompt: 'old-b',
+          },
+        ]),
+      )
+      .mockResolvedValue(
+        makeAnalysis([
+          {
+            role: 'New Expert',
+            description: 'Must not wait for the old queue',
+            temperature: 0.2,
+            prompt: 'new',
+          },
+        ]),
+      );
+
+    streamMocks.streamExpertResponse
+      .mockReset()
+      .mockImplementation(
+        async (
+          _ai,
+          _model,
+          expert,
+          _context,
+          _attachments,
+          _budget,
+          _thinkingLevel,
+          _signal,
+          onChunk,
+        ) => {
+          if (expert.role === 'Old Expert A') {
+            oldExpertStarted.resolve();
+            await oldExpertRelease.promise;
+            return;
+          }
+
+          if (expert.role === 'New Expert') {
+            newExpertStarted.resolve();
+          }
+
+          onChunk(`${expert.role} output`, `${expert.role} thought`);
+        },
+      );
+
+    const { result } = renderHook(() => useDeepThink());
+    let firstRun!: Promise<void>;
+    let secondRun!: Promise<void>;
+
+    act(() => {
+      firstRun = result.current.runDynamicDeepThink(
+        'first prompt',
+        baseHistory,
+        'gemini-3.5-flash',
+        { ...baseConfig, expertConcurrency: 1 },
+      );
+    });
+
+    await oldExpertStarted.promise;
+
+    act(() => {
+      secondRun = result.current.runDynamicDeepThink(
+        'second prompt',
+        baseHistory,
+        'gemini-3.5-flash',
+        { ...baseConfig, expertConcurrency: 1 },
+      );
+    });
+
+    await expect(
+      Promise.race([newExpertStarted.promise.then(() => true), delay(200).then(() => false)]),
+    ).resolves.toBe(true);
+
+    await act(async () => {
+      oldExpertRelease.resolve();
+      await Promise.allSettled([firstRun, secondRun]);
+    });
   });
 });

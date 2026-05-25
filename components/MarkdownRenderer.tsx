@@ -17,7 +17,7 @@ import typescript from 'react-syntax-highlighter/dist/esm/languages/hljs/typescr
 import xml from 'react-syntax-highlighter/dist/esm/languages/hljs/xml';
 import yaml from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml';
 import { Copy, Check, Terminal, ChevronDown, ChevronUp, Download } from 'lucide-react';
-import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 
 type CodeBlockProps = React.ComponentPropsWithoutRef<'code'> & {
   node?: unknown;
@@ -34,33 +34,37 @@ type CodeElementProps = {
   children?: React.ReactNode;
 };
 
-[
-  ['bash', bash],
-  ['sh', bash],
-  ['shell', bash],
-  ['zsh', bash],
-  ['css', css],
-  ['javascript', javascript],
-  ['js', javascript],
-  ['json', json],
-  ['markdown', markdown],
-  ['md', markdown],
-  ['plaintext', plaintext],
-  ['text', plaintext],
-  ['python', python],
-  ['py', python],
-  ['sql', sql],
-  ['typescript', typescript],
-  ['ts', typescript],
-  ['tsx', typescript],
-  ['jsx', javascript],
-  ['xml', xml],
-  ['html', xml],
-  ['yaml', yaml],
-  ['yml', yaml],
-].forEach(([name, language]) => {
-  SyntaxHighlighter.registerLanguage(name, language);
-});
+const MAX_COLLAPSED_CODE_BLOCK_HEIGHT = 400;
+const URL_PROTOCOL_PATTERN = /^[a-zA-Z][a-zA-Z\d+.-]*:/;
+const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+
+const LANGUAGE_DEFINITIONS = [
+  { aliases: ['bash', 'sh', 'shell', 'zsh'], extension: 'sh', grammar: bash },
+  { aliases: ['css'], extension: 'css', grammar: css },
+  { aliases: ['javascript', 'js', 'jsx'], extension: 'js', grammar: javascript },
+  { aliases: ['json'], extension: 'json', grammar: json },
+  { aliases: ['markdown', 'md'], extension: 'md', grammar: markdown },
+  { aliases: ['plaintext', 'text'], extension: 'txt', grammar: plaintext },
+  { aliases: ['python', 'py'], extension: 'py', grammar: python },
+  { aliases: ['sql'], extension: 'sql', grammar: sql },
+  { aliases: ['typescript', 'ts'], extension: 'ts', grammar: typescript },
+  { aliases: ['tsx'], extension: 'tsx', grammar: typescript },
+  { aliases: ['xml', 'html'], extension: 'xml', grammar: xml },
+  { aliases: ['yaml', 'yml'], extension: 'yml', grammar: yaml },
+] as const;
+
+const DOWNLOAD_EXTENSION_BY_LANGUAGE = LANGUAGE_DEFINITIONS.reduce<Record<string, string>>(
+  (extensions, definition) => {
+    definition.aliases.forEach((alias) => {
+      extensions[alias] = definition.extension;
+      SyntaxHighlighter.registerLanguage(alias, definition.grammar);
+    });
+    return extensions;
+  },
+  {},
+);
+DOWNLOAD_EXTENSION_BY_LANGUAGE.html = 'html';
+DOWNLOAD_EXTENSION_BY_LANGUAGE.jsx = 'jsx';
 
 const codeHeaderButtonClasses =
   'inline-flex min-h-10 min-w-10 items-center justify-center rounded-md p-0 text-[var(--theme-text-tertiary)] opacity-90 transition-all duration-200 hover:bg-[var(--theme-bg-tertiary)]/40 hover:text-[var(--theme-text-primary)] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--theme-bg-code-block-header)] disabled:cursor-not-allowed disabled:opacity-50';
@@ -88,33 +92,50 @@ const getLanguageFromClassName = (className?: string) => {
 
 const getDownloadExtension = (language: string) => {
   const normalized = language.toLowerCase();
-  const extensionByLanguage: Record<string, string> = {
-    bash: 'sh',
-    sh: 'sh',
-    shell: 'sh',
-    zsh: 'sh',
-    css: 'css',
-    javascript: 'js',
-    js: 'js',
-    jsx: 'jsx',
-    json: 'json',
-    markdown: 'md',
-    md: 'md',
-    plaintext: 'txt',
-    text: 'txt',
-    python: 'py',
-    py: 'py',
-    sql: 'sql',
-    typescript: 'ts',
-    ts: 'ts',
-    tsx: 'tsx',
-    xml: 'xml',
-    html: 'html',
-    yaml: 'yml',
-    yml: 'yml',
-  };
 
-  return extensionByLanguage[normalized] || normalized || 'txt';
+  return DOWNLOAD_EXTENSION_BY_LANGUAGE[normalized] || normalized || 'txt';
+};
+
+const transformMarkdownUrl = (url: string) => {
+  const trimmedUrl = url.trim();
+
+  if (
+    !trimmedUrl ||
+    trimmedUrl.startsWith('#') ||
+    (trimmedUrl.startsWith('/') && !trimmedUrl.startsWith('//')) ||
+    trimmedUrl.startsWith('./') ||
+    trimmedUrl.startsWith('../')
+  ) {
+    return url;
+  }
+
+  if (!URL_PROTOCOL_PATTERN.test(trimmedUrl)) {
+    return url;
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+    return SAFE_URL_PROTOCOLS.has(parsedUrl.protocol) ? url : '';
+  } catch {
+    return '';
+  }
+};
+
+const preprocessMarkdown = (text: string) => {
+  if (!text) return '';
+
+  return (
+    text
+      // Replace \[ ... \] with $$ ... $$
+      .replace(/\\\[/g, '$$$$')
+      .replace(/\\\]/g, '$$$$')
+      // Replace \( ... \) with $ ... $
+      .replace(/\\\(/g, '$$')
+      .replace(/\\\)/g, '$$')
+      // Fix potential spacing issues between bold marks and math delimiters
+      .replace(/\*\*(\$)/g, '** $1')
+      .replace(/(\$)\*\*/g, '$1 **')
+  );
 };
 
 const triggerDownload = (content: string, filename: string, type: string) => {
@@ -154,8 +175,6 @@ const PreBlock = ({ children, node: _node, ...props }: PreBlockProps) => {
   );
   const lineCount = codeString.split('\n').length;
   const isLong = lineCount > 15;
-  const MAX_HEIGHT = 400;
-
   const handleCopy = () => {
     copy(codeString);
   };
@@ -223,7 +242,7 @@ const PreBlock = ({ children, node: _node, ...props }: PreBlockProps) => {
           className="group !m-0 !rounded-none !border-none !bg-transparent !p-0 custom-scrollbar !overflow-x-auto"
           style={{
             overflowY: expanded || !isLong ? 'visible' : 'hidden',
-            maxHeight: expanded || !isLong ? 'none' : `${MAX_HEIGHT}px`,
+            maxHeight: expanded || !isLong ? 'none' : `${MAX_COLLAPSED_CODE_BLOCK_HEIGHT}px`,
           }}
           {...props}
         >
@@ -383,27 +402,6 @@ const Anchor = ({ href, children, ...props }: AnchorProps) => {
 };
 
 const MarkdownRenderer = ({ content, className }: { content: string; className?: string }) => {
-  /**
-   * Pre-process content to handle common LaTeX delimiters from Gemini
-   * and optimize Markdown compatibility.
-   */
-  const preprocessMarkdown = (text: string) => {
-    if (!text) return '';
-
-    return (
-      text
-        // Replace \[ ... \] with $$ ... $$
-        .replace(/\\\[/g, '$$$$')
-        .replace(/\\\]/g, '$$$$')
-        // Replace \( ... \) with $ ... $
-        .replace(/\\\(/g, '$$')
-        .replace(/\\\)/g, '$$')
-        // Fix potential spacing issues between bold marks and math delimiters
-        .replace(/\*\*(\$)/g, '** $1')
-        .replace(/(\$)\*\*/g, '$1 **')
-    );
-  };
-
   const rootClassName = ['markdown-body', className].filter(Boolean).join(' ');
 
   return (
@@ -411,7 +409,7 @@ const MarkdownRenderer = ({ content, className }: { content: string; className?:
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
-        urlTransform={(url) => url}
+        urlTransform={transformMarkdownUrl}
         components={{
           code: CodeBlock,
           pre: PreBlock,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { cleanJsonString, fileToBase64 } from '../utils';
+import { cleanJsonString, fileToBase64 } from '@/utils';
 
 describe('cleanJsonString', () => {
   beforeEach(() => {

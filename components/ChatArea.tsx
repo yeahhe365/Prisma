@@ -1,8 +1,9 @@
 import React from 'react';
-import type { ChatMessage, AppState, AnalysisResult, ExpertResult } from '../types';
-import ChatMessageView from './ChatMessage';
-import ProcessFlow from './ProcessFlow';
+import type { ChatMessage, AppState, AnalysisResult, ExpertResult } from '@/types';
+import ChatMessageView from '@/components/ChatMessage';
 import { Code, BookOpen, Lightbulb, BarChart3 } from 'lucide-react';
+
+const ACTIVE_MESSAGE_ID = 'streaming';
 
 const SUGGESTIONS = [
   {
@@ -53,8 +54,6 @@ const ChatArea = ({
   managerAnalysis,
   experts,
   finalOutput,
-  processStartTime,
-  processEndTime,
   onSuggestionClick,
   onEditMessage,
   onDeleteMessage,
@@ -106,56 +105,19 @@ const ChatArea = ({
             />
           ))}
 
-          {/* Active Generation (Ghost Message) */}
+          {/* Active Generation */}
           {appState !== 'idle' && appState !== 'completed' && (
-            <div className="group w-full bg-transparent text-[var(--theme-text-primary)]">
-              <div className="max-w-3xl mx-auto px-4 py-8 flex gap-6">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] shadow-sm">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--theme-border-focus)] border-t-transparent"></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="mb-2 text-sm font-semibold text-[var(--theme-text-primary)]">
-                    Prisma
-                  </div>
-
-                  {/* Loading Skeleton */}
-                  {!finalOutput && (
-                    <div className="space-y-3 animate-pulse">
-                      <div className="h-4 w-3/4 rounded bg-[var(--theme-bg-tertiary)]"></div>
-                      <div className="h-4 w-full rounded bg-[var(--theme-bg-tertiary)]"></div>
-                      <div className="h-4 w-5/6 rounded bg-[var(--theme-bg-tertiary)]"></div>
-                      <div className="h-4 w-2/3 rounded bg-[var(--theme-bg-tertiary)]"></div>
-                    </div>
-                  )}
-
-                  {/* Active Thinking Process */}
-                  <div className="mb-4 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-5 shadow-sm">
-                    <ProcessFlow
-                      appState={appState}
-                      managerAnalysis={managerAnalysis}
-                      experts={experts}
-                      processStartTime={processStartTime}
-                      processEndTime={processEndTime}
-                    />
-                  </div>
-
-                  {/* Streaming Output */}
-                  {finalOutput && (
-                    <div className="prose prose-slate dark:prose-invert max-w-none">
-                      <ChatMessageView
-                        message={{
-                          id: 'streaming',
-                          role: 'model',
-                          content: finalOutput,
-                          isThinking: false,
-                        }}
-                        prevMessage={messages[messages.length - 1]}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <ChatMessageView
+              message={{
+                id: ACTIVE_MESSAGE_ID,
+                role: 'model',
+                content: finalOutput,
+                isThinking: true,
+                analysis: managerAnalysis,
+                experts,
+              }}
+              prevMessage={messages[messages.length - 1]}
+            />
           )}
         </div>
       )}

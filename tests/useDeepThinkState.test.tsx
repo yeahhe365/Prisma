@@ -1,8 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { useDeepThinkState } from '../hooks/useDeepThinkState';
-import type { ExpertResult } from '../types';
+import { useDeepThinkState } from '@/hooks/useDeepThinkState';
+import type { ExpertResult } from '@/types';
 
 const initialExpert: ExpertResult = {
   id: 'expert-1',

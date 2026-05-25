@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Github, Star } from 'lucide-react';
-import Logo from '../Logo';
-import { APP_VERSION } from '../../appVersion';
+import Logo from '@/components/Logo';
+import { APP_VERSION } from '@/appVersion';
 
 const REPO_URL = 'https://github.com/yeahhe365/Prisma';
 const RELEASES_URL = `${REPO_URL}/releases`;

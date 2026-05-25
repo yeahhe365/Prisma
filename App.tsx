@@ -1,13 +1,13 @@
 import React from 'react';
-import { useAppLogic } from './hooks/useAppLogic';
-import { useDarkMode } from './hooks/useDarkMode';
+import { useAppLogic } from '@/hooks/useAppLogic';
+import { useDarkMode } from '@/hooks/useDarkMode';
 
-import ErrorBoundary from './components/ErrorBoundary';
-import SettingsModal from './components/settings/SettingsModal';
-import Header from './components/Header';
-import ChatInput from './components/ChatInput';
-import Sidebar from './components/Sidebar';
-import ChatArea from './components/ChatArea';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import SettingsModal from '@/components/settings/SettingsModal';
+import Header from '@/components/Header';
+import ChatInput from '@/components/ChatInput';
+import Sidebar from '@/components/Sidebar';
+import ChatArea from '@/components/ChatArea';
 
 const CHAT_INPUT_MAX_WIDTH_CLASS = 'max-w-[40.32rem]';
 

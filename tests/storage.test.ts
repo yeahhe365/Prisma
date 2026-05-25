@@ -7,8 +7,8 @@ import {
   getSession,
   migrateFromLocalStorage,
   putSession,
-} from '../services/storage';
-import type { ChatSession } from '../types';
+} from '@/services/storage';
+import type { ChatSession } from '@/types';
 
 const makeSession = (id: string, createdAt: number): ChatSession => ({
   id,

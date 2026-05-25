@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import MarkdownRenderer from '../components/MarkdownRenderer';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 describe('MarkdownRenderer', () => {
   it('renders content inside the AMC-style markdown body wrapper', () => {
@@ -56,5 +56,16 @@ describe('MarkdownRenderer', () => {
     expect(externalLink.getAttribute('target')).toBe('_blank');
     expect(externalLink.getAttribute('rel')).toBe('noopener noreferrer');
     expect(internalLink.getAttribute('target')).toBeNull();
+  });
+
+  it('strips unsafe markdown link protocols', () => {
+    render(
+      <MarkdownRenderer content={'[bad](javascript:alert(1)) [ok](mailto:test@example.com)'} />,
+    );
+
+    expect(screen.getByText('bad').closest('a')?.getAttribute('href')).toBe('');
+    expect(screen.getByRole('link', { name: 'ok' }).getAttribute('href')).toBe(
+      'mailto:test@example.com',
+    );
   });
 });

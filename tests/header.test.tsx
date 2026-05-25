@@ -5,9 +5,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_CONFIG } from '../config';
-import Header from '../components/Header';
-import type { AppConfig } from '../types';
+import { DEFAULT_CONFIG } from '@/config';
+import Header from '@/components/Header';
+import type { AppConfig } from '@/types';
 
 const configWithGeminiModel: AppConfig = {
   ...DEFAULT_CONFIG,

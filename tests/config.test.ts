@@ -12,8 +12,8 @@ import {
   getValidThinkingLevels,
   normalizeConfig,
   setModelPreference,
-} from '../config';
-import { resolveApiKey } from '../api';
+} from '@/config';
+import { resolveApiKey } from '@/api';
 
 describe('model bootstrap config', () => {
   it('starts without a default model when no user model exists', () => {
@@ -123,7 +123,7 @@ describe('model bootstrap config', () => {
       ],
     });
 
-    expect(config.presetOverrides).toEqual([]);
+    expect(config).not.toHaveProperty('presetOverrides');
     expect(config.customModels).toContainEqual(
       expect.objectContaining({
         name: 'gemini-3.5-flash',

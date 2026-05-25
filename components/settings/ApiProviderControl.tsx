@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ApiProvider } from '../../types';
-import { PROVIDER_OPTIONS } from './modelSettings';
+import type { ApiProvider } from '@/types';
+import { PROVIDER_OPTIONS } from '@/components/settings/modelSettings';
 
 interface ApiProviderControlProps {
   value: ApiProvider;

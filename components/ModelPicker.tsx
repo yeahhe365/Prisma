@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
-import type { ApiProvider, ModelCatalogItem, ModelOption } from '../types';
-import { getModelIcon } from './ModelIcon';
+import type { ApiProvider, ModelCatalogItem, ModelOption } from '@/types';
+import { getModelIcon } from '@/components/ModelIcon';
 
 type ModelPickerEntry = ModelCatalogItem & {
   id: ModelOption;

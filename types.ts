@@ -97,7 +97,6 @@ export type AppConfig = {
   synthesisLevel: ThinkingLevel;
   enableRecursiveLoop?: boolean;
   customModels?: CustomModel[];
-  presetOverrides?: CustomModel[];
   expertConcurrency?: number;
   /** Per-model preference overrides. Key = model name (e.g. 'glm-5-turbo'). */
   modelPreferences?: Record<string, ModelPreferences>;

@@ -1,5 +1,5 @@
 import { Box, Layers3, Sparkles } from 'lucide-react';
-import type { ModelCatalogItem } from '../types';
+import type { ModelCatalogItem } from '@/types';
 
 const MODEL_ICON_SIZE = 18;
 

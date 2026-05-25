@@ -2,20 +2,18 @@ import { useCallback, useRef } from 'react';
 import {
   DeepThinkRuntimeBridge,
   runDynamicDeepThinkOrchestration,
-} from '../services/deepThink/orchestrator';
-import { RequestQueue } from '../services/utils/retry';
-import type { AppConfig, ChatMessage, ModelOption } from '../types';
-import { useDeepThinkState } from './useDeepThinkState';
+} from '@/services/deepThink/orchestrator';
+import { RequestQueue } from '@/services/utils/retry';
+import type { AppConfig, ChatMessage, ModelOption } from '@/types';
+import { useDeepThinkState } from '@/hooks/useDeepThinkState';
 
 function useExpertQueue() {
   const queueRef = useRef(new RequestQueue(3));
   const concurrencyRef = useRef(3);
 
   const updateConcurrency = useCallback((concurrency: number) => {
-    if (concurrency !== concurrencyRef.current) {
-      concurrencyRef.current = concurrency;
-      queueRef.current = new RequestQueue(concurrency);
-    }
+    concurrencyRef.current = concurrency;
+    queueRef.current = new RequestQueue(concurrency);
   }, []);
 
   return { queueRef, updateConcurrency };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveAppVersion } from '../appVersion';
+import { resolveAppVersion } from '@/appVersion';
 
 describe('app version', () => {
   it('uses the injected package version when available', () => {

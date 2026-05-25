@@ -23,7 +23,7 @@ describe('deployment configuration', () => {
 
     expect(dockerfile).toContain('VITE_API_PROXY_MODE=local');
     expect(dockerfile).toContain('CMD ["node", "server.mjs"]');
-    expect(dockerComposeConfig).toContain("PRISMA_PROXY_ALLOWED_HOSTS:-*");
+    expect(dockerComposeConfig).toContain('PRISMA_PROXY_ALLOWED_HOSTS:-*');
     expect(wranglerConfig).toContain('pages_build_output_dir = "dist"');
     expect(wranglerConfig).not.toContain('VITE_API_PROXY_MODE');
     expect(wranglerConfig).not.toContain('custom-api');

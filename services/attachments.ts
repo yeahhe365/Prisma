@@ -1,5 +1,5 @@
-import type { MessageAttachment } from '../types';
-import { fileToBase64 } from '../utils';
+import type { MessageAttachment } from '@/types';
+import { fileToBase64 } from '@/utils';
 
 const TEXT_ATTACHMENT_EXTENSIONS =
   /\.(js|ts|tsx|py|c|cpp|rs|md|csv|json|html|css|go|java|rb|php)$/i;

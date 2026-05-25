@@ -1,77 +1,128 @@
 import React from 'react';
-import { Loader2, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CircleDashed, Loader2 } from 'lucide-react';
+import type { ProcessNodeStatus } from '@/components/processFlowStatus';
 
 interface ProcessNodeProps {
   icon: React.ElementType;
   title: string;
-  status: 'idle' | 'active' | 'completed';
+  summary?: string;
+  status: ProcessNodeStatus;
   children?: React.ReactNode;
   isExpanded: boolean;
   onToggle: () => void;
-  glow?: boolean;
+  meta?: React.ReactNode;
 }
+
+const statusStyles: Record<
+  ProcessNodeStatus,
+  {
+    label: string;
+    icon: React.ElementType;
+    marker: string;
+    iconBox: string;
+    badge: string;
+  }
+> = {
+  idle: {
+    label: '等待',
+    icon: CircleDashed,
+    marker: 'bg-[var(--theme-border-secondary)]',
+    iconBox: 'bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-tertiary)]',
+    badge:
+      'border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] text-[var(--theme-text-tertiary)]',
+  },
+  active: {
+    label: '进行中',
+    icon: Loader2,
+    marker: 'bg-[var(--theme-border-focus)]',
+    iconBox: 'bg-[var(--theme-bg-info)] text-[var(--theme-text-link)]',
+    badge:
+      'border-[var(--theme-border-focus)] bg-[var(--theme-bg-info)] text-[var(--theme-text-info)]',
+  },
+  completed: {
+    label: '已完成',
+    icon: CheckCircle2,
+    marker: 'bg-[var(--theme-text-success)]',
+    iconBox: 'bg-[var(--theme-bg-success)] text-[var(--theme-text-success)]',
+    badge:
+      'border-[var(--theme-text-success)]/30 bg-[var(--theme-bg-success)] text-[var(--theme-text-success)]',
+  },
+};
 
 const ProcessNode = ({
   icon: Icon,
   title,
+  summary,
   status,
   children,
   isExpanded,
   onToggle,
-  glow = false,
+  meta,
 }: ProcessNodeProps) => {
-  const isActive = status === 'active';
-  const isCompleted = status === 'completed';
+  const statusStyle = statusStyles[status];
+  const StatusIcon = statusStyle.icon;
+  const hasChildren = !!children;
 
   return (
-    <div
-      className={`relative z-10 overflow-hidden rounded-xl border transition-all duration-500 shadow-sm
-      ${isActive ? 'border-[var(--theme-border-focus)] bg-[var(--theme-bg-info)]' : 'border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)]'}
-      ${glow ? 'shadow-[0_0_20px_rgba(64,65,79,0.12)] dark:shadow-[0_0_20px_rgba(59,130,246,0.16)]' : ''}
-    `}
-    >
+    <section className="relative" data-process-node-status={status}>
       <div
-        className="flex cursor-pointer items-center justify-between p-5 hover:bg-[var(--theme-bg-tertiary)]/45"
+        className={`absolute left-5 top-5 h-2.5 w-2.5 rounded-full ${statusStyle.marker}`}
+        aria-hidden="true"
+      />
+
+      <button
+        type="button"
+        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--theme-bg-tertiary)]/45 focus:outline-none focus-visible:bg-[var(--theme-bg-tertiary)]/60"
         onClick={onToggle}
+        aria-expanded={hasChildren ? isExpanded : undefined}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className={`
-            flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-300
-            ${isActive ? 'animate-pulse bg-[var(--theme-bg-accent)] text-[var(--theme-text-accent)]' : ''}
-            ${isCompleted ? 'bg-[var(--theme-text-success)] text-[var(--theme-text-accent)]' : 'bg-[var(--theme-bg-tertiary)] text-[var(--theme-text-tertiary)]'}
-          `}
-          >
-            {isActive ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : isCompleted ? (
-              <CheckCircle2 size={16} />
-            ) : (
-              <Icon size={16} />
-            )}
-          </div>
-          <div>
-            <h3
-              className={`text-sm font-semibold ${isActive || isCompleted ? 'text-[var(--theme-text-primary)]' : 'text-[var(--theme-text-secondary)]'}`}
-            >
+        <div
+          className={`ml-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${statusStyle.iconBox}`}
+        >
+          <Icon size={17} aria-hidden="true" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <h3 className="truncate text-sm font-semibold text-[var(--theme-text-primary)]">
               {title}
             </h3>
-            {isActive && <p className="text-xs text-[var(--theme-text-link)]">处理中...</p>}
+            <span
+              className={`hidden shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium sm:inline-flex ${statusStyle.badge}`}
+            >
+              <StatusIcon
+                size={11}
+                className={status === 'active' ? 'animate-spin' : ''}
+                aria-hidden="true"
+              />
+              {statusStyle.label}
+            </span>
           </div>
+          {summary && (
+            <p className="mt-0.5 truncate text-xs leading-5 text-[var(--theme-text-tertiary)]">
+              {summary}
+            </p>
+          )}
         </div>
-        {children && (
-          <div className="text-[var(--theme-text-tertiary)] hover:text-[var(--theme-text-primary)]">
-            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </div>
-        )}
-      </div>
 
-      {isExpanded && children && (
-        <div className="border-t border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)]/45 p-5 animate-in slide-in-from-top-2 duration-300">
+        <div className="flex shrink-0 items-center gap-2">
+          {meta}
+          <ChevronDown
+            size={16}
+            className={`text-[var(--theme-text-tertiary)] transition-transform duration-200 group-hover:text-[var(--theme-text-primary)] ${
+              isExpanded ? 'rotate-180' : ''
+            }`}
+            aria-hidden="true"
+          />
+        </div>
+      </button>
+
+      {isExpanded && hasChildren && (
+        <div className="pb-4 pl-4 pr-4 animate-in fade-in slide-in-from-top-1 sm:pl-[4.75rem]">
           {children}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

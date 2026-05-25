@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AppConfig, ChatMessage, ChatSession, ExpertResult } from '../types';
+import type { AppConfig, ChatMessage, ChatSession, ExpertResult } from '@/types';
 
 const chatSessionsMock = vi.hoisted(() => ({
   sessions: [] as ChatSession[],
@@ -26,7 +26,7 @@ const deepThinkMock = vi.hoisted(() => ({
   processEndTime: null as number | null,
 }));
 
-vi.mock('../hooks/useChatSessions', () => ({
+vi.mock('@/hooks/useChatSessions', () => ({
   useChatSessions: () => ({
     sessions: chatSessionsMock.sessions,
     currentSessionId: chatSessionsMock.currentSessionId,
@@ -38,7 +38,7 @@ vi.mock('../hooks/useChatSessions', () => ({
   }),
 }));
 
-vi.mock('../hooks/useDeepThink', () => ({
+vi.mock('@/hooks/useDeepThink', () => ({
   useDeepThink: () => ({
     appState: deepThinkMock.appState,
     managerAnalysis: deepThinkMock.managerAnalysis,
@@ -53,8 +53,8 @@ vi.mock('../hooks/useDeepThink', () => ({
   }),
 }));
 
-import { DEFAULT_CONFIG, DEFAULT_MODEL, STORAGE_KEYS } from '../config';
-import { useAppLogic } from '../hooks/useAppLogic';
+import { DEFAULT_CONFIG, DEFAULT_MODEL, STORAGE_KEYS } from '@/config';
+import { useAppLogic } from '@/hooks/useAppLogic';
 
 const baseConfig: AppConfig = {
   ...DEFAULT_CONFIG,
@@ -133,6 +133,24 @@ describe('useAppLogic', () => {
     });
   });
 
+  it('keeps the cached active session id until async sessions are available', async () => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(baseConfig));
+    localStorage.setItem(STORAGE_KEYS.SESSION_ID, 'session-1');
+    chatSessionsMock.sessions = [];
+
+    const { rerender } = renderHook(() => useAppLogic());
+
+    expect(localStorage.getItem(STORAGE_KEYS.SESSION_ID)).toBe('session-1');
+    expect(chatSessionsMock.setCurrentSessionId).not.toHaveBeenCalledWith('session-1');
+
+    chatSessionsMock.sessions = [session];
+    rerender();
+
+    await waitFor(() => {
+      expect(chatSessionsMock.setCurrentSessionId).toHaveBeenCalledWith('session-1');
+    });
+  });
+
   it('migrates legacy bundled models out of cached settings', async () => {
     localStorage.setItem(STORAGE_KEYS.MODEL, 'glm-5-turbo');
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(legacyBundledConfig));
@@ -166,6 +184,30 @@ describe('useAppLogic', () => {
     const mobile = renderHook(() => useAppLogic());
 
     expect(mobile.result.current.isSidebarOpen).toBe(false);
+  });
+
+  it('restores and persists the sidebar expanded state across reloads', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_OPEN, 'false');
+
+    const desktop = renderHook(() => useAppLogic());
+
+    expect(desktop.result.current.isSidebarOpen).toBe(false);
+
+    act(() => {
+      desktop.result.current.setIsSidebarOpen(true);
+    });
+
+    await waitFor(() => {
+      expect(localStorage.getItem(STORAGE_KEYS.SIDEBAR_OPEN)).toBe('true');
+    });
+
+    desktop.unmount();
+
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 640 });
+    const mobile = renderHook(() => useAppLogic());
+
+    expect(mobile.result.current.isSidebarOpen).toBe(true);
   });
 
   it('blocks unsupported attachments for openai-compatible models', async () => {
@@ -284,6 +326,7 @@ describe('useAppLogic', () => {
   it('resets app state and closes the sidebar on mobile for new chats and selection', async () => {
     const { result } = renderHook(() => useAppLogic());
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 640 });
+    localStorage.setItem(STORAGE_KEYS.SESSION_ID, 'session-1');
 
     act(() => {
       result.current.setIsSidebarOpen(true);
@@ -296,6 +339,7 @@ describe('useAppLogic', () => {
     expect(chatSessionsMock.setCurrentSessionId).toHaveBeenCalledWith(null);
     expect(result.current.isSidebarOpen).toBe(false);
     expect(result.current.query).toBe('');
+    expect(localStorage.getItem(STORAGE_KEYS.SESSION_ID)).toBeNull();
 
     act(() => {
       result.current.handleSelectSession('session-2');

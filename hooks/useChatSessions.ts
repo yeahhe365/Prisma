@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { ChatSession, ChatMessage, ModelOption } from '../types';
+import type { ChatSession, ChatMessage, ModelOption } from '@/types';
 import {
   getAllSessions,
   putSession,
   deleteSession as deleteFromDB,
   autoCleanup,
   migrateFromLocalStorage,
-} from '../services/storage';
+} from '@/services/storage';
 
 export const useChatSessions = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -16,9 +16,9 @@ export const useChatSessions = () => {
   useEffect(() => {
     const init = async () => {
       await migrateFromLocalStorage();
+      await autoCleanup();
       const allSessions = await getAllSessions<ChatSession>();
       setSessions(allSessions);
-      await autoCleanup();
     };
     init();
   }, []);

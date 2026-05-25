@@ -1,6 +1,6 @@
 import React from 'react';
 import { Globe, Info, X } from 'lucide-react';
-import type { ApiProvider } from '../../types';
+import type { ApiProvider } from '@/types';
 
 interface ApiBaseUrlInputProps {
   id: string;

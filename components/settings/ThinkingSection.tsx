@@ -1,8 +1,8 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
-import type { AppConfig, ModelOption, ThinkingLevel } from '../../types';
-import { getValidThinkingLevels, getAllModels } from '../../config';
-import LevelSelect from './LevelSelect';
+import type { AppConfig, ModelOption, ThinkingLevel } from '@/types';
+import { getValidThinkingLevels, getAllModels } from '@/config';
+import LevelSelect from '@/components/settings/LevelSelect';
 
 interface ThinkingSectionProps {
   config: AppConfig;

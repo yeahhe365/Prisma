@@ -12,7 +12,7 @@ import {
   createPrismaServer,
   isAllowedTarget,
   parseAllowedHosts,
-} from '../docker/server.mjs';
+} from '@/docker/server.mjs';
 
 const servers: Server[] = [];
 const tempDirs: string[] = [];
@@ -69,6 +69,17 @@ describe('docker runtime server', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
+    expect(await response.text()).toContain('Prisma Docker');
+  });
+
+  it('falls back to the app shell for malformed encoded paths', async () => {
+    const staticDir = await makeStaticDir();
+    const server = createPrismaServer({ staticDir });
+    const port = await startServer(server);
+
+    const response = await fetch(`http://127.0.0.1:${port}/%E0%A4%A`);
+
+    expect(response.status).toBe(200);
     expect(await response.text()).toContain('Prisma Docker');
   });
 

@@ -8,7 +8,7 @@ import type {
   GoogleGenAIClient,
   ModelOption,
   OpenAIClient,
-} from './types';
+} from '@/types';
 
 // --- Configuration & Types ---
 
@@ -143,13 +143,6 @@ export const findCustomModel = (
   return customModels?.find((m) => m.name === modelName);
 };
 
-export const findPresetOverride = (
-  modelName: string,
-  presetOverrides?: CustomModel[],
-): CustomModel | undefined => {
-  return presetOverrides?.find((model) => model.name === modelName);
-};
-
 export const resolveApiKey = (
   explicitApiKey?: string,
   _env: ApiEnv = import.meta.env,
@@ -187,7 +180,7 @@ export const getAIProvider = (model: string): ApiProvider => {
 
 export const resolveModelApiConfig = (
   model: ModelOption,
-  config: Pick<AppConfig, 'customModels' | 'presetOverrides'>,
+  config: Pick<AppConfig, 'customModels'>,
 ): AIProviderConfig => {
   const customModelConfig = findCustomModel(model, config.customModels);
   const provider = customModelConfig?.provider || getAIProvider(model);

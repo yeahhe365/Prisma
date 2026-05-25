@@ -13,12 +13,12 @@ import {
   GitBranch,
   Pencil,
 } from 'lucide-react';
-import LazyMarkdownRenderer from './LazyMarkdownRenderer';
-import ProcessFlow from './ProcessFlow';
-import AttachmentRenderer from './AttachmentRenderer';
-import Logo from './Logo';
-import type { ChatMessage as ChatMessageType } from '../types';
-import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
+import LazyMarkdownRenderer from '@/components/LazyMarkdownRenderer';
+import ProcessFlow from '@/components/ProcessFlow';
+import AttachmentRenderer from '@/components/AttachmentRenderer';
+import Logo from '@/components/Logo';
+import type { ChatMessage as ChatMessageType } from '@/types';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -90,7 +90,7 @@ const MessageAvatar = ({
     return <div className="h-7 sm:h-8" />;
   }
 
-  const label = message.role === 'user' ? '编辑消息' : '编辑消息';
+  const label = '编辑消息';
   const editHandler = onEditMessage ? () => onEditMessage(message.id, 'update') : undefined;
 
   return (
@@ -359,7 +359,7 @@ const ChatMessage = ({
                   </button>
 
                   {showThinking && (
-                    <div className="mt-3 rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <div className="mt-3 animate-in fade-in slide-in-from-top-2">
                       <ProcessFlow
                         appState={message.isThinking ? 'experts_working' : 'completed'}
                         managerAnalysis={message.analysis || null}

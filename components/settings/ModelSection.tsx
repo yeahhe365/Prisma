@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bot, Check, CirclePlus, KeyRound, Trash2, X } from 'lucide-react';
-import type { ApiProvider, AppConfig, CustomModel, ModelCatalogItem } from '../../types';
-import { getModelIcon } from '../ModelIcon';
-import ApiConfigFields from './ApiConfigFields';
+import type { ApiProvider, AppConfig, CustomModel, ModelCatalogItem } from '@/types';
+import { getModelIcon } from '@/components/ModelIcon';
+import ApiConfigFields from '@/components/settings/ApiConfigFields';
 
 interface ModelSectionProps {
   config: AppConfig;
@@ -170,7 +170,7 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
     };
 
     if (isCreating) {
-      setConfig({ ...config, customModels: [...customModels, nextModel], presetOverrides: [] });
+      setConfig({ ...config, customModels: [...customModels, nextModel] });
       setSelectedId(nextModel.id);
       return;
     }
@@ -182,7 +182,6 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
       customModels: customModels.map((model) =>
         model.id === selectedItem.id ? { ...model, ...nextModel } : model,
       ),
-      presetOverrides: [],
     };
 
     if (selectedItem.modelId !== modelId && config.modelPreferences?.[selectedItem.modelId]) {
@@ -216,7 +215,6 @@ const ModelSection = ({ config, setConfig }: ModelSectionProps) => {
     setConfig({
       ...config,
       customModels: nextCustomModels,
-      presetOverrides: [],
       modelPreferences: nextModelPreferences,
     });
     setSelectedId(nextCustomModels[0]?.id || NEW_MODEL_ID);

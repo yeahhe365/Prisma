@@ -3,8 +3,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import Sidebar from '../components/Sidebar';
-import type { ChatSession } from '../types';
+import Sidebar from '@/components/Sidebar';
+import type { ChatSession } from '@/types';
 
 const sessions: ChatSession[] = [
   {

@@ -164,11 +164,14 @@ Cloudflare Pages 会读取仓库根目录的 `.node-version`，当前固定为 N
 ```bash
 Prisma/
 ├── components/
+│   ├── sidebar/         # 侧边栏子组件与最近对话浮层
 │   ├── settings/        # 配置面板 (Model, Thinking Levels, Github)
-│   │   ├── AddModelForm.tsx
+│   │   ├── ApiBaseUrlInput.tsx
+│   │   ├── ApiConfigFields.tsx
+│   │   ├── ApiKeyInput.tsx
+│   │   ├── ApiProviderControl.tsx
 │   │   ├── GithubSection.tsx
 │   │   ├── LevelSelect.tsx
-│   │   ├── ModelListItem.tsx
 │   │   ├── ModelSection.tsx
 │   │   ├── modelSettings.ts
 │   │   ├── SettingsModal.tsx
@@ -188,8 +191,13 @@ Prisma/
 ├── hooks/
 │   ├── useDeepThink.ts  # 深度思考运行时与 React 状态桥接
 │   ├── useDeepThinkState.ts # 深度思考状态管理
-│   ├── useAppLogic.ts   # 全局状态管理
+│   ├── useAppLogic.ts   # 应用状态编排
+│   ├── useChatMessageActions.ts # 消息编辑/重试/分支动作
 │   └── useChatSessions.ts # 聊天会话持久化
+├── styles/
+│   ├── markdown.css     # Markdown 与表格排版
+│   ├── theme.css        # 主题 token 与基础布局
+│   └── utilities.css    # 滚动条、动画与工具类
 ├── services/
 │   ├── deepThink/       # AI 提示词与业务逻辑
 │   │   ├── manager.ts   # 规划与审查
@@ -209,7 +217,7 @@ Prisma/
 ├── App.tsx              # 应用主组件
 ├── index.tsx            # 应用入口
 ├── index.html           # HTML 模板
-├── index.css            # 全局样式
+├── index.css            # Tailwind 入口
 ├── metadata.json        # 应用元数据
 ├── tests/               # Vitest 与 Testing Library 测试
 ├── docs/                # 设计与修复计划文档
