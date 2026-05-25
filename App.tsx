@@ -14,6 +14,7 @@ const CHAT_INPUT_MAX_WIDTH_CLASS = 'max-w-[40.32rem]';
 const App = () => {
   const {
     sessions,
+    groups,
     currentSessionId,
     messages,
     query,
@@ -37,6 +38,15 @@ const App = () => {
     handleNewChat,
     handleSelectSession,
     handleDeleteSession,
+    renameSession,
+    togglePinSession,
+    duplicateSession,
+    handleExportSession,
+    createGroup,
+    deleteGroup,
+    renameGroup,
+    moveSessionToGroup,
+    toggleGroupExpansion,
     stopDeepThink,
     focusTrigger,
     inputError,
@@ -72,10 +82,20 @@ const App = () => {
           onOpen={() => setIsSidebarOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           sessions={sessions}
+          groups={groups}
           currentSessionId={currentSessionId}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}
           onDeleteSession={handleDeleteSession}
+          onRenameSession={renameSession}
+          onTogglePinSession={togglePinSession}
+          onDuplicateSession={duplicateSession}
+          onExportSession={handleExportSession}
+          onAddNewGroup={createGroup}
+          onDeleteGroup={deleteGroup}
+          onRenameGroup={renameGroup}
+          onMoveSessionToGroup={moveSessionToGroup}
+          onToggleGroupExpansion={toggleGroupExpansion}
         />
 
         <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--theme-bg-primary)]">

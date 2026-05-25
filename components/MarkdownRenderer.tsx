@@ -401,8 +401,16 @@ const Anchor = ({ href, children, ...props }: AnchorProps) => {
   );
 };
 
-const MarkdownRenderer = ({ content, className }: { content: string; className?: string }) => {
-  const rootClassName = ['markdown-body', className].filter(Boolean).join(' ');
+type MarkdownRendererProps = {
+  content: string;
+  className?: string;
+  isStreaming?: boolean;
+};
+
+const MarkdownRenderer = ({ content, className, isStreaming = false }: MarkdownRendererProps) => {
+  const rootClassName = ['markdown-body', isStreaming ? 'is-loading' : '', className]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={rootClassName}>

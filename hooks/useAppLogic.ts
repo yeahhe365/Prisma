@@ -22,11 +22,20 @@ export const useAppLogic = () => {
   // Session Management
   const {
     sessions,
+    groups,
     currentSessionId,
     setCurrentSessionId,
     createSession,
     updateSessionMessages,
     deleteSession,
+    renameSession,
+    togglePinSession,
+    duplicateSession,
+    createGroup,
+    deleteGroup,
+    renameGroup,
+    moveSessionToGroup,
+    toggleGroupExpansion,
     getSession,
   } = useChatSessions();
 
@@ -303,8 +312,35 @@ export const useAppLogic = () => {
     [deleteSession, currentSessionId, handleNewChat],
   );
 
+  const handleExportSession = useCallback(
+    (id: string) => {
+      const session = getSession(id);
+      if (!session) return;
+
+      const fileNameBase = session.title.trim() || 'prisma-chat';
+      const safeFileName = fileNameBase
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 80);
+      const blob = new Blob([JSON.stringify(session, null, 2)], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${safeFileName || 'prisma-chat'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
+    [getSession],
+  );
+
   return {
     sessions,
+    groups,
     currentSessionId,
     messages,
     query,
@@ -328,6 +364,15 @@ export const useAppLogic = () => {
     handleNewChat,
     handleSelectSession,
     handleDeleteSession,
+    renameSession,
+    togglePinSession,
+    duplicateSession,
+    handleExportSession,
+    createGroup,
+    deleteGroup,
+    renameGroup,
+    moveSessionToGroup,
+    toggleGroupExpansion,
     stopDeepThink,
     focusTrigger,
     inputError,

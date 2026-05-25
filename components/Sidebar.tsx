@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Settings, SquarePen, X } from 'lucide-react';
-import type { ChatSession } from '@/types';
+import { Folders, Search, Settings, SquarePen, X } from 'lucide-react';
+import type { ChatGroup, ChatSession } from '@/types';
 import { useDismissableLayer } from '@/hooks/useDismissableLayer';
 import Logo from '@/components/Logo';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -23,10 +23,20 @@ interface SidebarProps {
   onOpen: () => void;
   onOpenSettings: () => void;
   sessions: ChatSession[];
+  groups?: ChatGroup[];
   currentSessionId: string | null;
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string, e: React.MouseEvent) => void;
+  onRenameSession?: (id: string, title: string) => void;
+  onTogglePinSession?: (id: string) => void;
+  onDuplicateSession?: (id: string) => void;
+  onExportSession?: (id: string) => void;
+  onAddNewGroup?: () => void;
+  onDeleteGroup?: (id: string) => void;
+  onRenameGroup?: (id: string, title: string) => void;
+  onMoveSessionToGroup?: (sessionId: string, groupId: string | null) => void;
+  onToggleGroupExpansion?: (id: string) => void;
 }
 
 const Sidebar = ({
@@ -35,15 +45,32 @@ const Sidebar = ({
   onOpen,
   onOpenSettings,
   sessions,
+  groups = [],
   currentSessionId,
   onSelectSession,
   onNewChat,
   onDeleteSession,
+  onRenameSession = () => {},
+  onTogglePinSession = () => {},
+  onDuplicateSession = () => {},
+  onExportSession = () => {},
+  onAddNewGroup = () => {},
+  onDeleteGroup = () => {},
+  onRenameGroup = () => {},
+  onMoveSessionToGroup = () => {},
+  onToggleGroupExpansion = () => {},
 }: SidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [activeSessionMenuId, setActiveSessionMenuId] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [editingGroup, setEditingGroup] = useState<{ id: string; title: string } | null>(null);
+  const [editingSession, setEditingSession] = useState<{ id: string; title: string } | null>(
+    null,
+  );
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const groupEditInputRef = useRef<HTMLInputElement>(null);
+  const sessionEditInputRef = useRef<HTMLInputElement>(null);
   const expandedPaneRef = useRef<HTMLDivElement>(null);
   const sessionMenuRef = useRef<HTMLDivElement>(null);
   const debouncedSearch = useDebounce(searchQuery, 250);
@@ -77,6 +104,20 @@ const Sidebar = ({
   }, [isSearching, isOpen]);
 
   useEffect(() => {
+    if (editingGroup) {
+      groupEditInputRef.current?.focus();
+      groupEditInputRef.current?.select();
+    }
+  }, [editingGroup]);
+
+  useEffect(() => {
+    if (editingSession) {
+      sessionEditInputRef.current?.focus();
+      sessionEditInputRef.current?.select();
+    }
+  }, [editingSession]);
+
+  useEffect(() => {
     const pane = expandedPaneRef.current as (HTMLDivElement & { inert?: boolean }) | null;
     if (!pane) {
       return;
@@ -92,8 +133,8 @@ const Sidebar = ({
     pane.setAttribute('inert', '');
   }, [isOpen]);
 
-  useDismissableLayer(sessionMenuRef, Boolean(activeSessionMenuId), () => {
-    setActiveSessionMenuId(null);
+  useDismissableLayer(sessionMenuRef, Boolean(activeMenuId), () => {
+    setActiveMenuId(null);
   });
 
   const closeSearch = () => {
@@ -104,6 +145,50 @@ const Sidebar = ({
   const handleNewChat = () => {
     onNewChat();
     if (window.innerWidth < 1024) onClose();
+  };
+
+  const handleAddNewGroup = () => {
+    onAddNewGroup();
+  };
+
+  const handleRenameGroupStart = (group: ChatGroup) => {
+    setEditingGroup({ id: group.id, title: group.title });
+    setActiveMenuId(null);
+  };
+
+  const handleRenameSessionStart = (session: ChatSession) => {
+    setEditingSession({ id: session.id, title: session.title });
+    setActiveMenuId(null);
+  };
+
+  const handleGroupEditConfirm = () => {
+    if (editingGroup?.title.trim()) {
+      onRenameGroup(editingGroup.id, editingGroup.title.trim());
+    }
+    setEditingGroup(null);
+  };
+
+  const handleGroupEditKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+      handleGroupEditConfirm();
+    } else if (event.key === 'Escape') {
+      setEditingGroup(null);
+    }
+  };
+
+  const handleSessionEditConfirm = () => {
+    if (editingSession?.title.trim()) {
+      onRenameSession(editingSession.id, editingSession.title.trim());
+    }
+    setEditingSession(null);
+  };
+
+  const handleSessionEditKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+      handleSessionEditConfirm();
+    } else if (event.key === 'Escape') {
+      setEditingSession(null);
+    }
   };
 
   const handleMiniSearchClick = () => {
@@ -244,19 +329,60 @@ const Sidebar = ({
                 </span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={handleAddNewGroup}
+              className={SIDEBAR_ACTION_ROW_CLASS}
+              aria-label="新建分组"
+            >
+              <Folders
+                size={18}
+                strokeWidth={2}
+                className="shrink-0 text-[var(--theme-icon-history)]"
+              />
+              <span className="min-w-0 flex-1 truncate text-[var(--theme-text-primary)]">
+                新建分组
+              </span>
+            </button>
           </div>
 
           <SessionList
-            activeSessionMenuId={activeSessionMenuId}
+            activeMenuId={activeMenuId}
             currentSessionId={currentSessionId}
+            dragOverGroupId={dragOverGroupId}
+            editingGroup={editingGroup}
+            editingSession={editingSession}
             filteredSessions={filteredSessions}
+            groupEditInputRef={groupEditInputRef}
+            groups={groups}
             onClose={onClose}
+            onDeleteGroup={onDeleteGroup}
             onDeleteSession={onDeleteSession}
+            onDuplicateSession={onDuplicateSession}
             onEmptySpaceClick={handleEmptySpaceClick}
+            onExportSession={onExportSession}
+            onGroupEditChange={(title) =>
+              setEditingGroup((current) => (current ? { ...current, title } : current))
+            }
+            onGroupEditConfirm={handleGroupEditConfirm}
+            onGroupEditKeyDown={handleGroupEditKeyDown}
+            onMoveSessionToGroup={onMoveSessionToGroup}
+            onRenameGroupStart={handleRenameGroupStart}
+            onRenameSessionStart={handleRenameSessionStart}
             onSelectSession={onSelectSession}
+            onSessionEditChange={(title) =>
+              setEditingSession((current) => (current ? { ...current, title } : current))
+            }
+            onSessionEditConfirm={handleSessionEditConfirm}
+            onSessionEditKeyDown={handleSessionEditKeyDown}
+            onTogglePinSession={onTogglePinSession}
+            onToggleGroupExpansion={onToggleGroupExpansion}
             sessionMenuRef={sessionMenuRef}
+            sessionEditInputRef={sessionEditInputRef}
             sessions={sessions}
-            setActiveSessionMenuId={setActiveSessionMenuId}
+            setActiveMenuId={setActiveMenuId}
+            setDragOverGroupId={setDragOverGroupId}
           />
 
           <div className="shrink-0 bg-[var(--theme-bg-secondary)]/30 p-3">

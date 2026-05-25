@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -101,6 +101,115 @@ describe('ChatMessage', () => {
     await user.click(screen.getByRole('menuitem', { name: '从此分支' }));
 
     expect(forkMessage).toHaveBeenCalledWith('model-1');
+  });
+
+  it('uses an AMC-style collapsed thought panel for model thinking data', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ChatMessage
+        message={{
+          id: 'model-thinking',
+          role: 'model',
+          content: 'answer',
+          totalDuration: 1500,
+          analysis: {
+            thought_process: '先拆解问题，再并行验证。',
+            experts: [
+              {
+                role: '架构专家',
+                description: '检查结构',
+                temperature: 0.2,
+                prompt: 'review architecture',
+              },
+            ],
+          },
+          experts: [
+            {
+              id: 'expert-1',
+              role: '架构专家',
+              description: '检查结构',
+              temperature: 0.2,
+              prompt: 'review architecture',
+              status: 'completed',
+              content: '结构可行',
+              thoughts: '检查依赖边界。',
+            },
+          ],
+        }}
+      />,
+    );
+
+    const toggle = screen.getByRole('button', { name: /已思考 1\.5 秒/ });
+    const accordion = screen.getByTestId('thinking-process-accordion');
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.className).toContain('rounded-xl');
+    expect(toggle.className).toContain('bg-[var(--theme-bg-tertiary)]/20');
+    expect(accordion.className).toContain('thought-process-accordion');
+    expect(accordion.className).not.toContain('expanded');
+
+    await user.click(toggle);
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(accordion.className).toContain('expanded');
+    expect(screen.getByTestId('process-flow')).toBeTruthy();
+  });
+
+  it('renders streaming model content through the Markdown renderer', async () => {
+    const { container } = render(
+      <ChatMessage
+        message={{
+          id: 'streaming-model',
+          role: 'model',
+          isThinking: true,
+          content: '| 项目 | 状态 |\n| --- | --- |\n| **Markdown** | streaming |',
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('.markdown-body.is-loading')).toBeTruthy();
+    });
+    expect(screen.getByRole('table')).toBeTruthy();
+    expect(screen.getByText('Markdown').tagName.toLowerCase()).toBe('strong');
+    expect(container.querySelector('pre.whitespace-pre-wrap')).toBeNull();
+  });
+
+  it('does not expose text edit actions for model messages', () => {
+    render(
+      <ChatMessage
+        message={{ id: 'model-1', role: 'model', content: 'answer' }}
+        onEditMessage={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: '编辑消息' })).toBeNull();
+  });
+
+  it('does not expose text edit actions for attachment-only user messages', () => {
+    render(
+      <ChatMessage
+        message={{
+          id: 'user-1',
+          role: 'user',
+          content: '',
+          attachments: [
+            {
+              id: 'att-1',
+              type: 'image',
+              name: 'diagram.png',
+              mimeType: 'image/png',
+              data: 'ZmFrZQ==',
+            },
+          ],
+        }}
+        onEditMessage={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: '编辑消息' })).toBeNull();
+    expect(screen.getByAltText('attachment')).toBeTruthy();
   });
 
   it('does not show copied state when clipboard write fails', async () => {

@@ -12,6 +12,7 @@ import {
   CirclePlay,
   GitBranch,
   Pencil,
+  Loader2,
 } from 'lucide-react';
 import LazyMarkdownRenderer from '@/components/LazyMarkdownRenderer';
 import ProcessFlow from '@/components/ProcessFlow';
@@ -35,6 +36,30 @@ const actionButtonClasses =
 const menuItemClasses =
   'flex w-full items-center gap-2 px-3 py-2 text-left text-xs whitespace-nowrap text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] focus:outline-none focus-visible:bg-[var(--theme-bg-tertiary)] focus-visible:text-[var(--theme-text-primary)]';
 const actionIconSize = 16;
+
+const formatThinkingDuration = (durationMs: number) => {
+  const totalSeconds = Math.max(0, durationMs / 1000);
+
+  if (totalSeconds < 60) {
+    return `${totalSeconds.toFixed(1)} 秒`;
+  }
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60)
+    .toString()
+    .padStart(2, '0');
+
+  return `${minutes}:${seconds}`;
+};
+
+const getThinkingSummary = (message: ChatMessageType) => {
+  if (message.isThinking) return '推理过程';
+  if (message.totalDuration !== undefined) {
+    return `已思考 ${formatThinkingDuration(message.totalDuration)}`;
+  }
+
+  return '推理过程';
+};
 
 interface MessageActionsProps {
   message: ChatMessageType;
@@ -90,8 +115,10 @@ const MessageAvatar = ({
     return <div className="h-7 sm:h-8" />;
   }
 
-  const label = '编辑消息';
-  const editHandler = onEditMessage ? () => onEditMessage(message.id, 'update') : undefined;
+  const canEditText =
+    message.role === 'user' && Boolean(message.content.trim()) && Boolean(onEditMessage);
+  const label = canEditText ? '编辑消息' : message.role === 'user' ? '用户消息' : 'Prisma';
+  const editHandler = canEditText ? () => onEditMessage?.(message.id, 'update') : undefined;
 
   return (
     <AvatarButton label={label} onClick={editHandler}>
@@ -126,6 +153,8 @@ const MessageActions = ({
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
   const showRetryButton = message.role === 'model' && !!onRetryMessage;
+  const showTextEditButton =
+    message.role === 'user' && !!onEditMessage && Boolean(message.content.trim());
   const showOverflowActions =
     message.role === 'model' && (!!onContinueGeneration || !!onForkMessage) && !message.isThinking;
 
@@ -165,7 +194,7 @@ const MessageActions = ({
         data-testid="message-actions"
         className="message-actions mt-1 flex translate-y-1 flex-col items-center gap-1 opacity-0 transition-all duration-300 ease-in-out pointer-events-none group-hover:translate-y-0 group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto max-sm:translate-y-0 max-sm:opacity-100 max-sm:pointer-events-auto"
       >
-        {message.role === 'user' && onEditMessage && (
+        {showTextEditButton && (
           <button
             type="button"
             onClick={() => onEditMessage(message.id, 'resend')}
@@ -343,31 +372,65 @@ const ChatMessage = ({
             <div className={bubbleClasses} data-testid="message-bubble">
               {/* Thinking Process Accordion (Only for AI) */}
               {hasThinkingData && (
-                <div className="mb-4">
+                <div className="message-thoughts-block mb-3">
                   <button
+                    type="button"
                     onClick={() => setShowThinking(!showThinking)}
-                    className="flex w-full items-center gap-2 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-input)] px-3 py-2 text-xs font-medium text-[var(--theme-text-secondary)] transition-colors hover:bg-[var(--theme-bg-tertiary)] hover:text-[var(--theme-text-primary)] md:w-auto"
+                    aria-expanded={showThinking}
+                    className={`group flex w-full select-none items-center justify-between gap-2 overflow-hidden rounded-xl bg-[var(--theme-bg-tertiary)]/20 px-3 py-2 text-left transition-all duration-200 hover:bg-[var(--theme-bg-tertiary)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--theme-border-focus)] ${
+                      showThinking ? 'bg-[var(--theme-bg-tertiary)]/30 shadow-sm' : ''
+                    }`}
                   >
-                    <span>
-                      {message.isThinking
-                        ? '思考中...'
-                        : message.totalDuration
-                          ? `思考了 ${(message.totalDuration / 1000).toFixed(1)} 秒`
-                          : '推理过程'}
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      {message.isThinking && (
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--theme-border-focus)] sm:h-8 sm:w-8">
+                          <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                        </span>
+                      )}
+                      <span className="flex min-w-0 flex-col justify-center sm:min-h-8">
+                        {message.isThinking && (
+                          <span className="truncate text-base font-bold uppercase text-[var(--theme-text-secondary)] opacity-90">
+                            思考中...
+                          </span>
+                        )}
+                        <span
+                          className={`truncate ${
+                            message.isThinking
+                              ? 'font-mono text-sm text-[var(--theme-text-tertiary)]'
+                              : 'text-base font-medium text-[var(--theme-text-secondary)] opacity-90'
+                          }`}
+                        >
+                          {getThinkingSummary(message)}
+                        </span>
+                      </span>
                     </span>
-                    {showThinking ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors group-hover:bg-[var(--theme-bg-input)]">
+                      <ChevronDown
+                        size={14}
+                        className={`text-[var(--theme-text-tertiary)] transition-transform duration-300 ${
+                          showThinking ? 'rotate-180' : ''
+                        }`}
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                      />
+                    </span>
                   </button>
 
-                  {showThinking && (
-                    <div className="mt-3 animate-in fade-in slide-in-from-top-2">
-                      <ProcessFlow
-                        appState={message.isThinking ? 'experts_working' : 'completed'}
-                        managerAnalysis={message.analysis || null}
-                        experts={message.experts || []}
-                        defaultExpanded={true}
-                      />
+                  <div
+                    className={`thought-process-accordion ${showThinking ? 'expanded' : ''}`}
+                    data-testid="thinking-process-accordion"
+                  >
+                    <div className="thought-process-inner">
+                      <div className="pt-3">
+                        <ProcessFlow
+                          appState={message.isThinking ? 'experts_working' : 'completed'}
+                          managerAnalysis={message.analysis || null}
+                          experts={message.experts || []}
+                          defaultExpanded={true}
+                        />
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -379,13 +442,7 @@ const ChatMessage = ({
               {/* Text Content */}
               <div className="max-w-none">
                 {message.content ? (
-                  message.isThinking ? (
-                    <pre className="whitespace-pre-wrap break-words text-sm text-[var(--theme-text-secondary)]">
-                      {message.content}
-                    </pre>
-                  ) : (
-                    <LazyMarkdownRenderer content={message.content} />
-                  )
+                  <LazyMarkdownRenderer content={message.content} isStreaming={message.isThinking} />
                 ) : (
                   message.isThinking && (
                     <span className="inline-block h-4 w-2 animate-pulse bg-[var(--theme-border-focus)]" />

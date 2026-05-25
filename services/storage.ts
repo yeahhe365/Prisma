@@ -4,8 +4,9 @@
  */
 
 const DB_NAME = 'prisma-sessions';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'sessions';
+const GROUPS_STORE_NAME = 'groups';
 const MAX_SESSIONS = 50;
 
 function openDB(): Promise<IDBDatabase> {
@@ -17,6 +18,9 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: 'id' });
       }
+      if (!db.objectStoreNames.contains(GROUPS_STORE_NAME)) {
+        db.createObjectStore(GROUPS_STORE_NAME, { keyPath: 'id' });
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -24,11 +28,11 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function getAllSessions<T>(): Promise<T[]> {
+async function getAllFromStore<T>(storeName: string): Promise<T[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
     const request = store.getAll();
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error);
@@ -37,11 +41,11 @@ export async function getAllSessions<T>(): Promise<T[]> {
   });
 }
 
-export async function getSession<T>(id: string): Promise<T | undefined> {
+async function getFromStore<T>(storeName: string, id: string): Promise<T | undefined> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
     const request = store.get(id);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -50,12 +54,12 @@ export async function getSession<T>(id: string): Promise<T | undefined> {
   });
 }
 
-export async function putSession<T extends { id: string }>(session: T): Promise<void> {
+async function putInStore<T extends { id: string }>(storeName: string, value: T): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    store.put(session);
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.put(value);
     tx.oncomplete = () => {
       db.close();
       resolve();
@@ -67,11 +71,11 @@ export async function putSession<T extends { id: string }>(session: T): Promise<
   });
 }
 
-export async function deleteSession(id: string): Promise<void> {
+async function deleteFromStore(storeName: string, id: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
     store.delete(id);
     tx.oncomplete = () => {
       db.close();
@@ -82,6 +86,34 @@ export async function deleteSession(id: string): Promise<void> {
       reject(tx.error);
     };
   });
+}
+
+export async function getAllSessions<T>(): Promise<T[]> {
+  return getAllFromStore<T>(STORE_NAME);
+}
+
+export async function getSession<T>(id: string): Promise<T | undefined> {
+  return getFromStore<T>(STORE_NAME, id);
+}
+
+export async function putSession<T extends { id: string }>(session: T): Promise<void> {
+  return putInStore(STORE_NAME, session);
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  return deleteFromStore(STORE_NAME, id);
+}
+
+export async function getAllGroups<T>(): Promise<T[]> {
+  return getAllFromStore<T>(GROUPS_STORE_NAME);
+}
+
+export async function putGroup<T extends { id: string }>(group: T): Promise<void> {
+  return putInStore(GROUPS_STORE_NAME, group);
+}
+
+export async function deleteGroup(id: string): Promise<void> {
+  return deleteFromStore(GROUPS_STORE_NAME, id);
 }
 
 /**

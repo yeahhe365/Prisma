@@ -1,15 +1,24 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AppConfig, ChatMessage, ChatSession, ExpertResult } from '@/types';
+import type { AppConfig, ChatGroup, ChatMessage, ChatSession, ExpertResult } from '@/types';
 
 const chatSessionsMock = vi.hoisted(() => ({
   sessions: [] as ChatSession[],
+  groups: [] as ChatGroup[],
   currentSessionId: null as string | null,
   setCurrentSessionId: vi.fn<(id: string | null) => void>(),
   createSession: vi.fn<(messages: ChatMessage[], model: string) => string>(),
   updateSessionMessages: vi.fn<(id: string, messages: ChatMessage[]) => void>(),
   deleteSession: vi.fn<(id: string) => void>(),
+  renameSession: vi.fn<(id: string, title: string) => void>(),
+  togglePinSession: vi.fn<(id: string) => void>(),
+  duplicateSession: vi.fn<(id: string) => string | null>(),
+  createGroup: vi.fn<() => string>(),
+  deleteGroup: vi.fn<(id: string) => void>(),
+  renameGroup: vi.fn<(id: string, title: string) => void>(),
+  moveSessionToGroup: vi.fn<(sessionId: string, groupId: string | null) => void>(),
+  toggleGroupExpansion: vi.fn<(id: string) => void>(),
   getSession: vi.fn<(id: string) => ChatSession | undefined>(),
 }));
 
@@ -29,11 +38,20 @@ const deepThinkMock = vi.hoisted(() => ({
 vi.mock('@/hooks/useChatSessions', () => ({
   useChatSessions: () => ({
     sessions: chatSessionsMock.sessions,
+    groups: chatSessionsMock.groups,
     currentSessionId: chatSessionsMock.currentSessionId,
     setCurrentSessionId: chatSessionsMock.setCurrentSessionId,
     createSession: chatSessionsMock.createSession,
     updateSessionMessages: chatSessionsMock.updateSessionMessages,
     deleteSession: chatSessionsMock.deleteSession,
+    renameSession: chatSessionsMock.renameSession,
+    togglePinSession: chatSessionsMock.togglePinSession,
+    duplicateSession: chatSessionsMock.duplicateSession,
+    createGroup: chatSessionsMock.createGroup,
+    deleteGroup: chatSessionsMock.deleteGroup,
+    renameGroup: chatSessionsMock.renameGroup,
+    moveSessionToGroup: chatSessionsMock.moveSessionToGroup,
+    toggleGroupExpansion: chatSessionsMock.toggleGroupExpansion,
     getSession: chatSessionsMock.getSession,
   }),
 }));
@@ -94,6 +112,7 @@ describe('useAppLogic', () => {
   beforeEach(() => {
     localStorage.clear();
     chatSessionsMock.sessions = [];
+    chatSessionsMock.groups = [];
     chatSessionsMock.currentSessionId = null;
     chatSessionsMock.setCurrentSessionId.mockReset().mockImplementation((id) => {
       chatSessionsMock.currentSessionId = id;
@@ -101,6 +120,14 @@ describe('useAppLogic', () => {
     chatSessionsMock.createSession.mockReset().mockReturnValue('created-session');
     chatSessionsMock.updateSessionMessages.mockReset();
     chatSessionsMock.deleteSession.mockReset();
+    chatSessionsMock.renameSession.mockReset();
+    chatSessionsMock.togglePinSession.mockReset();
+    chatSessionsMock.duplicateSession.mockReset().mockReturnValue('duplicated-session');
+    chatSessionsMock.createGroup.mockReset().mockReturnValue('group-1');
+    chatSessionsMock.deleteGroup.mockReset();
+    chatSessionsMock.renameGroup.mockReset();
+    chatSessionsMock.moveSessionToGroup.mockReset();
+    chatSessionsMock.toggleGroupExpansion.mockReset();
     chatSessionsMock.getSession
       .mockReset()
       .mockImplementation((id) => chatSessionsMock.sessions.find((entry) => entry.id === id));
@@ -483,6 +510,49 @@ describe('useAppLogic', () => {
     expect(deepThinkMock.resetDeepThink).toHaveBeenCalled();
     expect(deepThinkMock.runDynamicDeepThink).toHaveBeenCalledWith(
       'retry me',
+      expectedHistory,
+      'glm-5-turbo',
+      expect.objectContaining({ planningLevel: DEFAULT_CONFIG.planningLevel }),
+    );
+  });
+
+  it('retries a model message when the previous user message only has attachments', async () => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(baseConfig));
+    const attachment = {
+      id: 'image-1',
+      type: 'image' as const,
+      name: 'diagram.png',
+      mimeType: 'image/png',
+      data: 'ZmFrZQ==',
+    };
+    const messageSession: ChatSession = {
+      ...session,
+      messages: [
+        { id: 'user-1', role: 'user', content: '', attachments: [attachment] },
+        { id: 'model-1', role: 'model', content: 'stale answer' },
+      ],
+    };
+    chatSessionsMock.sessions = [messageSession];
+    chatSessionsMock.currentSessionId = 'session-1';
+
+    const { result } = renderHook(() => useAppLogic());
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(2);
+    });
+
+    act(() => {
+      result.current.handleRetryMessage('model-1');
+    });
+
+    const expectedHistory = [{ id: 'user-1', role: 'user', content: '', attachments: [attachment] }];
+    expect(result.current.messages).toEqual(expectedHistory);
+    expect(chatSessionsMock.updateSessionMessages).toHaveBeenCalledWith(
+      'session-1',
+      expectedHistory,
+    );
+    expect(deepThinkMock.runDynamicDeepThink).toHaveBeenCalledWith(
+      '',
       expectedHistory,
       'glm-5-turbo',
       expect.objectContaining({ planningLevel: DEFAULT_CONFIG.planningLevel }),

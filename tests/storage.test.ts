@@ -2,13 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   autoCleanup,
+  deleteGroup,
   deleteSession,
+  getAllGroups,
   getAllSessions,
   getSession,
   migrateFromLocalStorage,
+  putGroup,
   putSession,
 } from '@/services/storage';
-import type { ChatSession } from '@/types';
+import type { ChatGroup, ChatSession } from '@/types';
 
 const makeSession = (id: string, createdAt: number): ChatSession => ({
   id,
@@ -16,6 +19,13 @@ const makeSession = (id: string, createdAt: number): ChatSession => ({
   createdAt,
   model: 'gemini-3.5-flash',
   messages: [{ id: `msg-${id}`, role: 'user', content: `hello ${id}` }],
+});
+
+const makeGroup = (id: string, createdAt: number): ChatGroup => ({
+  id,
+  title: `Group ${id}`,
+  createdAt,
+  isExpanded: true,
 });
 
 const resetIndexedDb = async () => {
@@ -51,6 +61,18 @@ describe('storage service', () => {
     await deleteSession('alpha');
 
     await expect(getSession<ChatSession>('alpha')).resolves.toBeUndefined();
+  });
+
+  it('stores, retrieves, and deletes groups from IndexedDB', async () => {
+    const group = makeGroup('alpha', 1);
+
+    await putGroup(group);
+
+    await expect(getAllGroups<ChatGroup>()).resolves.toEqual([group]);
+
+    await deleteGroup('alpha');
+
+    await expect(getAllGroups<ChatGroup>()).resolves.toEqual([]);
   });
 
   it('keeps only the newest 50 sessions during cleanup', async () => {

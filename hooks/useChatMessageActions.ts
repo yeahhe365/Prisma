@@ -87,7 +87,12 @@ export const useChatMessageActions = ({
       const previousUserMessage = [...currentMessages.slice(0, messageIndex)]
         .reverse()
         .find((entry) => entry.role === 'user');
-      if (!previousUserMessage?.content) return;
+      if (
+        !previousUserMessage ||
+        (!previousUserMessage.content.trim() && !previousUserMessage.attachments?.length)
+      ) {
+        return;
+      }
 
       const retryHistory = currentMessages.slice(0, messageIndex);
       stopDeepThink();

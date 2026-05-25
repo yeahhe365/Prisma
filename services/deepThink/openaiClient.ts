@@ -43,6 +43,68 @@ const parseThinkingTokens = (text: string): { thought: string; text: string } =>
   return { thought: thought.trim(), text: cleanText.trim() };
 };
 
+const THINKING_OPEN_TAG = '<thinking>';
+const THINKING_CLOSE_TAG = '</thinking>';
+
+type ThinkingStreamState = {
+  inThinking: boolean;
+  buffer: string;
+};
+
+const getPartialTagSuffixLength = (value: string, tag: string): number => {
+  for (let length = Math.min(value.length, tag.length - 1); length > 0; length--) {
+    if (tag.startsWith(value.slice(-length))) return length;
+  }
+
+  return 0;
+};
+
+const consumeThinkingContent = (
+  state: ThinkingStreamState,
+  content: string,
+  flush = false,
+): { text: string; thought: string } => {
+  state.buffer += content;
+
+  let text = '';
+  let thought = '';
+
+  while (state.buffer) {
+    const tag = state.inThinking ? THINKING_CLOSE_TAG : THINKING_OPEN_TAG;
+    const tagIndex = state.buffer.indexOf(tag);
+
+    if (tagIndex !== -1) {
+      const beforeTag = state.buffer.slice(0, tagIndex);
+      if (state.inThinking) {
+        thought += beforeTag;
+      } else {
+        text += beforeTag;
+      }
+
+      state.buffer = state.buffer.slice(tagIndex + tag.length);
+      state.inThinking = !state.inThinking;
+      continue;
+    }
+
+    const keepLength = flush ? 0 : getPartialTagSuffixLength(state.buffer, tag);
+    const emitLength = state.buffer.length - keepLength;
+
+    if (emitLength > 0) {
+      const emitValue = state.buffer.slice(0, emitLength);
+      if (state.inThinking) {
+        thought += emitValue;
+      } else {
+        text += emitValue;
+      }
+      state.buffer = state.buffer.slice(emitLength);
+    }
+
+    break;
+  }
+
+  return { text, thought };
+};
+
 const getOpenAIReasoningEffort = (
   model: ModelOption,
   thinkingLevel?: ThinkingLevel,
@@ -155,8 +217,10 @@ export async function* generateContentStream(
 
   const stream = await withRetry(() => ai.chat.completions.create(requestOptions));
 
-  let inThinking = false;
-  let currentThought = '';
+  const thinkingStreamState: ThinkingStreamState = {
+    inThinking: false,
+    buffer: '',
+  };
 
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta as
@@ -172,41 +236,15 @@ export async function* generateContentStream(
     if (!content) continue;
 
     if (config.thinkingConfig?.includeThoughts) {
-      if (content.includes('<thinking>')) {
-        inThinking = true;
-        continue;
-      }
-
-      if (inThinking) {
-        if (content.includes('</thinking>')) {
-          inThinking = false;
-          const parts = content.split('</thinking>', 2);
-          currentThought += parts[0];
-
-          if (currentThought.trim()) {
-            yield { text: '', thought: currentThought };
-            currentThought = '';
-          }
-
-          if (parts[1]) {
-            yield { text: parts[1], thought: '' };
-          }
-        } else {
-          currentThought += content;
-          if (currentThought.length > 100) {
-            yield { text: '', thought: currentThought };
-            currentThought = '';
-          }
-        }
-      } else {
-        yield { text: content, thought: '' };
-      }
+      const parsed = consumeThinkingContent(thinkingStreamState, content);
+      if (parsed.text || parsed.thought) yield parsed;
     } else {
       yield { text: content, thought: '' };
     }
   }
 
-  if (currentThought.trim()) {
-    yield { text: '', thought: currentThought };
+  if (config.thinkingConfig?.includeThoughts) {
+    const parsed = consumeThinkingContent(thinkingStreamState, '', true);
+    if (parsed.text || parsed.thought) yield parsed;
   }
 }

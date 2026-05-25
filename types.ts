@@ -124,10 +124,19 @@ export type ChatMessage = {
   totalDuration?: number; // Total time in ms
 };
 
+export type ChatGroup = {
+  id: string;
+  title: string;
+  createdAt: number;
+  isExpanded?: boolean;
+};
+
 export type ChatSession = {
   id: string;
   title: string;
   messages: ChatMessage[];
   createdAt: number;
   model: ModelOption;
+  groupId?: string | null;
+  isPinned?: boolean;
 };

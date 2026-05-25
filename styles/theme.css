@@ -132,6 +132,20 @@ body,
     border-color 0.3s ease;
 }
 
+.thought-process-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s var(--ease-spring);
+}
+
+.thought-process-accordion.expanded {
+  grid-template-rows: 1fr;
+}
+
+.thought-process-inner {
+  overflow: hidden;
+}
+
 .mono {
   font-family: 'JetBrains Mono', monospace;
 }

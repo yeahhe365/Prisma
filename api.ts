@@ -52,6 +52,30 @@ const createCustomFetch = (
   const nativeFetch = window.fetch.bind(window);
   const cleanBaseUrl = baseUrl?.replace(/\/+$/, '') ?? null;
 
+  const cloneRequestWithUrl = (request: Request, url: string): Request => {
+    const method = request.method;
+    const init: RequestInit & { duplex?: 'half' } = {
+      method,
+      headers: request.headers,
+      body: ['GET', 'HEAD'].includes(method) ? undefined : request.body,
+      cache: request.cache,
+      credentials: request.credentials,
+      integrity: request.integrity,
+      keepalive: request.keepalive,
+      mode: request.mode,
+      redirect: request.redirect,
+      referrer: request.referrer,
+      referrerPolicy: request.referrerPolicy,
+      signal: request.signal,
+    };
+
+    if (init.body) {
+      init.duplex = 'half';
+    }
+
+    return new Request(url, init);
+  };
+
   const createProxyInit = (
     input: RequestInfo | URL,
     init: RequestInit | undefined,
@@ -107,7 +131,12 @@ const createCustomFetch = (
           if (versionPrefix && url.pathname.includes(versionPrefix + versionPrefix)) {
             url.pathname = url.pathname.replace(versionPrefix + versionPrefix, versionPrefix);
             urlString = url.toString();
-            requestInput = urlString;
+            requestInput =
+              input instanceof Request
+                ? cloneRequestWithUrl(input, urlString)
+                : input instanceof URL
+                  ? url
+                  : urlString;
           }
         }
       } catch {

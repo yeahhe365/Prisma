@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -97,5 +97,24 @@ describe('ExpertCard', () => {
     await user.click(screen.getByRole('button', { name: '推理' }));
 
     expect(screen.getByText('结构推理')).toBeTruthy();
+  });
+
+  it('renders in-progress expert output through streaming markdown', async () => {
+    const { container } = render(
+      <ExpertCard
+        expert={expert({
+          id: 'expert-streaming',
+          status: 'thinking',
+          content: '| 检查项 | 结果 |\n| --- | --- |\n| **渲染** | streaming |',
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('.markdown-body.is-loading')).toBeTruthy();
+    });
+    expect(screen.getByRole('table')).toBeTruthy();
+    expect(screen.getByText('渲染').tagName.toLowerCase()).toBe('strong');
+    expect(container.querySelector('pre.whitespace-pre-wrap')).toBeNull();
   });
 });

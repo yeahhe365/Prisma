@@ -13,6 +13,14 @@ describe('MarkdownRenderer', () => {
     expect(screen.getByRole('heading', { name: '标题' })).toBeTruthy();
   });
 
+  it('marks streaming content with the AMC loading class while still rendering markdown', () => {
+    const { container } = render(<MarkdownRenderer content={'## 流式标题'} isStreaming />);
+
+    expect(container.firstElementChild?.className).toContain('markdown-body');
+    expect(container.firstElementChild?.className).toContain('is-loading');
+    expect(screen.getByRole('heading', { name: '流式标题' })).toBeTruthy();
+  });
+
   it('does not show copied state when copying a code block fails', async () => {
     const user = userEvent.setup({ writeToClipboard: false });
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('clipboard blocked'));

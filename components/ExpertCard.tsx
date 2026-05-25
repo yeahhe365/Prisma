@@ -244,16 +244,11 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
             {view === 'thoughts' && (
               <div className="max-w-none">
                 {expert.thoughts ? (
-                  isWorking ? (
-                    <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-5 text-[var(--theme-text-secondary)]">
-                      {expert.thoughts}
-                    </pre>
-                  ) : (
-                    <LazyMarkdownRenderer
-                      content={expert.thoughts}
-                      className="font-mono text-[11px] leading-5 text-[var(--theme-text-secondary)]"
-                    />
-                  )
+                  <LazyMarkdownRenderer
+                    content={expert.thoughts}
+                    className="font-mono text-[11px] leading-5 text-[var(--theme-text-secondary)]"
+                    isStreaming={isWorking}
+                  />
                 ) : (
                   <p className="text-xs text-[var(--theme-text-tertiary)]">暂无推理片段。</p>
                 )}
@@ -266,16 +261,11 @@ const ExpertCard = ({ expert }: { expert: ExpertResult }) => {
             {view === 'output' && (
               <div className="max-w-none">
                 {expert.content ? (
-                  isWorking ? (
-                    <pre className="whitespace-pre-wrap break-words text-xs leading-6 text-[var(--theme-text-secondary)]">
-                      {expert.content}
-                    </pre>
-                  ) : (
-                    <LazyMarkdownRenderer
-                      content={expert.content}
-                      className="text-xs leading-6 text-[var(--theme-text-secondary)]"
-                    />
-                  )
+                  <LazyMarkdownRenderer
+                    content={expert.content}
+                    className="text-xs leading-6 text-[var(--theme-text-secondary)]"
+                    isStreaming={isWorking}
+                  />
                 ) : (
                   <p className="text-xs text-[var(--theme-text-tertiary)]">
                     {isWorking ? '正在生成输出...' : '暂无输出。'}

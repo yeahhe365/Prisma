@@ -183,6 +183,42 @@ describe('api helpers', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://gateway.example.com/v1beta/models', undefined);
   });
 
+  it('preserves Request init data when deduplicating repeated api version segments', async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL) => new Response(JSON.stringify({ ok: true })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    Object.defineProperty(window, 'fetch', {
+      writable: true,
+      value: fetchMock,
+    });
+
+    getAI({
+      provider: 'google',
+      apiKey: 'google-key',
+      baseUrl: 'https://gateway.example.com/v1beta',
+    });
+
+    const options = (googleConstructor.mock.instances[0] as { options: { fetch: typeof fetch } })
+      .options;
+    const request = new Request('https://gateway.example.com/v1beta/v1beta/models', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer google-key' },
+      body: JSON.stringify({ prompt: 'hello' }),
+    });
+
+    await options.fetch(request);
+
+    const forwardedRequest = fetchMock.mock.calls[0][0];
+    expect(forwardedRequest).toBeInstanceOf(Request);
+    expect((forwardedRequest as Request).url).toBe('https://gateway.example.com/v1beta/models');
+    expect((forwardedRequest as Request).method).toBe('POST');
+    expect((forwardedRequest as Request).headers.get('authorization')).toBe('Bearer google-key');
+    await expect((forwardedRequest as Request).text()).resolves.toBe(
+      JSON.stringify({ prompt: 'hello' }),
+    );
+  });
+
   it('passes through URL objects without rewriting unrelated hosts', async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL) => new Response(JSON.stringify({ ok: true })),

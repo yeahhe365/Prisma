@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@/hooks/useAppLogic', () => ({
   useAppLogic: () => ({
     sessions: [],
+    groups: [],
     currentSessionId: null,
     messages: [],
     query: '',
@@ -48,6 +49,11 @@ vi.mock('@/hooks/useAppLogic', () => ({
     handleNewChat: vi.fn(),
     handleSelectSession: vi.fn(),
     handleDeleteSession: vi.fn(),
+    createGroup: vi.fn(),
+    deleteGroup: vi.fn(),
+    renameGroup: vi.fn(),
+    moveSessionToGroup: vi.fn(),
+    toggleGroupExpansion: vi.fn(),
     stopDeepThink: vi.fn(),
     focusTrigger: 0,
     inputError: null,

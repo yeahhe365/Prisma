@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import Sidebar from '@/components/Sidebar';
-import type { ChatSession } from '@/types';
+import type { ChatGroup, ChatSession } from '@/types';
 
 const sessions: ChatSession[] = [
   {
@@ -23,6 +23,15 @@ const sessions: ChatSession[] = [
   },
 ];
 
+const groups: ChatGroup[] = [
+  {
+    id: 'group-1',
+    title: 'Research',
+    createdAt: new Date('2026-04-03').getTime(),
+    isExpanded: true,
+  },
+];
+
 const renderSidebar = (props: Partial<React.ComponentProps<typeof Sidebar>> = {}) => {
   const defaultProps: React.ComponentProps<typeof Sidebar> = {
     isOpen: true,
@@ -34,6 +43,12 @@ const renderSidebar = (props: Partial<React.ComponentProps<typeof Sidebar>> = {}
     onSelectSession: vi.fn(),
     onNewChat: vi.fn(),
     onDeleteSession: vi.fn(),
+    groups: [],
+    onAddNewGroup: vi.fn(),
+    onDeleteGroup: vi.fn(),
+    onRenameGroup: vi.fn(),
+    onMoveSessionToGroup: vi.fn(),
+    onToggleGroupExpansion: vi.fn(),
   };
 
   return render(<Sidebar {...defaultProps} {...props} />);
@@ -125,6 +140,20 @@ describe('Sidebar', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('adds the AMC-style new group action', () => {
+    const onAddNewGroup = vi.fn();
+    const { container } = renderSidebar({ onAddNewGroup });
+
+    const newGroupButton = screen.getByRole('button', { name: '新建分组' });
+
+    expect(newGroupButton.className).toContain('rounded-full');
+    expect(container.querySelector('.lucide-folders')).toBeTruthy();
+
+    fireEvent.click(newGroupButton);
+
+    expect(onAddNewGroup).toHaveBeenCalled();
+  });
+
   it('uses AMC-style sidebar surfaces and rounded action rows', () => {
     const { container } = renderSidebar({ currentSessionId: '1' });
 
@@ -144,6 +173,7 @@ describe('Sidebar', () => {
     expect(newChat?.className).toContain('bg-transparent');
     expect(searchButton.className).toContain('rounded-full');
     expect(searchButton.className).toContain('bg-transparent');
+    expect(screen.getByRole('button', { name: '新建分组' }).className).toContain('rounded-full');
     expect(activeSession?.className).toContain('bg-[var(--theme-bg-tertiary)]');
   });
 
@@ -179,6 +209,197 @@ describe('Sidebar', () => {
     await user.click(deleteButton);
 
     expect(onDeleteSession).toHaveBeenCalledWith('1', expect.anything());
+  });
+
+  it('supports AMC-style session edit, pin, duplicate, and export actions', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onRenameSession = vi.fn();
+    const onTogglePinSession = vi.fn();
+    const onDuplicateSession = vi.fn();
+    const onExportSession = vi.fn();
+
+    renderSidebar({
+      onRenameSession,
+      onTogglePinSession,
+      onDuplicateSession,
+      onExportSession,
+    });
+
+    await user.click(screen.getByRole('button', { name: '打开 Frontend architecture 操作菜单' }));
+
+    const menu = screen.getByRole('menu', { name: 'Frontend architecture 操作' });
+    expect(within(menu).getByRole('menuitem', { name: '编辑' })).toBeTruthy();
+    expect(within(menu).getByRole('menuitem', { name: '置顶' })).toBeTruthy();
+    expect(within(menu).getByRole('menuitem', { name: '创建副本' })).toBeTruthy();
+    expect(within(menu).getByRole('menuitem', { name: '导出对话' })).toBeTruthy();
+
+    await user.click(within(menu).getByRole('menuitem', { name: '编辑' }));
+    const editInput = screen.getByDisplayValue('Frontend architecture');
+    fireEvent.change(editInput, { target: { value: 'Frontend plan' } });
+    fireEvent.keyDown(editInput, { key: 'Enter' });
+
+    expect(onRenameSession).toHaveBeenCalledWith('1', 'Frontend plan');
+
+    await user.click(screen.getByRole('button', { name: '打开 Frontend architecture 操作菜单' }));
+    await user.click(screen.getByRole('menuitem', { name: '置顶' }));
+
+    expect(onTogglePinSession).toHaveBeenCalledWith('1');
+
+    await user.click(screen.getByRole('button', { name: '打开 Frontend architecture 操作菜单' }));
+    await user.click(screen.getByRole('menuitem', { name: '创建副本' }));
+
+    expect(onDuplicateSession).toHaveBeenCalledWith('1');
+
+    await user.click(screen.getByRole('button', { name: '打开 Frontend architecture 操作菜单' }));
+    await user.click(screen.getByRole('menuitem', { name: '导出对话' }));
+
+    expect(onExportSession).toHaveBeenCalledWith('1');
+  });
+
+  it('opens the session action menu from right-click like AMC', () => {
+    renderSidebar();
+
+    const sessionRow = screen.getByText('Frontend architecture').closest('[data-session-row]');
+    if (!sessionRow) {
+      throw new Error('expected a session row');
+    }
+
+    fireEvent.contextMenu(sessionRow);
+
+    expect(screen.getByRole('menu', { name: 'Frontend architecture 操作' })).toBeTruthy();
+  });
+
+  it('separates ungrouped pinned sessions into an AMC-style pinned section', () => {
+    renderSidebar({
+      sessions: [
+        { ...sessions[0], isPinned: true },
+        { ...sessions[1], isPinned: false },
+      ],
+    });
+
+    const pinnedSection = screen.getByText('已置顶').parentElement;
+    expect(pinnedSection).toBeTruthy();
+    expect(within(pinnedSection as HTMLElement).getByText('Frontend architecture')).toBeTruthy();
+    expect(screen.getByText('Database notes')).toBeTruthy();
+    expect(pinnedSection?.querySelector('.lucide-pin')).toBeTruthy();
+  });
+
+  it('renders persisted groups with their sessions and keeps empty groups visible', () => {
+    const groupedSessions: ChatSession[] = [
+      { ...sessions[0], groupId: 'group-1' },
+      { ...sessions[1], groupId: null },
+    ];
+
+    const { rerender } = renderSidebar({
+      groups,
+      sessions: groupedSessions,
+    });
+
+    expect(screen.getByText('Research')).toBeTruthy();
+    expect(screen.getByText('Frontend architecture')).toBeTruthy();
+    expect(screen.getByText('Database notes')).toBeTruthy();
+
+    rerender(
+      <Sidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        onOpen={vi.fn()}
+        onOpenSettings={vi.fn()}
+        sessions={[]}
+        groups={groups}
+        currentSessionId={null}
+        onSelectSession={vi.fn()}
+        onNewChat={vi.fn()}
+        onDeleteSession={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Research')).toBeTruthy();
+    expect(screen.queryByText('暂无对话记录')).toBeNull();
+  });
+
+  it('toggles group expansion from the group header', () => {
+    const onToggleGroupExpansion = vi.fn();
+
+    renderSidebar({
+      groups,
+      sessions: [{ ...sessions[0], groupId: 'group-1' }],
+      onToggleGroupExpansion,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Research' }));
+
+    expect(onToggleGroupExpansion).toHaveBeenCalledWith('group-1');
+  });
+
+  it('edits and deletes groups from the AMC-style group menu', async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const onDeleteGroup = vi.fn();
+    const onRenameGroup = vi.fn();
+
+    renderSidebar({
+      groups,
+      sessions: [{ ...sessions[0], groupId: 'group-1' }],
+      onDeleteGroup,
+      onRenameGroup,
+    });
+
+    await user.click(screen.getByRole('button', { name: '打开 Research 分组菜单' }));
+
+    const menu = screen.getByRole('menu', { name: 'Research 分组操作' });
+    expect(menu.className).toContain('right-3');
+    expect(menu.className).toContain('-top-1');
+
+    await user.click(within(menu).getByRole('menuitem', { name: '编辑' }));
+
+    const editInput = screen.getByDisplayValue('Research');
+    fireEvent.change(editInput, { target: { value: 'Work' } });
+    fireEvent.keyDown(editInput, { key: 'Enter' });
+
+    expect(onRenameGroup).toHaveBeenCalledWith('group-1', 'Work');
+
+    await user.click(screen.getByRole('button', { name: '打开 Research 分组菜单' }));
+    await user.click(screen.getByRole('menuitem', { name: '删除' }));
+
+    expect(onDeleteGroup).toHaveBeenCalledWith('group-1');
+  });
+
+  it('moves sessions into groups and back to all conversations with drag and drop', () => {
+    const onMoveSessionToGroup = vi.fn();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      dropEffect: '',
+      effectAllowed: '',
+      getData(key: string) {
+        return this.data[key] || '';
+      },
+      setData(key: string, value: string) {
+        this.data[key] = value;
+      },
+    };
+
+    const { container } = renderSidebar({
+      groups,
+      sessions,
+      onMoveSessionToGroup,
+    });
+
+    const sessionRow = screen.getByText('Frontend architecture').closest('[data-session-row]');
+    const groupRow = screen.getByText('Research').closest('[data-group-row]');
+    const sessionList = container.querySelector('[data-sidebar-session-list]');
+
+    if (!sessionRow || !groupRow || !sessionList) {
+      throw new Error('expected draggable session, group row, and sidebar list');
+    }
+
+    fireEvent.dragStart(sessionRow, { dataTransfer });
+    fireEvent.drop(groupRow, { dataTransfer });
+    fireEvent.drop(sessionList, { dataTransfer });
+
+    expect(onMoveSessionToGroup).toHaveBeenCalledWith('1', 'group-1');
+    expect(onMoveSessionToGroup).toHaveBeenCalledWith('1', null);
   });
 
   it('keeps an AMC-style mini rail visible when collapsed on desktop', () => {
